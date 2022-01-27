@@ -1,6 +1,6 @@
 # pandroide-svpg
 
-A more modern implementation of the SVPG algorithm using [PyTorch](https://pytorch.org/) and [OpenIA Gym](https://gym.openai.com/) as part of the ANDROIDE project.
+A more modern implementation of the SVPG algorithm using [PyTorch](https://pytorch.org/) and [OpenIA Gym](https://gym.openai.com/) as part of our ANDROIDE project.
 
 ## Resources
 - Our [colab notebook](https://colab.research.google.com/drive/15Kv6SnBmB3NXLfmZnPS88TnpEqXGDLvZ#scrollTo=SqNaC7QC_GwF).
