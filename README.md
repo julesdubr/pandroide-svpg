@@ -11,4 +11,4 @@ A more modern implementation of the SVPG algorithm using [PyTorch](https://pytor
 - CANITROT Julien
 - DUBREUIL Jules
 - HUYNH Tan Khiem
-- KOSTA Nikola
+- KOSTADINOVIC Nikola
