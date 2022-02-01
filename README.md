@@ -8,5 +8,7 @@ A more modern implementation of the SVPG algorithm using [PyTorch](https://pytor
 - The code was inspired from [this github repo](https://github.com/largelymfs/svpg_REINFORCE), it was written by one of the authors of [this paper](https://arxiv.org/pdf/1704.02399.pdf) (Yang Liu).
 
 ## Team
-DUBREUIL Jules
-HUYNH Tan Khiem
+- CANITROT Julien
+- DUBREUIL Jules
+- HUYNH Tan Khiem
+- KOSTA Nikola
