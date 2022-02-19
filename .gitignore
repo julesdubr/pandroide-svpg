@@ -132,4 +132,4 @@ dmypy.json
 salina/
 
 # outputs
-**/outputs/
+outputs/
