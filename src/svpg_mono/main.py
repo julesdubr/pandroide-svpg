@@ -13,9 +13,8 @@ from gym.spaces import Box, Discrete
 from gym.wrappers import TimeLimit
 
 import salina
-import salina.rl.functional as RLF
-from salina import TAgent, Workspace, get_arguments, get_class, instantiate_class
-from salina.agents import Agents, NRemoteAgent, TemporalAgent
+from salina import Agent, get_arguments, get_class, instantiate_class
+from salina.agents import Agents, RemoteAgent, TemporalAgent
 from salina.agents.gyma import AutoResetGymAgent, GymAgent
 from salina.logger import TFLogger
 
@@ -30,9 +29,27 @@ def _index(tensor_3d, tensor_2d):
     return v
 
 
-class ProbAgent(TAgent):
+def get_parameters(nn_list):
+    """Wraps up the policy parameters of all agents into a 2D tensor."""
+    params = []
+    for nn in nn_list:
+        l = list(nn.parameters())
+        l_flatten = []
+
+        for p in l:
+            l_flatten.append(torch.flatten(p))
+
+        l_flatten = tuple(l_flatten)
+        l_concat = torch.cat(l_flatten)
+
+        params.append(l_concat)
+
+    return torch.stack(params)
+
+
+class ProbAgent(Agent):
     def __init__(self, observation_size, hidden_size, n_actions):
-        super().__init__(name="prob_agent")
+        super().__init__()
         self.model = nn.Sequential(
             nn.Linear(observation_size, hidden_size),
             nn.ReLU(),
@@ -46,7 +63,7 @@ class ProbAgent(TAgent):
         self.set(("action_probs", t), probs)
 
 
-class ActionAgent(TAgent):
+class ActionAgent(Agent):
     def __init__(self):
         super().__init__()
 
@@ -60,7 +77,7 @@ class ActionAgent(TAgent):
         self.set(("action", t), action)
 
 
-class CriticAgent(TAgent):
+class CriticAgent(Agent):
     def __init__(self, observation_size, hidden_size, n_actions):
         super().__init__()
         self.critic_model = nn.Sequential(
@@ -75,7 +92,7 @@ class CriticAgent(TAgent):
         self.set(("critic", t), critic)
 
 
-class EnvAgent(GymAgent):
+class EnvAgent(AutoResetGymAgent):
     # Create the environment agent
     # This agent implements N gym environments with auto-reset
     def __init__(self, cfg):
@@ -98,6 +115,32 @@ class EnvAgent(GymAgent):
         return self.env.observation_space.shape[0], action_space
 
 
+class RBF(Agent):
+    def __init__(self, sigma=None):
+        super().__init__()
+        self.sigma = sigma
+
+    def forward(self, X, Y):
+        XX = X.matmul(X.t())
+        XY = X.matmul(Y.t())
+        YY = Y.matmul(Y.t())
+
+        dnorm2 = -2 * XY + XX.diag().unsqueeze(1) + YY.diag().unsqueeze(0)
+
+        # Apply the median heuristic (PyTorch does not give true median)
+        if self.sigma is None:
+            np_dnorm2 = dnorm2.detach().cpu().numpy()
+            h = np.median(np_dnorm2) / (2 * np.log(X.size(0) + 1))
+            sigma = np.sqrt(h).item()
+        else:
+            sigma = self.sigma
+
+        gamma = 1.0 / (1e-8 + 2 * sigma ** 2)
+        K_XY = (-gamma * dnorm2).exp()
+
+        return K_XY
+
+
 class Logger:
     # Not generic
     # Specifically designed in the context of this A2C example
@@ -114,47 +157,31 @@ class Logger:
         self.add_log("a2c_loss", a2c_loss, epoch)
 
 
-# TODO: tester environement custom ?
 def make_env(env_name, max_episode_steps):
     return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
 
 
 # Create the A2C gent
-def create_a2c_agent(cfg, env_agent):
-    # Get info on the environment
+def create_a2c_agent(cfg, env_agent, order, n_agents):
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
-    del env_agent.env
 
-    assert cfg.algorithm.n_envs % cfg.algorithm.n_processes == 0
-
-    # Create the agents
-    acq_env_agent = AutoResetGymAgent(
-        get_class(cfg.algorithm.env),
-        get_arguments(cfg.algorithm.env),
-        n_envs=int(cfg.algorithm.n_envs / cfg.algorithm.n_processes),
-    )
+    if order == n_agents - 1:
+        del env_agent.env
 
     prob_agent = ProbAgent(
         observation_size, cfg.algorithm.architecture.hidden_size, n_actions
     )
-    acq_prob_agent = copy.deepcopy(prob_agent)
-
-    acq_action_agent = ActionAgent()
-    acq_agent = TemporalAgent(Agents(acq_env_agent, acq_prob_agent, acq_action_agent))
-    acq_remote_agent, acq_workspace = NRemoteAgent.create(
-        acq_agent,
-        num_processes=cfg.algorithm.n_processes,
-        t=0,
-        n_steps=cfg.algorithm.n_timesteps,
-        stochastic=True,
-    )
-    acq_remote_agent.seed(cfg.algorithm.env_seed)
-
+    action_agent = ActionAgent()
     critic_agent = CriticAgent(
         observation_size, cfg.algorithm.architecture.hidden_size, n_actions
     )
 
-    return acq_workspace, acq_remote_agent, prob_agent, critic_agent
+    # Combine env and policy agents
+    agent = Agents(env_agent, prob_agent, action_agent)
+    # Get an agent that is executed on a complete workspace
+    agent = TemporalAgent(agent)
+    agent.seed(cfg.algorithm.env_seed)
+    return agent, prob_agent, critic_agent
 
 
 # Configure the optimizer over the a2c agent
@@ -165,21 +192,13 @@ def setup_optimizers(cfg, prob_agent, critic_agent):
     return optimizer
 
 
-# ---- TRICKY PART ---- #
-def execute_agent(cfg, epoch, acq_workspace, acq_remote_agent, prob_agent):
-    pagent = acq_remote_agent.get_by_name("prob_agent")
-    for a in pagent:
-        a.load_state_dict(prob_agent.state_dict())
-
+def execute_agent(cfg, epoch, workspace, agent):
+    workspace.zero_grad()
     if epoch > 0:
-        acq_workspace.copy_n_last_steps(1)
-        acq_remote_agent(
-            acq_workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True
-        )
+        workspace.copy_n_last_steps(1)
+        agent(workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True)
     else:
-        acq_remote_agent(
-            acq_workspace, t=0, n_steps=cfg.algorithm.n_timesteps, stochastic=True
-        )
+        agent(workspace, t=0, n_steps=cfg.algorithm.n_timesteps, stochastic=True)
 
 
 def compute_critic_loss(cfg, reward, done, critic):
@@ -201,8 +220,31 @@ def compute_a2c_loss(action_probs, action, td):
     return a2c_loss.mean()
 
 
-def run_a2c(cfg):
+def add_gradients(total_a2c_loss, kernels, dict_agents, n_agents):
+    total_a2c_loss.backward(retain_graph=True)
+    for i in range(n_agents):
+        for j in range(n_agents):
+            if j == i:
+                continue
+
+            theta_i = dict_agents[i]["prob_agent"].model.parameters()
+            theta_j = dict_agents[j]["prob_agent"].model.parameters()
+
+            for w in zip(theta_i, theta_j):
+                w[0].grad = w[0].grad + w[1].grad * kernels[j, i].detach()
+
+
+def add_gradient_to_nn_params(nn, grad, n_agents):
+    for i, w in enumerate(nn.parameters()):
+        if w.grad is None:
+            w.grad = grad[i] / n_agents
+
+        w.grad = w.grad + grad[i] / n_agents
+
+
+def run_svpg(cfg, n_agents=16):
     start = time.process_time()
+
     # 1) Build the logger
     logger = Logger(cfg)
 
@@ -210,30 +252,28 @@ def run_a2c(cfg):
     env_agent = EnvAgent(cfg)
 
     # 3) Create the A2C Agent
-    acq_workspace, acq_remote_a2c_agent, prob_agent, critic_agent = create_a2c_agent(
-        cfg, env_agent
-    )
+    a2c_agent, prob_agent, critic_agent = create_a2c_agent(cfg, env_agent)
 
     # 4) Create the temporal critic agent to compute critic values over the workspace
-    tprob_agent = TemporalAgent(prob_agent)
     tcritic_agent = TemporalAgent(critic_agent)
 
-    # 5) Configure the optimizer over the a2c agent
+    # 5) Configure the workspace to the right dimension
+    workspace = salina.Workspace()
+
+    # 6) Configure the optimizer over the a2c agent
     optimizer = setup_optimizers(cfg, prob_agent, critic_agent)
 
-    # 8) Training loop
+    # 7) Training loop
     epoch = 0
     for epoch in range(cfg.algorithm.max_epochs):
         # Execute the agent in the workspace
-        execute_agent(cfg, epoch, acq_workspace, acq_remote_a2c_agent, prob_agent)
+        execute_agent(cfg, epoch, workspace, a2c_agent)
 
-        # Compute the prob and critic value over the whole replay workspace
-        replay_workspace = Workspace(acq_workspace)
-        tprob_agent(replay_workspace, t=0, n_steps=cfg.algorithm.n_timesteps)
-        tcritic_agent(replay_workspace, t=0, n_steps=cfg.algorithm.n_timesteps)
+        # Compute the critic value over the whole workspace
+        tcritic_agent(workspace, n_steps=cfg.algorithm.n_timesteps)
 
         # Get relevant tensors (size are timestep * n_envs * ...)
-        critic, done, action_probs, reward, action = replay_workspace[
+        critic, done, action_probs, reward, action = workspace[
             "critic", "env/done", "action_probs", "env/reward", "action"
         ]
 
@@ -261,13 +301,10 @@ def run_a2c(cfg):
         optimizer.step()
 
         # Compute the cumulated reward on final_state
-        creward = replay_workspace["env/cumulated_reward"]
+        creward = workspace["env/cumulated_reward"]
         creward = creward[done]
         if creward.size()[0] > 0:
             logger.add_log("reward", creward.mean(), epoch)
-
-        # θj = gradient retourné par l'agent j
-        # nos params : probe_agent.parameters()
 
         if creward.mean() >= 100.0:
             return epoch, time.process_time() - start
@@ -278,7 +315,7 @@ def main(cfg):
     import torch.multiprocessing as mp
 
     mp.set_start_method("spawn")
-    epoch, duration = run_a2c(cfg)
+    epoch, duration = run_svpg(cfg)
 
     print(f"terminated in {duration}s at epoch {epoch}")
 

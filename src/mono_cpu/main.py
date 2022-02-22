@@ -72,10 +72,6 @@ class CriticAgent(Agent):
         self.set(("critic", t), critic)
 
 
-def make_env(env_name, max_episode_steps):
-    return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
-
-
 class EnvAgent(AutoResetGymAgent):
     # Create the environment agent
     # This agent implements N gym environments with auto-reset
@@ -113,6 +109,10 @@ class Logger:
         self.add_log("critic_loss", critic_loss, epoch)
         self.add_log("entropy_loss", entropy_loss, epoch)
         self.add_log("a2c_loss", a2c_loss, epoch)
+
+
+def make_env(env_name, max_episode_steps):
+    return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
 
 
 # Create the A2C gent
