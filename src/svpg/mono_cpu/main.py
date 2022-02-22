@@ -29,24 +29,6 @@ def _index(tensor_3d, tensor_2d):
     return v
 
 
-def get_parameters(nn_list):
-    """Wraps up the policy parameters of all agents into a 2D tensor."""
-    params = []
-    for nn in nn_list:
-        l = list(nn.parameters())
-        l_flatten = []
-
-        for p in l:
-            l_flatten.append(torch.flatten(p))
-
-        l_flatten = tuple(l_flatten)
-        l_concat = torch.cat(l_flatten)
-
-        params.append(l_concat)
-
-    return torch.stack(params)
-
-
 class ProbAgent(Agent):
     def __init__(self, observation_size, hidden_size, n_actions):
         super().__init__()
@@ -218,28 +200,6 @@ def compute_a2c_loss(action_probs, action, td):
     action_logp = _index(action_probs, action).log()
     a2c_loss = action_logp[:-1] * td.detach()
     return a2c_loss.mean()
-
-
-def add_gradients(total_a2c_loss, kernels, dict_agents, n_agents):
-    total_a2c_loss.backward(retain_graph=True)
-    for i in range(n_agents):
-        for j in range(n_agents):
-            if j == i:
-                continue
-
-            theta_i = dict_agents[i]["prob_agent"].model.parameters()
-            theta_j = dict_agents[j]["prob_agent"].model.parameters()
-
-            for w in zip(theta_i, theta_j):
-                w[0].grad = w[0].grad + w[1].grad * kernels[j, i].detach()
-
-
-def add_gradient_to_nn_params(nn, grad, n_agents):
-    for i, w in enumerate(nn.parameters()):
-        if w.grad is None:
-            w.grad = grad[i] / n_agents
-
-        w.grad = w.grad + grad[i] / n_agents
 
 
 def run_svpg(cfg, n_agents=16):
