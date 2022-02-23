@@ -100,9 +100,9 @@ class EnvAgent(AutoResetGymAgent):
         return self.env.observation_space.shape[0], action_space
 
 
-class RBF(Agent):
+class RBF(torch.nn.Module):
     def __init__(self, sigma=None):
-        super().__init__()
+        super(RBF, self).__init__()
         self.sigma = sigma
 
     def forward(self, X, Y):
@@ -209,9 +209,16 @@ def get_parameters(nn_list):
     params = []
     for nn in nn_list:
         l = list(nn.parameters())
-        l_flatten = (torch.flatten(p) for p in l)
+        # l_flatten = (torch.flatten(p) for p in l)
 
+        l_flatten = []
+
+        for p in l:
+            l_flatten.append(torch.flatten(p))
+
+        l_flatten = tuple(l_flatten)
         l_concat = torch.cat(l_flatten)
+
         params.append(l_concat)
 
     return torch.stack(params)
@@ -228,10 +235,8 @@ def add_gradients(total_a2c_loss, kernels, particles, n_particles, temp):
             theta_i = particles[i]["prob_agent"].model.parameters()
             theta_j = particles[j]["prob_agent"].model.parameters()
 
-            for k in range(len(theta_i)):
-                theta_i[k].grad = (
-                    theta_i[k].grad + theta_j[k].grad * kernels[j, i].detach()
-                )
+            for (wi, wj) in zip(theta_i, theta_j):
+                wi.grad = wi.grad + wj.grad * kernels[j, i].detach()
 
 
 def add_gradient_to_nn_params(nn, grad, n_particles):
@@ -330,7 +335,7 @@ def run_svpg(cfg, n_particles=16, temp=1):
             [particles[i]["prob_agent"].model for i in range(n_particles)]
         )
 
-        kernels = RBF(params, params.detach())
+        kernels = RBF()(params, params.detach())
 
         add_gradients(total_a2c_loss, kernels, particles, n_particles, temp)
 
