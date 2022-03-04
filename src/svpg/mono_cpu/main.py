@@ -365,7 +365,9 @@ def run_svpg(cfg, n_particles=16, temp=1):
             logger.add_log("reward", creward.mean(), epoch)
 
         if creward.mean() >= 100.0:
-            return epoch, time.process_time() - start
+            break
+
+    return epoch, time.process_time() - start
 
 
 @hydra.main(config_path=".", config_name="main.yaml")
