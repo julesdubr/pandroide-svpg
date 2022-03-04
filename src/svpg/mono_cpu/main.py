@@ -30,29 +30,29 @@ def _index(tensor_3d, tensor_2d):
 
 
 class ProbAgent(Agent):
-    def __init__(self, observation_size, hidden_size, n_actions, order):
+    def __init__(self, observation_size, hidden_size, n_actions, pid):
         super().__init__()
         self.model = nn.Sequential(
             nn.Linear(observation_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, n_actions),
         )
-        self.order = order
+        self.pid = pid
 
     def forward(self, t, **kwargs):
         observation = self.get(("env/env_obs", t))
         scores = self.model(observation)
         probs = torch.softmax(scores, dim=-1)
-        self.set(("action_probs" + str(self.order), t), probs)
+        self.set(("action_probs" + str(self.pid), t), probs)
 
 
 class ActionAgent(Agent):
-    def __init__(self, order):
+    def __init__(self, pid):
         super().__init__()
-        self.order = order
+        self.pid = pid
 
     def forward(self, t, stochastic, **kwargs):
-        probs = self.get(("action_probs" + str(self.order), t))
+        probs = self.get(("action_probs" + str(self.pid), t))
         if stochastic:
             action = torch.distributions.Categorical(probs).sample()
         else:
@@ -62,19 +62,19 @@ class ActionAgent(Agent):
 
 
 class CriticAgent(Agent):
-    def __init__(self, observation_size, hidden_size, n_actions, order):
+    def __init__(self, observation_size, hidden_size, n_actions, pid):
         super().__init__()
         self.critic_model = nn.Sequential(
             nn.Linear(observation_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, 1),
         )
-        self.order = order
+        self.pid = pid
 
     def forward(self, t, **kwargs):
         observation = self.get(("env/env_obs", t))
         critic = self.critic_model(observation).squeeze(-1)
-        self.set(("critic" + str(self.order), t), critic)
+        self.set(("critic" + str(self.pid), t), critic)
 
 
 class EnvAgent(AutoResetGymAgent):
@@ -147,18 +147,17 @@ def make_env(env_name, max_episode_steps):
 
 
 # Create the A2C gent
-def create_a2c_agent(cfg, env_agent, order, n_particles):
+def create_a2c_agent(cfg, env_agent, pid, n_particles):
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
-
-    if order == n_particles - 1:
-        del env_agent.env
+    del env_agent.env
 
     prob_agent = ProbAgent(
-        observation_size, cfg.algorithm.architecture.hidden_size, n_actions, order
+        observation_size, cfg.algorithm.architecture.hidden_size, n_actions, pid
     )
-    action_agent = ActionAgent(order)
+
+    action_agent = ActionAgent(pid)
     critic_agent = CriticAgent(
-        observation_size, cfg.algorithm.architecture.hidden_size, n_actions, order
+        observation_size, cfg.algorithm.architecture.hidden_size, n_actions, pid
     )
 
     # Combine env and policy agents
