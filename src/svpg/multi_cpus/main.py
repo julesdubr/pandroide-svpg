@@ -80,18 +80,20 @@ class CriticAgent(Agent):
 class EnvAgent(AutoResetGymAgent):
     # Create the environment agent
     # This agent implements N gym environments with auto-reset
-    def __init__(self, cfg, order):
+    def __init__(self, cfg, pid):
         super().__init__(
             get_class(cfg.algorithm.env),
             get_arguments(cfg.algorithm.env),
             n_envs=cfg.algorithm.n_envs,
-            # add the order of the agent corresponding to the environment to the input and output
-            input="action" + str(order),
-            output="env" + str(order) + "/",
+            # add the pid of the agent corresponding to the environment to the input
+            # and output
+            input=f"action{pid}",
+            output=f"env{pid}/",
         )
         self.env = instantiate_class(cfg.algorithm.env)
 
     # Return the size of the observation and action spaces of the env
+    # TODO: fix Pendulum
     def get_obs_and_actions_sizes(self):
         action_space = None
 
@@ -123,7 +125,11 @@ class RBF(torch.nn.Module):
         else:
             sigma = self.sigma
 
-        gamma = 1.0 / (1e-8 + 2 * sigma ** 2)
+        if sigma != 0:
+            gamma = 1.0 / (2 * sigma ** 2)
+        else:
+            gamma = 1e8
+
         K_XY = (-gamma * dnorm2).exp()
 
         return K_XY
@@ -250,13 +256,14 @@ def add_gradients(total_a2c_loss, kernels, particles, n_particles):
                 wi.grad = wi.grad + wj.grad * kernels[j, i].detach()
 
 
-def run_svpg(cfg, n_particles=16, temp=1):
+def run_svpg(cfg, temp=1):
     start = time.process_time()
 
     # 1) Build the logger
     logger = Logger(cfg)
 
     # 2) Create the environment agent
+    n_particles = cfg.algorithm.n_particles
     env_agents = [EnvAgent(cfg, i) for i in range(n_particles)]
 
     # 3) Create the A2C Agent
@@ -276,16 +283,16 @@ def run_svpg(cfg, n_particles=16, temp=1):
     # Combine all acquisition agent of all particle in a unique TemporalAgent. This will help us to avoid
     # using a loop explicitly to execute all these agents (these agents will still be executed by a for loop by SaliNa)
     combined_acquisition_agent = TemporalAgent(
-        Agents(*[agent["acquisition_agent"] for agent in particles])
+        Agents(*[particle["acquisition_agent"] for particle in particles])
     )
 
     # Combine all prob_agent of each particle to calculate the gradient
-    combined_prob_agent = Agents(*[agent["prob_agent"] for agent in particles])
+    combined_prob_agent = Agents(*[particle["prob_agent"] for particle in particles])
 
     # Create the remote acquisition agent and the remote acquisition workspace
     remote_combined_acq_agent, remote_acquisition_workspace = NRemoteAgent.create(
         combined_acquisition_agent,
-        num_processes=cfg.algorithm.n_timesteps,
+        num_processes=cfg.algorithm.n_processes,
         t=0,
         n_steps=cfg.algorithm.n_timesteps,
         stochastic=True,
@@ -297,7 +304,7 @@ def run_svpg(cfg, n_particles=16, temp=1):
     # 4) Create the temporal critic agent to compute critic values over the workspace
     # We also combine all the critic_agent of all particle into a unique TemporalAgent
     tcritic_agent = TemporalAgent(
-        Agents(*[agent["critic_agent"] for agent in particles])
+        Agents(*[particle["critic_agent"] for particle in particles])
     )
 
     # 5) Configure the workspace to the right dimension
@@ -306,8 +313,8 @@ def run_svpg(cfg, n_particles=16, temp=1):
     # 6) Configure the optimizer over the a2c agent
     optimizer = setup_optimizers(
         cfg,
-        [agent["prob_agent"] for agent in particles],
-        [agent["critic_agent"] for agent in particles],
+        [particle["prob_agent"] for particle in particles],
+        [particle["critic_agent"] for particle in particles],
     )
 
     # 7) Training loop
@@ -325,8 +332,8 @@ def run_svpg(cfg, n_particles=16, temp=1):
         total_a2c_loss = None
 
         # norm of gradients for debugging
-        total_policy_gradient_norm = None
-        total_critic_gradient_norm = None
+        total_policy_gradnorm = None
+        total_critic_gradnorm = None
 
         # Execute the remote acquisition_agent in the remote workspace
         execute_agent(
@@ -420,28 +427,24 @@ def run_svpg(cfg, n_particles=16, temp=1):
             for p1, p2 in zip(prob_params, critic_params):
                 if p1.grad is not None:
                     norm = p1.grad.detach().data.norm(2)
-                    if total_policy_gradient_norm is not None:
-                        total_policy_gradient_norm = (
-                            total_policy_gradient_norm + norm ** 2
-                        )
+                    if total_policy_gradnorm is not None:
+                        total_policy_gradnorm = total_policy_gradnorm + norm ** 2
                     else:
-                        total_policy_gradient_norm = norm ** 2
+                        total_policy_gradnorm = norm ** 2
 
                 if p2.grad is not None:
                     norm = p2.grad.detach().data.norm(2)
-                    if total_critic_gradient_norm is not None:
-                        total_critic_gradient_norm = (
-                            total_critic_gradient_norm + norm ** 2
-                        )
+                    if total_critic_gradnorm is not None:
+                        total_critic_gradnorm = total_critic_gradnorm + norm ** 2
                     else:
-                        total_critic_gradient_norm = norm ** 2
+                        total_critic_gradnorm = norm ** 2
 
-        total_policy_gradient_norm, total_critic_gradient_norm = (
-            total_policy_gradient_norm ** 0.5,
-            total_critic_gradient_norm ** 0.5,
+        total_policy_gradnorm, total_critic_gradnorm = (
+            total_policy_gradnorm ** 0.5,
+            total_critic_gradnorm ** 0.5,
         )
-        logger.add_log("Policy Gradient norm", total_policy_gradient_norm, epoch)
-        logger.add_log("Critic Gradient norm", total_critic_gradient_norm, epoch)
+        logger.add_log("Policy Gradient norm", total_policy_gradnorm, epoch)
+        logger.add_log("Critic Gradient norm", total_critic_gradnorm, epoch)
 
         # Store the mean of losses all over the agents for tensorboard display
         logger.log_losses(
