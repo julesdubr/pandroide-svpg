@@ -29,6 +29,21 @@ def _index(tensor_3d, tensor_2d):
     return v
 
 
+class Logger:
+    # Not generic, specifically designed in the context of this A2C example
+    def __init__(self, cfg):
+        self.logger = instantiate_class(cfg.logger)
+
+    def add_log(self, log_string, loss, epoch):
+        self.logger.add_scalar(log_string, loss.item(), epoch)
+
+    # Log losses
+    def log_losses(self, cfg, epoch, critic_loss, entropy_loss, a2c_loss):
+        self.add_log("critic_loss", critic_loss, epoch)
+        self.add_log("entropy_loss", entropy_loss, epoch)
+        self.add_log("a2c_loss", a2c_loss, epoch)
+
+
 class ProbAgent(Agent):
     def __init__(self, observation_size, hidden_size, n_actions, pid):
         super().__init__()
@@ -133,22 +148,6 @@ class RBF(torch.nn.Module):
         K_XY = (-gamma * dnorm2).exp()
 
         return K_XY
-
-
-class Logger:
-    # Not generic
-    # Specifically designed in the context of this A2C example
-    def __init__(self, cfg):
-        self.logger = instantiate_class(cfg.logger)
-
-    def add_log(self, log_string, loss, epoch):
-        self.logger.add_scalar(log_string, loss.item(), epoch)
-
-    # Log losses
-    def log_losses(self, cfg, epoch, critic_loss, entropy_loss, a2c_loss):
-        self.add_log("critic_loss", critic_loss, epoch)
-        self.add_log("entropy_loss", entropy_loss, epoch)
-        self.add_log("a2c_loss", a2c_loss, epoch)
 
 
 def make_env(env_name, max_episode_steps):
@@ -392,8 +391,9 @@ def run_svpg(cfg, temp=1):
             # Compute the cumulated reward on final_state
             creward = workspace["env" + str(i) + "/cumulated_reward"]
             creward = creward[done]
-            if creward.size()[0] > 0:
-                logger.add_log("reward" + str(i), creward.mean(), epoch)
+
+            # if creward.size()[0] > 0:
+            #     logger.add_log("reward" + str(i), creward.mean(), epoch)
 
         params = get_parameters(
             [particles[i]["prob_agent"].model for i in range(n_particles)]
