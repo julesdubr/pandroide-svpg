@@ -309,8 +309,8 @@ def compute_losses(cfg, n_particles, replay_workspace, alpha, logger, epoch):
         creward = replay_workspace[f"env{i}/cumulated_reward"]
         creward = creward[done]
 
-        # if creward.size()[0] > 0:
-        #     logger.add_log(f"reward{i}", creward.mean(), epoch)
+        if creward.size()[0] > 0:
+            logger.add_log(f"reward{i}", creward.mean(), epoch)
 
     return critic_loss, entropy_loss, a2c_loss
 
@@ -434,16 +434,17 @@ def run_svpg(cfg, alpha=1):
         optimizer.step()
 
         # Compute the norm of gradient of the actor and gradient of the critic
-        compute_gradients_norms(particles, logger, epoch)
+        # if cfg.verbose:
+        #     compute_gradients_norms(particles, logger, epoch)
 
         # Store the mean of losses all over the agents for tensorboard display
-        logger.log_losses(
-            cfg,
-            epoch,
-            critic_loss.detach().mean(),
-            entropy_loss.detach().mean(),
-            a2c_loss.detach().mean(),
-        )
+        # logger.log_losses(
+        #     cfg,
+        #     epoch,
+        #     critic_loss.detach().mean(),
+        #     entropy_loss.detach().mean(),
+        #     a2c_loss.detach().mean(),
+        # )
 
     return epoch
 
