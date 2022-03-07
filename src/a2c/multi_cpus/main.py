@@ -140,6 +140,7 @@ def create_a2c_agent(cfg, env_agent):
     acq_prob_agent = copy.deepcopy(prob_agent)
 
     acq_action_agent = ActionAgent()
+
     acq_agent = TemporalAgent(Agents(acq_env_agent, acq_prob_agent, acq_action_agent))
     acq_remote_agent, acq_workspace = NRemoteAgent.create(
         acq_agent,
@@ -165,7 +166,6 @@ def setup_optimizers(cfg, prob_agent, critic_agent):
     return optimizer
 
 
-# ---- TRICKY PART ---- #
 def execute_agent(cfg, epoch, acq_workspace, acq_remote_agent, prob_agent):
     pagent = acq_remote_agent.get_by_name("prob_agent")
     for a in pagent:

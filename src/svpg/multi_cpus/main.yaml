@@ -6,7 +6,7 @@ logger:
 
 algorithm:
   env_seed: 432
-  n_envs: 1
+  n_envs: 8
   n_processes: 4
   n_particles: 16
   n_timesteps: 16
