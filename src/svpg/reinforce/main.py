@@ -134,7 +134,7 @@ def make_env(env_name, max_episode_steps):
     return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
 
 
-# Create the A2C gent
+# Create the REINFORCE gent
 def create_reinforce_agent(cfg, env_agent, pid):
     # Get info on the environment
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
@@ -173,7 +173,7 @@ def combine_agents(cfg, particles):
     # Set the seed
     acq_remote_agents.seed(cfg.algorithm.env_seed)
 
-    # Combine all prob_agent of each particle to calculate the gradient
+    # Combine particles' r_agent
     r_agents = Agents(*[particle["r_agent"] for particle in particles])
 
     return r_agents, acq_remote_agents, acq_workspace
@@ -182,7 +182,7 @@ def combine_agents(cfg, particles):
 def create_particles(cfg, n_particles, env_agents):
     particles = list()
     for i in range(n_particles):
-        # Create A2C agent for all particles
+        # Create REINFORCE agent for all particles
         acq_agent, r_agent = create_reinforce_agent(cfg, env_agents[i], i)
         particles.append(
             {
@@ -197,8 +197,6 @@ def create_particles(cfg, n_particles, env_agents):
 # Configure the optimizer over the a2c agent
 def setup_optimizers(cfg, r_agents):
     optimizer_args = get_arguments(cfg.algorithm.optimizer)
-    # parameters = [r_agent.parameters() for r_agent in r_agents]
-    # parameters = nn.Sequential(**r_agents).parameters()
 
     parameters = []
     for r_agent in r_agents:
@@ -215,7 +213,6 @@ def execute_agent(cfg, epoch, acq_remote_agents, acq_workspace, particles):
             a.load_state_dict(particle["r_agent"].state_dict())
 
     if epoch > 0:
-        # acq_remote_workspace.zero_grad()
         acq_workspace.copy_n_last_steps(1)
         acq_remote_agents(
             acq_workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True
@@ -290,7 +287,7 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
     n_particles = len(particles)
     stop = False
 
-    # Compute critic, entropy and a2c losses
+    # Compute reinforce, entropy and baseline losses
     reinforce_loss, entropy_loss, baseline_loss = 0, 0, 0
     for i in range(n_particles):
         # Get relevant tensors (size are timestep * n_envs * ...)
@@ -302,7 +299,7 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
             f"action{i}",
         ]
 
-        # Compute critic loss
+        # Compute the losses
         losses = compute_reinforce_loss(
             reward, action_probs, baseline, action, done, cfg.algorithm.discount_factor
         )
@@ -310,7 +307,7 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
         if verbose:
             [logger.add_scalar(k, v.item(), epoch) for k, v in losses.items()]
 
-        entropy_loss += losses["entropy_loss"]
+        entropy_loss -= losses["entropy_loss"]
         baseline_loss += losses["baseline_loss"]
         reinforce_loss -= losses["reinforce_loss"]  # * (1 / alpha) * (1 / n_particles)
 
@@ -336,7 +333,7 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
     add_gradients(reinforce_loss, kernels, particles, n_particles)
 
     loss = (
-        -cfg.algorithm.entropy_coef * entropy_loss
+        cfg.algorithm.entropy_coef * entropy_loss
         + cfg.algorithm.baseline_coef * baseline_loss
         + cfg.algorithm.reinforce_coef * reinforce_loss
         # + kernels.sum() / n_particles
@@ -407,7 +404,7 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
     # 4) Combine the agents
     r_agents, acq_remote_agents, acq_workspace = combine_agents(cfg, particles)
 
-    # 5) Configure the optimizer over the a2c agent
+    # 5) Configure the optimizer over the reinforce agent
     optimizer = setup_optimizers(cfg, [particle["r_agent"] for particle in particles])
 
     # 8) Training loop
@@ -415,8 +412,9 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
         # Execute the remote acq_agent in the remote workspace
         execute_agent(cfg, epoch, acq_remote_agents, acq_workspace, particles)
 
-        # Compute the prob and critic value over the whole replay workspace
+        # Compute the reinforce value over the whole replay workspace
         replay_workspace = Workspace(acq_workspace)
+        # replay_workspace.clear()
 
         for i, agent in enumerate(r_agents.agents):
             agent(replay_workspace, stochastic=True, t=0, stop_variable=f"env{i}/done")
