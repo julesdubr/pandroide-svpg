@@ -7,10 +7,10 @@ logger:
 algorithm:
   env_seed: 432
   n_envs: 8
-  n_processes: 1
-  n_particles: 1
+  n_processes: 4
+  n_particles: 16
   n_timesteps: 16
-  max_epochs: 1000
+  max_epochs: 500
   discount_factor: 0.95
   entropy_coef: 0.001
   critic_coef: 1.0

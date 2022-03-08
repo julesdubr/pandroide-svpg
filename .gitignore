@@ -136,7 +136,3 @@ outputs/
 
 # tensorboard
 tmp/
-
-# ROMS
-HC ROMS/
-ROMS/

@@ -46,44 +46,14 @@ class Logger:
         self.add_log("a2c_loss", a2c_loss, epoch)
 
 
-class ProbAgent(Agent):
-    # We need to add the pid of the particle to its prob_agent name so
-    # that we can synchronize the acquisition_agent of each particle to
-    # the prob_agent corresponding
+class REINFORCEAgent(Agent):
     def __init__(self, observation_size, hidden_size, n_actions, pid):
-        super().__init__(name=f"prob_agent{pid}")
+        super().__init__(name=f"r_agent{pid}")
         self.model = nn.Sequential(
             nn.Linear(observation_size, hidden_size),
             nn.ReLU(),
             nn.Linear(hidden_size, n_actions),
         )
-        self.pid = pid
-
-    def forward(self, t, **kwargs):
-        observation = self.get((f"env{self.pid}/env_obs", t))
-        scores = self.model(observation)
-        probs = torch.softmax(scores, dim=-1)
-        self.set((f"action_probs{self.pid}", t), probs)
-
-
-class ActionAgent(Agent):
-    def __init__(self, pid):
-        super().__init__()
-        self.pid = pid
-
-    def forward(self, t, stochastic, **kwargs):
-        probs = self.get((f"action_probs{self.pid}", t))
-        if stochastic:
-            action = torch.distributions.Categorical(probs).sample()
-        else:
-            action = probs.argmax(1)
-
-        self.set((f"action{self.pid}", t), action)
-
-
-class CriticAgent(Agent):
-    def __init__(self, observation_size, hidden_size, pid):
-        super().__init__()
         self.critic_model = nn.Sequential(
             nn.Linear(observation_size, hidden_size),
             nn.ReLU(),
@@ -91,10 +61,19 @@ class CriticAgent(Agent):
         )
         self.pid = pid
 
-    def forward(self, t, **kwargs):
+    def forward(self, t, stochastic, **kwargs):
         observation = self.get((f"env{self.pid}/env_obs", t))
+        scores = self.model(observation)
+        probs = torch.softmax(scores, dim=-1)
         critic = self.critic_model(observation).squeeze(-1)
-        self.set((f"critic{self.pid}", t), critic)
+        if stochastic:
+            action = torch.distributions.Categorical(probs).sample()
+        else:
+            action = probs.argmax(1)
+
+        self.set((f"action{self.pid}", t), action)
+        self.set((f"action_probs{self.pid}", t), probs)
+        self.set((f"baseline{self.pid}", t), critic)
 
 
 class EnvAgent(AutoResetGymAgent):
@@ -156,7 +135,7 @@ def make_env(env_name, max_episode_steps):
 
 
 # Create the A2C gent
-def create_a2c_agent(cfg, env_agent, pid):
+def create_reinforce_agent(cfg, env_agent, pid):
     # Get info on the environment
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
     del env_agent.env
@@ -165,22 +144,14 @@ def create_a2c_agent(cfg, env_agent, pid):
 
     acq_env_agent = EnvAgent(cfg, pid)
 
-    prob_agent = ProbAgent(
+    r_agent = REINFORCEAgent(
         observation_size, cfg.algorithm.architecture.hidden_size, n_actions, pid
     )
-    acq_prob_agent = deepcopy(prob_agent)  # create a copy of the prob_agent
+    acq_r_agent = deepcopy(r_agent)
 
-    action_agent = ActionAgent(pid)
+    acq_agent = Agents(acq_env_agent, acq_r_agent)
 
-    # Combine env and acquisition agents
-    # We'll combine the acq_agents of all particle into a single TemporalAgent later
-    acq_agent = Agents(acq_env_agent, acq_prob_agent, action_agent)
-
-    critic_agent = CriticAgent(
-        observation_size, cfg.algorithm.architecture.hidden_size, pid
-    )
-
-    return acq_agent, prob_agent, critic_agent
+    return acq_agent, r_agent
 
 
 def combine_agents(cfg, particles):
@@ -203,26 +174,20 @@ def combine_agents(cfg, particles):
     acq_remote_agents.seed(cfg.algorithm.env_seed)
 
     # Combine all prob_agent of each particle to calculate the gradient
-    prob_agents = Agents(*[particle["prob_agent"] for particle in particles])
+    r_agents = Agents(*[particle["r_agent"] for particle in particles])
 
-    # We also combine all the critic_agent of all particle into a unique TemporalAgent
-    tcritic_agent = TemporalAgent(
-        Agents(*[particle["critic_agent"] for particle in particles])
-    )
-
-    return prob_agents, tcritic_agent, acq_remote_agents, acq_workspace
+    return r_agents, acq_remote_agents, acq_workspace
 
 
 def create_particles(cfg, n_particles, env_agents):
     particles = list()
     for i in range(n_particles):
         # Create A2C agent for all particles
-        acq_agent, prob_agent, critic_agent = create_a2c_agent(cfg, env_agents[i], i)
+        acq_agent, r_agent = create_reinforce_agent(cfg, env_agents[i], i)
         particles.append(
             {
                 "acq_agent": acq_agent,
-                "prob_agent": prob_agent,
-                "critic_agent": critic_agent,
+                "r_agent": r_agent,
             }
         )
 
@@ -230,12 +195,14 @@ def create_particles(cfg, n_particles, env_agents):
 
 
 # Configure the optimizer over the a2c agent
-def setup_optimizers(cfg, prob_agents, critic_agents):
+def setup_optimizers(cfg, r_agents):
     optimizer_args = get_arguments(cfg.algorithm.optimizer)
+    # parameters = [r_agent.parameters() for r_agent in r_agents]
+    # parameters = nn.Sequential(**r_agents).parameters()
 
     parameters = []
-    for prob_agent, critic_agent in zip(prob_agents, critic_agents):
-        parameters += list(prob_agent.parameters()) + list(critic_agent.parameters())
+    for r_agent in r_agents:
+        parameters += list(r_agent.parameters())
 
     optimizer = get_class(cfg.algorithm.optimizer)(parameters, **optimizer_args)
     return optimizer
@@ -243,9 +210,9 @@ def setup_optimizers(cfg, prob_agents, critic_agents):
 
 def execute_agent(cfg, epoch, acq_remote_agents, acq_workspace, particles):
     for i, particle in enumerate(particles):
-        pagent = acq_remote_agents.get_by_name(f"prob_agent{i}")
+        pagent = acq_remote_agents.get_by_name(f"r_agent{i}")
         for a in pagent:
-            a.load_state_dict(particle["prob_agent"].state_dict())
+            a.load_state_dict(particle["r_agent"].state_dict())
 
     if epoch > 0:
         # acq_remote_workspace.zero_grad()
@@ -259,23 +226,63 @@ def execute_agent(cfg, epoch, acq_remote_agents, acq_workspace, particles):
         )
 
 
-def compute_critic_loss(cfg, reward, done, critic):
-    # Compute de temporal difference
-    target = reward[1:] + cfg.algorithm.discount_factor * critic[1:].detach() * (
-        1 - done[1:].float()
+def compute_reinforce_loss(
+    reward, action_probabilities, baseline, action, done, discount_factor
+):
+    """This function computes the reinforce loss, considering that episodes may have
+    different lengths."""
+    batch_size = reward.size()[1]
+
+    # Find the first done occurence for each episode
+    v_done, trajectories_length = done.float().max(0)
+    trajectories_length += 1
+    # assert v_done.eq(1.0).all()
+    max_trajectories_length = trajectories_length.max().item()
+
+    # Shorten trajectories for accelerate computation
+    reward = reward[:max_trajectories_length]
+    action_probabilities = action_probabilities[:max_trajectories_length]
+    baseline = baseline[:max_trajectories_length]
+    action = action[:max_trajectories_length]
+
+    # Create a binary mask to mask useless values (of size max_trajectories_length x batch_size)
+    arange = (
+        torch.arange(max_trajectories_length, device=done.device)
+        .unsqueeze(-1)
+        .repeat(1, batch_size)
     )
-    td = target - critic[:-1]
+    mask = arange.lt(
+        trajectories_length.unsqueeze(0).repeat(max_trajectories_length, 1)
+    )
+    reward = reward * mask
 
-    # Compute critic loss
-    td_error = td ** 2
-    critic_loss = td_error.mean()
-    return critic_loss, td
+    # Compute discounted cumulated reward
+    cumulated_reward = [torch.zeros_like(reward[-1])]
+    for t in range(max_trajectories_length - 1, 0, -1):
+        cumulated_reward.append(discount_factor + cumulated_reward[-1] + reward[t])
+    cumulated_reward.reverse()
+    cumulated_reward = torch.cat([c.unsqueeze(0) for c in cumulated_reward])
 
+    # baseline loss
+    g = baseline - cumulated_reward
+    baseline_loss = (g) ** 2
+    baseline_loss = (baseline_loss * mask).mean()
 
-def compute_a2c_loss(action_probs, action, td):
-    action_logp = _index(action_probs, action).log()
-    a2c_loss = action_logp[:-1] * td.detach()
-    return a2c_loss.mean()
+    # policy loss
+    log_probabilities = _index(action_probabilities, action).log()
+    policy_loss = log_probabilities * -g.detach()
+    policy_loss = policy_loss * mask
+    policy_loss = policy_loss.mean()
+
+    # entropy loss
+    entropy = torch.distributions.Categorical(action_probabilities).entropy() * mask
+    entropy_loss = entropy.mean()
+
+    return {
+        "baseline_loss": baseline_loss,
+        "reinforce_loss": policy_loss,
+        "entropy_loss": entropy_loss,
+    }
 
 
 def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, verbose):
@@ -283,11 +290,11 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
     stop = False
 
     # Compute critic, entropy and a2c losses
-    critic_loss, entropy_loss, a2c_loss = 0, 0, 0
+    reinforce_loss, entropy_loss, baseline_loss = 0, 0, 0
     for i in range(n_particles):
         # Get relevant tensors (size are timestep * n_envs * ...)
-        critic, done, action_probs, reward, action = replay_workspace[
-            f"critic{i}",
+        baseline, done, action_probs, reward, action = replay_workspace[
+            f"baseline{i}",
             f"env{i}/done",
             f"action_probs{i}",
             f"env{i}/reward",
@@ -295,20 +302,21 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
         ]
 
         # Compute critic loss
-        tmp, td = compute_critic_loss(cfg, reward, done, critic)
-        critic_loss += tmp
-
-        # Compute entropy loss
-        entropy_loss += torch.distributions.Categorical(action_probs).entropy().mean()
-
-        # Compute A2C loss
-        a2c_loss -= (
-            compute_a2c_loss(action_probs, action, td) * (1 / alpha) * (1 / n_particles)
+        losses = compute_reinforce_loss(
+            reward, action_probs, baseline, action, done, cfg.algorithm.discount_factor
         )
+
+        if verbose:
+            [logger.add_scalar(k, v.item(), epoch) for k, v in losses.items()]
+
+        entropy_loss += losses["entropy_loss"]
+        baseline_loss += losses["baseline_loss"]
+        reinforce_loss -= losses["reinforce_loss"]  # * (1 / alpha) * (1 / n_particles)
 
         # Compute the cumulated reward on final_state
         creward = replay_workspace[f"env{i}/cumulated_reward"]
-        creward = creward[done]
+        tl = done.float().argmax(0)
+        creward = creward[tl, torch.arange(creward.size()[1])]
 
         if creward.size()[0] > 0:
             logger.add_log(f"reward{i}", creward.mean(), epoch)
@@ -316,31 +324,20 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
         if creward.mean() >= 100:
             stop = True
 
-    if verbose:
-        logger.log_losses(
-            cfg,
-            epoch,
-            critic_loss.detach().mean(),
-            entropy_loss.detach().mean(),
-            a2c_loss.detach().mean(),
-        )
-
     # Get the params
-    params = get_parameters(
-        [particles[i]["prob_agent"].model for i in range(n_particles)]
-    )
+    params = get_parameters([particles[i]["r_agent"].model for i in range(n_particles)])
 
     # We need to detach the second list of params out of the computation graph
     # because we don't want to compute its gradient two time when using backward()
     kernels = RBF()(params, params.detach())
 
     # Compute the first term in the SVGD update
-    add_gradients(a2c_loss, kernels, particles, n_particles)
+    add_gradients(reinforce_loss, kernels, particles, n_particles)
 
     loss = (
         -cfg.algorithm.entropy_coef * entropy_loss
-        + cfg.algorithm.critic_coef * critic_loss
-        + cfg.algorithm.a2c_coef * a2c_loss
+        + cfg.algorithm.baseline_coef * baseline_loss
+        + cfg.algorithm.reinforce_coef * reinforce_loss
         # + kernels.sum() / n_particles
     )
 
@@ -348,27 +345,19 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, v
 
 
 def compute_gradients_norms(particles, logger, epoch):
-    policy_gradnorm, critic_gradnorm = 0, 0
+    policy_gradnorm = 0
 
     for particle in particles:
 
-        prob_params = particle["prob_agent"].model.parameters()
-        critic_params = particle["critic_agent"].critic_model.parameters()
+        r_params = particle["r_agent"].model.parameters()
 
-        for w_prob, w_critic in zip(prob_params, critic_params):
-            if w_prob.grad != None:
-                policy_gradnorm += w_prob.grad.detach().data.norm(2) ** 2
+        for w in r_params:
+            if w.grad != None:
+                policy_gradnorm += w.grad.detach().data.norm(2) ** 2
 
-            if w_critic.grad != None:
-                critic_gradnorm += w_critic.grad.detach().data.norm(2) ** 2
-
-    policy_gradnorm, critic_gradnorm = (
-        torch.sqrt(policy_gradnorm),
-        torch.sqrt(critic_gradnorm),
-    )
+    policy_gradnorm = torch.sqrt(policy_gradnorm)
 
     logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
-    logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
 
 def get_parameters(nn_list):
@@ -394,8 +383,8 @@ def add_gradients(total_a2c_loss, kernels, particles, n_particles):
             if i == j:
                 continue
 
-            theta_i = particles[i]["prob_agent"].model.parameters()
-            theta_j = particles[j]["prob_agent"].model.parameters()
+            theta_i = particles[i]["r_agent"].model.parameters()
+            theta_j = particles[j]["r_agent"].model.parameters()
 
             for (wi, wj) in zip(theta_i, theta_j):
                 wi.grad = wi.grad + wj.grad * kernels[j, i].detach()
@@ -415,16 +404,10 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
     particles = create_particles(cfg, n_particles, env_agents)
 
     # 4) Combine the agents
-    prob_agents, tcritic_agent, acq_remote_agents, acq_workspace = combine_agents(
-        cfg, particles
-    )
+    r_agents, acq_remote_agents, acq_workspace = combine_agents(cfg, particles)
 
     # 5) Configure the optimizer over the a2c agent
-    optimizer = setup_optimizers(
-        cfg,
-        [particle["prob_agent"] for particle in particles],
-        [particle["critic_agent"] for particle in particles],
-    )
+    optimizer = setup_optimizers(cfg, [particle["r_agent"] for particle in particles])
 
     # 8) Training loop
     for epoch in range(cfg.algorithm.max_epochs):
@@ -433,8 +416,9 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
 
         # Compute the prob and critic value over the whole replay workspace
         replay_workspace = Workspace(acq_workspace)
-        prob_agents(replay_workspace, t=0, n_steps=cfg.algorithm.n_timesteps)
-        tcritic_agent(replay_workspace, t=0, n_steps=cfg.algorithm.n_timesteps)
+
+        for i, agent in enumerate(r_agents.agents):
+            agent(replay_workspace, stochastic=True, t=0, stop_variable=f"env{i}/done")
 
         # Sum up all the losses including the sum of kernel matrix and then use
         # backward() to automatically compute the gradient of the critic and the
