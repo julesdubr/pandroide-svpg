@@ -47,5 +47,5 @@ def visu_loss_along_time(cpts, losses, loss_file_name) -> None:
     ax.set_xlabel("cpt", fontsize=24)
     ax.set_ylabel("loss", fontsize=24)
     ax.scatter(cpts, losses, color="blue", alpha=0.2)
-    plt.savefig("./results/" + loss_file_name + ".pdf")
+    # plt.savefig("./results/" + loss_file_name + ".pdf")
     plt.show()

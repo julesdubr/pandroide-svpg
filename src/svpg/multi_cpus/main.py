@@ -18,6 +18,8 @@ from salina.agents import Agents, NRemoteAgent, TemporalAgent
 from salina.agents.gyma import AutoResetGymAgent, GymAgent
 from salina.logger import TFLogger
 
+from visu.visu_gradient import visu_loss_along_time
+
 
 def _index(tensor_3d, tensor_2d):
     """This function is used to index a 3d tensors using a 2d tensor"""
@@ -276,8 +278,9 @@ def compute_a2c_loss(action_probs, action, td):
     return a2c_loss.mean()
 
 
-def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch):
+def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch, verbose):
     n_particles = len(particles)
+    stop = False
 
     # Compute critic, entropy and a2c losses
     critic_loss, entropy_loss, a2c_loss = 0, 0, 0
@@ -310,13 +313,17 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch):
         if creward.size()[0] > 0:
             logger.add_log(f"reward{i}", creward.mean(), epoch)
 
-    # logger.log_losses(
-    #     cfg,
-    #     epoch,
-    #     critic_loss.detach().mean(),
-    #     entropy_loss.detach().mean(),
-    #     a2c_loss.detach().mean(),
-    # )
+        if creward.mean() >= 100:
+            stop = True
+
+    if verbose:
+        logger.log_losses(
+            cfg,
+            epoch,
+            critic_loss.detach().mean(),
+            entropy_loss.detach().mean(),
+            a2c_loss.detach().mean(),
+        )
 
     # Get the params
     params = get_parameters(
@@ -333,11 +340,11 @@ def compute_total_loss(cfg, particles, replay_workspace, alpha, logger, epoch):
     loss = (
         -cfg.algorithm.entropy_coef * entropy_loss
         + cfg.algorithm.critic_coef * critic_loss
-        # - cfg.algorithm.a2c_coef * a2c_loss
-        + kernels.sum() / n_particles
+        + cfg.algorithm.a2c_coef * a2c_loss
+        # + kernels.sum() / n_particles
     )
 
-    return loss
+    return loss, stop
 
 
 def compute_gradients_norms(particles, logger, epoch):
@@ -395,6 +402,8 @@ def add_gradients(total_a2c_loss, kernels, particles, n_particles):
 
 
 def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
+    losses = []
+
     # 1) Build the logger
     logger = Logger(cfg)
 
@@ -430,9 +439,13 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
         # Sum up all the losses including the sum of kernel matrix and then use
         # backward() to automatically compute the gradient of the critic and the
         # second term in SVGD update
-        loss = compute_total_loss(
-            cfg, particles, replay_workspace, alpha, logger, epoch
+        loss, stop = compute_total_loss(
+            cfg, particles, replay_workspace, alpha, logger, epoch, show_losses
         )
+        losses.append(loss.item())
+
+        if stop:
+            break
 
         optimizer.zero_grad()
         loss.backward()
@@ -442,7 +455,7 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
         if show_gradients:
             compute_gradients_norms(particles, logger, epoch)
 
-    return epoch
+    return losses, epoch
 
 
 @hydra.main(config_path=".", config_name="main.yaml")
@@ -452,8 +465,10 @@ def main(cfg):
     mp.set_start_method("spawn")
 
     duration = time.process_time()
-    epoch = run_svpg(cfg)
+    losses, epoch = run_svpg(cfg)
     duration = time.process_time() - duration
+
+    visu_loss_along_time(range(epoch + 1), losses, "loss_along_time")
 
     print(f"terminated in {duration}s at epoch {epoch}")
 
