@@ -7,8 +7,8 @@ logger:
 algorithm:
   env_seed: 432
   n_envs: 8
-  n_processes: 4
-  n_particles: 16
+  n_processes: 2
+  n_particles: 2
   n_timesteps: 16
   max_epochs: 500
   discount_factor: 0.95
@@ -21,8 +21,8 @@ algorithm:
 
   env:
     classname: __main__.make_env
-    env_name: CartPole-v0
-    max_episode_steps: 100
+    env_name: CartPole-v1
+    max_episode_steps: 500
 
   optimizer:
     classname: torch.optim.Adam
