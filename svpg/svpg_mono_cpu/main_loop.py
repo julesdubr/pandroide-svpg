@@ -35,8 +35,9 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
 
     # 8) Training loop
     for epoch in range(cfg.algorithm.max_epochs):
-        # Execute the remote acq_agent in the remote workspace
-        execute_agent(cfg, epoch, acq_agent, particles)
+        # Execute the acq_agent in the workspace
+        execute_agent(cfg, epoch, workspace, acq_agent)
+        tcritic_agent(workspace, n_steps=cfg.algorithm.n_timesteps)
         # Sum up all the losses including the sum of kernel matrix and then use
         # backward() to automatically compute the gradient of the critic and the
         # second term in SVGD update
