@@ -1,8 +1,8 @@
 from svpg.helpers.logger import Logger
 
-from .agents import create_a2c_agent, execute_agent, EnvAgent
-from .loss import compute_critic_loss, compute_a2c_loss
-from .optimizer import setup_optimizers
+from svpg.algos.a2c.mono.agents import create_a2c_agent, execute_agent, EnvAgent
+from svpg.algos.a2c.mono.loss import compute_critic_loss, compute_a2c_loss
+from svpg.algos.a2c.mono.optimizer import setup_optimizers
 
 import salina
 import torch

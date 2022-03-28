@@ -1,4 +1,4 @@
-from helpers.utils import _index
+from svpg.helpers.utils import _index
 
 
 def compute_critic_loss(cfg, reward, done, critic):
