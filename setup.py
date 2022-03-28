@@ -1,5 +1,5 @@
 import os
-from setuptools import setup
+from setuptools import find_packages, setup
 
 # Utility function to read the README file.
 # Used for the long_description.  It's nice, because now 1) we have a top level
@@ -10,10 +10,20 @@ def read(fname):
 
 
 setup(
-    name="SVPG",
+    name="svpg",
     author="SVPG team-SU",
     license="MIT",
     url="https://github.com/Anidwyd/pandroide-svpg.git",
-    packages=["a2c_mono_cpu", "helper"],
+    python_requires=">=3.9",
+    packages=[
+        "svpg",
+        "svpg.algos",
+        "svpg.algos.a2c.mono",
+        "svpg.algos.a2c.multi",
+        "svpg.algos.reinforce.mono",
+        "svpg.algos.reinforce.multi",
+        "svpg.helpers",
+    ],
+    # packages=find_packages(),
     long_description=read("README.md"),
 )
