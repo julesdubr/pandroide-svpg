@@ -1,6 +1,6 @@
-from salina import Agent, Agents, TemporalAgent
-from salina.agents.gyma import AutoResetGymAgent, GymAgent
-from salina import get_arguments, get_class, instantiate_class
+from salina import Agent, get_arguments, get_class, instantiate_class
+from salina.agents import Agents, TemporalAgent
+from salina.agents.gyma import AutoResetGymAgent
 
 import torch
 import torch.nn as nn
