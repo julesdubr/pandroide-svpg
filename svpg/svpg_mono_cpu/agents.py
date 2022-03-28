@@ -63,7 +63,7 @@ class EnvAgent(AutoResetGymAgent):
         super().__init__(
             get_class(cfg.algorithm.env),
             get_arguments(cfg.algorithm.env),
-            n_envs=int(cfg.algorithm.n_envs / cfg.algorithm.n_processes),
+            n_envs=cfg.algorithm.n_envs,
             input=f"action{pid}",
             output=f"env{pid}/",
         )
