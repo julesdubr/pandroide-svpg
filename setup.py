@@ -15,15 +15,6 @@ setup(
     license="MIT",
     url="https://github.com/Anidwyd/pandroide-svpg.git",
     python_requires=">=3.9",
-    packages=[
-        "svpg",
-        "svpg.algos",
-        "svpg.algos.a2c.mono",
-        "svpg.algos.a2c.multi",
-        "svpg.algos.reinforce.mono",
-        "svpg.algos.reinforce.multi",
-        "svpg.helpers",
-    ],
-    # packages=find_packages(),
+    packages=find_packages(),
     long_description=read("README.md"),
 )
