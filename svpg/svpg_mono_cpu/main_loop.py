@@ -3,10 +3,10 @@ from salina import Workspace
 from svpg.helpers.logger import Logger
 from svpg.helpers.utils import compute_gradients_norms
 from svpg.algos.a2c.mono.agents import execute_agent
-from agents import EnvAgent, combine_agents
-from particles import create_particles
-from loss import compute_gradient
-from optimizer import setup_optimizers
+from svpg.svpg_mono_cpu.agents import EnvAgent, combine_agents
+from svpg.svpg_mono_cpu.particles import create_particles
+from svpg.svpg_mono_cpu.loss import compute_gradient
+from svpg.svpg_mono_cpu.optimizer import setup_optimizers
 
 def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
     # 1) Build the logger

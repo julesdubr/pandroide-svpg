@@ -1,4 +1,4 @@
-from agents import create_acquisition_agent
+from svpg.svpg_mono_cpu.agents import create_acquisition_agent
 
 def create_particles(cfg, n_particles, env_agents):
     particles = list()
