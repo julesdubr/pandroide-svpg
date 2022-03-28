@@ -13,6 +13,6 @@ setup(
     author="SVPG team-SU",
     license="MIT",
     url="https://github.com/Anidwyd/pandroide-svpg.git",
-    packages=['src/a2c/mono_cpu'],
-    long_description=read('README.md')
+    packages=['a2c_mono_cpu', 'helper'],
+    long_description=read('README')
 )
