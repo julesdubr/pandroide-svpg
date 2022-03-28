@@ -101,11 +101,11 @@ class EnvAgent(AutoResetGymAgent):
 
     # This is necessary to create the corresponding RL agent
     def get_obs_and_actions_sizes(self):
-        if self.action_space.isinstance(Box):
+        if self.env.action_space.isinstance(Box):
             # Return the size of the observation and action spaces of the environment
             # In the case of a continuous action environment
             return self.env.observation_space.shape[0], self.env.action_space.shape[0]
-        elif self.action_space.isinstance(Discrete):
+        elif self.env.action_space.isinstance(Discrete):
             # Return the size of the observation and action spaces of the environment
             return self.env.observation_space.shape[0], self.env.action_space.n
         else:
