@@ -1,14 +1,15 @@
 import time
 
 import torch
-
 import hydra
+
 from salina import Workspace
 from salina.agents import Agents, NRemoteAgent, TemporalAgent
 
 from algos.a2c.mono.agents import EnvAgent, create_a2c_agent, execute_agent
 from algos.a2c.mono.loss import compute_a2c_loss, compute_critic_loss
 from algos.a2c.mono.optimizer import setup_optimizers
+
 from algos.svgd import *
 
 from helpers.logger import Logger
