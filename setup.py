@@ -14,7 +14,7 @@ setup(
     author="SVPG team-SU",
     license="MIT",
     url="https://github.com/Anidwyd/pandroide-svpg.git",
-    python_requires=">=3.9",
+    python_requires=">=3.7",
     packages=find_packages(),
     long_description=read("README.md"),
 )
