@@ -1,5 +1,5 @@
 import matplotlib.pyplot as plt
-from visu.visu_policies import final_show
+from helpers.visu.visu_policies import final_show
 
 
 def visu_cartpole_replay_data(list_states, list_targets) -> None:

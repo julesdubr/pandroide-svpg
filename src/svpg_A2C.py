@@ -9,8 +9,8 @@ from salina.agents import Agents, NRemoteAgent, TemporalAgent
 from algos.a2c import *
 from algos.svgd import *
 
-from logger import Logger
-from visu.visu_gradient import visu_loss_along_time
+from helpers.logger import Logger
+from helpers.visu.visu_gradient import visu_loss_along_time
 
 
 def compute_gradients_norms(particles, logger, epoch):
@@ -212,7 +212,7 @@ def run_svpg(cfg, alpha=1, show_losses=False, show_gradients=False):
             compute_gradients_norms(particles, logger, epoch)
 
 
-@hydra.main(config_path=".", config_name="main.yaml")
+@hydra.main(config_path=".", config_name="config.yaml")
 def main(cfg):
     import torch.multiprocessing as mp
 
