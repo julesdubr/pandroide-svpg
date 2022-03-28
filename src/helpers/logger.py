@@ -1,9 +1,13 @@
 from salina import instantiate_class
-from salina.logger import TFLogger
+
+"""
+- Setup the logger for the visualization of the results
+- Using the logging mechanism provided under the hood by salina (tensorboard) and the arguments for the
+configuration file
+"""
 
 
 class Logger:
-    # Not generic, specifically designed in the context of this A2C example
     def __init__(self, cfg):
         self.logger = instantiate_class(cfg.logger)
 

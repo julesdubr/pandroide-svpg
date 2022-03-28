@@ -2,6 +2,7 @@ from helpers import Logger
 from agents import create_a2c_agent, execute_agent, EnvAgent
 from loss import compute_critic_loss, compute_a2c_loss
 from optimizer import setup_optimizers
+from algos.a2c import setup_optimizers
 
 import salina
 import torch
