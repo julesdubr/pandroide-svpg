@@ -104,12 +104,12 @@ class EnvAgent(AutoResetGymAgent):
         if self.action_space.isinstance(Box):
             # Return the size of the observation and action spaces of the environment
             # In the case of a continuous action environment
-            return self.observation_space.shape[0], self.action_space.shape[0]
+            return self.env.observation_space.shape[0], self.env.action_space.shape[0]
         elif self.action_space.isinstance(Discrete):
             # Return the size of the observation and action spaces of the environment
-            return self.observation_space.shape[0], self.action_space.n
+            return self.env.observation_space.shape[0], self.env.action_space.n
         else:
-            print("unknown type of action space", self.action_space)
+            print("unknown type of action space", self.env.action_space)
             return None
 
 
