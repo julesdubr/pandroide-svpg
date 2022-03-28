@@ -14,5 +14,5 @@ setup(
     license="MIT",
     url="https://github.com/Anidwyd/pandroide-svpg.git",
     packages=['src/a2c/mono_cpu'],
-    long_description=read('README')
+    long_description=read('README.md')
 )
