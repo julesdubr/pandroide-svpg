@@ -13,8 +13,8 @@ from gym.spaces import Box, Discrete
 class ProbAgent(Agent):
     """
     ProbAgent:
-    - A one hidden layer neural network which takes an observation as input and whose output is a probability
-    given by a final softmax layer
+    - A one hidden layer neural network which takes an observation as input and whose
+    output is a probability given by a final softmax layer
     - Note that to get the input observation from the environment we call:
         observation = self.get(("env/env_obs", t))
     and that to perform an action in the environment we call:
@@ -39,8 +39,10 @@ class ProbAgent(Agent):
 class ActionAgent(Agent):
     """
     ActionAgent:
-    - Takes action probabilities as input (coming from the ProbAgent) and outputs an action.
-    - In the deterministic case it takes the argmax, in the stochastic case it samples from the Categorical distribution.
+    - Takes action probabilities as input (coming from the ProbAgent) and outputs an
+      action.
+    - In the deterministic case it takes the argmax, in the stochastic case it samples
+      from the Categorical distribution.
     """
 
     def __init__(self):
