@@ -41,10 +41,9 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
         # Sum up all the losses including the sum of kernel matrix and then use
         # backward() to automatically compute the gradient of the critic and the
         # second term in SVGD update
-        compute_gradient(cfg, particles, workspace, logger, epoch, show_losses, alpha)
+        compute_gradient(
+            cfg, particles, workspace, logger, epoch, show_losses, alpha
+        )
+
         optimizer.step()
         optimizer.zero_grad()
-
-        # Compute the norm of gradient of the actor and gradient of the critic
-        if show_gradients:
-            compute_gradients_norms(particles, logger, epoch)
