@@ -29,7 +29,7 @@ class RBF(nn.Module):
         return K_XY
 
 
-def add_gradients(total_a2c_loss, kernels, particles, n_particles):
+def add_gradients(total_a2c_loss, kernels, prob_agents, n_particles):
     total_a2c_loss.backward(retain_graph=True)
 
     for i in range(n_particles):
@@ -37,8 +37,8 @@ def add_gradients(total_a2c_loss, kernels, particles, n_particles):
             if j == i:
                 continue
 
-            theta_i = particles[i]["prob_agent"].model.parameters()
-            theta_j = particles[j]["prob_agent"].model.parameters()
+            theta_i = prob_agents[i].model.parameters()
+            theta_j = prob_agents[j].model.parameters()
 
             for (wi, wj) in zip(theta_i, theta_j):
                 wi.grad = wi.grad + wj.grad * kernels[j, i].detach()

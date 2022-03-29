@@ -15,6 +15,7 @@ def _index(tensor_3d, tensor_2d):
 
     return v
 
+
 def get_parameters(nn_list):
     params = []
     for nn in nn_list:
@@ -29,13 +30,14 @@ def get_parameters(nn_list):
 
     return torch.stack(params)
 
-def compute_gradients_norms(particles, logger, epoch):
+
+def compute_gradients_norms(prob_agents, critic_agents, logger, epoch):
     policy_gradnorm, critic_gradnorm = 0, 0
 
-    for particle in particles:
+    for prob_agent, critic_agent in zip(prob_agents, critic_agents):
 
-        prob_params = particle["prob_agent"].model.parameters()
-        critic_params = particle["critic_agent"].critic_model.parameters()
+        prob_params = prob_agent.model.parameters()
+        critic_params = critic_agent.critic_model.parameters()
 
         for w_prob, w_critic in zip(prob_params, critic_params):
             if w_prob.grad != None:

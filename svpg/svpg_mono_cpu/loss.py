@@ -6,8 +6,10 @@ from svpg.helpers.utils import *
 from svpg.algos.svgd import *
 
 
-def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alpha=10):
-    n_particles = len(particles)
+def compute_gradient(
+    cfg, prob_agents, critic_agents, workspace, logger, epoch, verbose=True, alpha=10
+):
+    n_particles = len(prob_agents)
 
     # Compute critic, entropy and a2c losses
     critic_loss, entropy_loss, a2c_loss = 0, 0, 0
@@ -53,9 +55,7 @@ def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alp
         )
 
     # Get the params
-    params = get_parameters(
-        [particles[i]["prob_agent"].model for i in range(n_particles)]
-    )
+    params = get_parameters([prob_agents[i].model for i in range(n_particles)])
 
     # We need to detach the second list of params out of the computation graph
     # because we don't want to compute its gradient two time when using backward()
@@ -69,9 +69,9 @@ def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alp
     )
 
     # Compute the first term in SVGD update
-    add_gradients(a2c_loss, kernels, particles, n_particles)
+    add_gradients(a2c_loss, kernels, prob_agents, n_particles)
     # Compute the TD gradient as well as the seconde term in the SVGD update
     loss.backward()
 
     if verbose:
-        compute_gradients_norms(particles, logger, epoch)
+        compute_gradients_norms(prob_agents, critic_agents, logger, epoch)
