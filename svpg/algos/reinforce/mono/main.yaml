@@ -18,8 +18,9 @@ algorithm:
     hidden_size: 32
 
   env:
-    classname: salina_examples.rl.reinforce.mono_cpu.main.make_cartpole
-    max_episode_steps: 100
+    classname: svpg.algos.a2c.mono.agents.make_env
+    env_name: CartPole-v1
+    max_episode_steps: 500
 
   optimizer:
     classname: torch.optim.Adam

@@ -12,7 +12,6 @@ def compute_reinforce_loss(
     # Find the first done occurence for each episode
     v_done, trajectories_length = done.float().max(0)
     trajectories_length += 1
-    print(v_done)
     assert v_done.eq(1.0).all()
     max_trajectories_length = trajectories_length.max().item()
 

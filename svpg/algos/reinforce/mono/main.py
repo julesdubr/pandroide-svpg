@@ -58,7 +58,7 @@ def run_reinforce(cfg):
         )
 
         # Log losses
-        [logger.add_scalar(k, v.item(), epoch) for k, v in r_loss.items()]
+        # [logger.add_scalar(k, v.item(), epoch) for k, v in r_loss.items()]
 
         loss = (
             -cfg.algorithm.entropy_coef * r_loss["entropy_loss"]
