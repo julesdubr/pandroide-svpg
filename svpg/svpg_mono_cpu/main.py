@@ -26,6 +26,7 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
     workspace = Workspace()
 
     # 5) Configure the optimizer over the a2c agent
+    # TODO: mettre particles dans setup_optimizers
     optimizer = setup_optimizers(
         cfg,
         [particle["prob_agent"] for particle in particles],
