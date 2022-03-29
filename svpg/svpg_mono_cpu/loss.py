@@ -5,6 +5,7 @@ from svpg.algos.svgd import *
 from svpg.helpers.utils import *
 from svpg.algos.svgd import *
 
+
 def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alpha=10):
     n_particles = len(particles)
 
@@ -25,7 +26,10 @@ def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alp
         critic_loss = critic_loss + tmp
 
         # Compute entropy loss
-        entropy_loss = entropy_loss + torch.distributions.Categorical(action_probs).entropy().mean()
+        entropy_loss = (
+            entropy_loss
+            + torch.distributions.Categorical(action_probs).entropy().mean()
+        )
 
         # Compute A2C loss
         a2c_loss = a2c_loss - (

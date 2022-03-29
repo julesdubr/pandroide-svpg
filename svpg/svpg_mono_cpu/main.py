@@ -8,6 +8,7 @@ from svpg.svpg_mono_cpu.particles import create_particles
 from svpg.svpg_mono_cpu.loss import compute_gradient
 from svpg.svpg_mono_cpu.optimizer import setup_optimizers
 
+
 def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
     # 1) Build the logger
     logger = Logger(cfg)
@@ -20,9 +21,7 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
     particles = create_particles(cfg, n_particles, env_agents)
 
     # 4) Combine the agents
-    acq_agent, tcritic_agent = combine_agents(
-        cfg, particles
-    )
+    acq_agent, tcritic_agent = combine_agents(cfg, particles)
 
     workspace = Workspace()
 

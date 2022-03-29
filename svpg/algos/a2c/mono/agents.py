@@ -13,8 +13,8 @@ from gym.spaces import Box, Discrete
 class ProbAgent(Agent):
     """
     ProbAgent:
-    - A one hidden layer neural network which takes an observation as input and whose output is a probability
-    given by a final softmax layer
+    - A one hidden layer neural network which takes an observation as input and whose
+    output is a probability given by a final softmax layer
     - Note that to get the input observation from the environment we call:
         observation = self.get(("env/env_obs", t))
     and that to perform an action in the environment we call:
@@ -39,8 +39,10 @@ class ProbAgent(Agent):
 class ActionAgent(Agent):
     """
     ActionAgent:
-    - Takes action probabilities as input (coming from the ProbAgent) and outputs an action.
-    - In the deterministic case it takes the argmax, in the stochastic case it samples from the Categorical distribution.
+    - Takes action probabilities as input (coming from the ProbAgent) and outputs an
+      action.
+    - In the deterministic case it takes the argmax, in the stochastic case it samples
+      from the Categorical distribution.
     """
 
     def __init__(self):
@@ -116,9 +118,10 @@ class EnvAgent(AutoResetGymAgent):
 def create_a2c_agent(cfg, env_agent):
     """
     Create the A2C agent:
-    - Combine ProbAgent, ActionAgent, CriticAgent and EnvAgent into a single TemporalAgent in order to interact with the environment
-    - We delete the environment(not the environment agent) with del env_agent.env once we do not need it anymore
-    just to avoid mistakes afterwards
+    - Combine ProbAgent, ActionAgent, CriticAgent and EnvAgent into a single
+      TemporalAgent in order to interact with the environment
+    - We delete the environment(not the environment agent) with del env_agent.env
+      once we do not need it anymore just to avoid mistakes afterwards
     """
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
     del env_agent.env
@@ -142,12 +145,17 @@ def execute_agent(cfg, epoch, workspace, agent):
     """
     Execute agent:
     - This is the tricky part with SaLinA, the one we need to understand in detail.
-    - The difficulty lies in the copy of the last step and the way to deal with the n_steps return.
-    - The call to agent(workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True) makes the agent run a number of steps in the workspace.
-    In practice, it calls makes a forward pass of the agent network using the workspace data and updates the workspace accordingly.
-    - Now, if we start at the first epoch (epoch=0), we start from the first step (t=0). But when subsequently we perform the next epochs (epoch>0),
-    there is a risk that we do not cover the transition at the border between the previous epoch and the current epoch. To avoid this risk,
-    we need to shift the time indexes, hence the (t=1) and (cfg.algorithm.n_timesteps - 1).
+    - The difficulty lies in the copy of the last step and the way to deal with the
+      n_steps return.
+    - The call to agent(workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1,
+      stochastic=True) makes the agent run a number of steps in the workspace.
+      n practice, it calls makes a forward pass of the agent network using the
+      workspace data and updates the workspace accordingly.
+    - Now, if we start at the first epoch (epoch=0), we start from the first step (t=0).
+      But when subsequently we perform the next epochs (epoch>0), there is a risk that
+      we do not cover the transition at the border between the previous epoch and the
+      current epoch. To avoid this risk, we need to shift the time indexes, hence the
+      (t=1) and (cfg.algorithm.n_timesteps - 1).
     """
     if epoch > 0:
         workspace.zero_grad()

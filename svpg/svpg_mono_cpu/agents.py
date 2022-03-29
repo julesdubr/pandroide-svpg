@@ -41,6 +41,7 @@ class ActionAgent(Agent):
 
         self.set((f"action{self.pid}", t), action)
 
+
 class CriticAgent(Agent):
     def __init__(self, observation_size, hidden_size, pid):
         super().__init__()
@@ -55,6 +56,7 @@ class CriticAgent(Agent):
         observation = self.get((f"env{self.pid}/env_obs", t))
         critic = self.critic_model(observation).squeeze(-1)
         self.set((f"critic{self.pid}", t), critic)
+
 
 class EnvAgent(AutoResetGymAgent):
     # Create the environment agent
@@ -103,6 +105,7 @@ def create_acquisition_agent(cfg, env_agent, pid):
     )
 
     return acq_agent, prob_agent, critic_agent
+
 
 def combine_agents(cfg, particles):
     # Combine all acquisition agent of all particle in a unique TemporalAgent.
