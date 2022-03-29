@@ -12,7 +12,7 @@ def compute_reinforce_loss(
     # Find the first done occurence for each episode
     v_done, trajectories_length = done.float().max(0)
     trajectories_length += 1
-    assert v_done.eq(1.0).all()
+    # assert v_done.eq(1.0).all()
     max_trajectories_length = trajectories_length.max().item()
 
     # Shorten trajectories for accelerate computation
@@ -59,3 +59,36 @@ def compute_reinforce_loss(
         "reinforce_loss": policy_loss,
         "entropy_loss": entropy_loss,
     }
+
+
+def compute_losses(cfg, workspace, n_particles, epoch, logger):
+    losses = list()
+
+    for i in range(n_particles):
+        baseline, done, action_probs, reward, action = workspace[
+            f"baseline{i}",
+            f"env{i}/done",
+            f"action_probs{i}",
+            f"env{i}/reward",
+            f"action{i}",
+        ]
+        r_loss = compute_reinforce_loss(
+            reward, action_probs, baseline, action, done, cfg.algorithm.discount_factor
+        )
+
+        # Log losses
+        # [logger.add_scalar(k, v.item(), epoch) for k, v in r_loss.items()]
+
+        losses.append(
+            -cfg.algorithm.entropy_coef * r_loss["entropy_loss"]
+            + cfg.algorithm.baseline_coef * r_loss["baseline_loss"]
+            - cfg.algorithm.reinforce_coef * r_loss["reinforce_loss"]
+        )
+
+        # Compute the cumulated reward on final_state
+        creward = workspace[f"env{i}/cumulated_reward"]
+        tl = done.float().argmax(0)
+        creward = creward[tl, torch.arange(creward.size()[1])]
+        logger.add_scalar(f"reward{i}", creward.mean().item(), epoch)
+
+    return losses

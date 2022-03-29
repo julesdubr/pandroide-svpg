@@ -128,7 +128,7 @@ def create_a2c_agent(cfg, env_agent, pid):
     observation_size, n_actions = env_agent.get_obs_and_actions_sizes()
     del env_agent.env
 
-    env_agent = EnvAgent(cfg, pid)
+    acq_env_agent = EnvAgent(cfg, pid)
 
     prob_agent = ProbAgent(
         observation_size, cfg.algorithm.architecture.hidden_size, n_actions, pid
@@ -138,7 +138,7 @@ def create_a2c_agent(cfg, env_agent, pid):
 
     # Combine env and acquisition agents
     # We'll combine the acq_agents of all particle into a single TemporalAgent later
-    acq_agent = Agents(env_agent, prob_agent, action_agent)
+    acq_agent = Agents(acq_env_agent, prob_agent, action_agent)
 
     critic_agent = CriticAgent(
         observation_size, cfg.algorithm.architecture.hidden_size, pid
