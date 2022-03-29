@@ -44,9 +44,6 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
         compute_gradient(
             cfg, particles, workspace, logger, epoch, show_losses, alpha
         )
+
         optimizer.step()
         optimizer.zero_grad()
-
-        # Compute the norm of gradient of the actor and gradient of the critic
-        if show_gradients:
-            compute_gradients_norms(particles, logger, epoch)

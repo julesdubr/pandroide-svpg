@@ -68,3 +68,6 @@ def compute_gradient(cfg, particles, workspace, logger, epoch, verbose=True, alp
     add_gradients(a2c_loss, kernels, particles, n_particles)
     # Compute the TD gradient as well as the seconde term in the SVGD update
     loss.backward()
+
+    if verbose:
+        compute_gradients_norms(particles, logger, epoch)
