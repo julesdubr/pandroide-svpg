@@ -1,7 +1,9 @@
+import hydra
+import time
+
 from salina import Workspace
 
 from svpg.helpers.logger import Logger
-
 from svpg.algos.a2c.mono.agents import (
     execute_agent,
     EnvAgent,
@@ -9,11 +11,13 @@ from svpg.algos.a2c.mono.agents import (
     create_particles,
 )
 
-from svpg.svpg_mono_cpu.loss import compute_gradient
-from svpg.svpg_mono_cpu.optimizer import setup_optimizers
+from loss import compute_gradient
+from optimizer import setup_optimizers
+
+from svpg.helpers.visu.visu_gradient import visu_loss_along_time
 
 
-def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
+def run_svpg(cfg, alpha=10, show_losses=False, show_gradients=False):
     # 1) Build the logger
     logger = Logger(cfg)
 
@@ -49,9 +53,29 @@ def run_svpg(cfg, alpha=10, show_losses=True, show_gradients=True):
             workspace,
             logger,
             epoch,
-            show_losses,
             alpha,
+            show_losses,
+            show_gradients,
         )
 
         optimizer.step()
         optimizer.zero_grad()
+
+
+@hydra.main(config_path="..", config_name="config.yaml")
+def main(cfg):
+    import torch.multiprocessing as mp
+
+    mp.set_start_method("spawn")
+
+    duration = time.process_time()
+    losses, epoch = run_svpg(cfg)
+    duration = time.process_time() - duration
+
+    visu_loss_along_time(range(epoch + 1), losses, "loss_along_time")
+
+    print(f"terminated in {duration}s at epoch {epoch}")
+
+
+if __name__ == "__main__":
+    main()

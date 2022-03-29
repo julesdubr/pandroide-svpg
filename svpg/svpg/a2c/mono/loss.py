@@ -7,7 +7,15 @@ from svpg.algos.svgd import *
 
 
 def compute_gradient(
-    cfg, prob_agents, critic_agents, workspace, logger, epoch, verbose=True, alpha=10
+    cfg,
+    prob_agents,
+    critic_agents,
+    workspace,
+    logger,
+    epoch,
+    alpha=10,
+    show_loss=True,
+    show_grad=True,
 ):
     n_particles = len(prob_agents)
 
@@ -45,7 +53,7 @@ def compute_gradient(
         if creward.size()[0] > 0:
             logger.add_log(f"reward{i}", creward.mean(), epoch)
 
-    if verbose:
+    if show_loss:
         logger.log_losses(
             cfg,
             epoch,
@@ -73,5 +81,5 @@ def compute_gradient(
     # Compute the TD gradient as well as the seconde term in the SVGD update
     loss.backward()
 
-    if verbose:
+    if show_grad:
         compute_gradients_norms(prob_agents, critic_agents, logger, epoch)

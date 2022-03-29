@@ -23,7 +23,7 @@ algorithm:
     hidden_size: 32
 
   env:
-    classname: __main__.make_env
+    classname: svpg.algos.reinforce.mono.agents.make_env
     env_name: CartPole-v1
     max_episode_steps: 500
 
