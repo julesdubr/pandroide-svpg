@@ -3,9 +3,7 @@ import torch
 
 
 def compute_critic_loss(cfg, reward, done, critic):
-    """
-    Compute critic loss
-    """
+    """Compute critic loss"""
 
     # Compute temporal difference
     target = reward[1:] + cfg.algorithm.discount_factor * critic[1:].detach() * (

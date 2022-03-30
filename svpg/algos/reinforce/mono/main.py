@@ -1,9 +1,7 @@
 import hydra
 import torch
 
-from salina import Workspace, get_arguments, get_class, instantiate_class
-from salina.agents.gyma import GymAgent
-from salina.agents import Agents, TemporalAgent
+from salina import Workspace, instantiate_class
 
 from svpg.algos.a2c.mono.agents import EnvAgent
 
