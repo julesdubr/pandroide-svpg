@@ -177,7 +177,7 @@ def create_particles(cfg, n_particles, env_agents):
     return acq_agents, prob_agents, critic_agents
 
 
-def execute_agent(cfg, epoch, workspace, agent):
+def execute_agent(cfg, epoch, workspace, tacq_agent):
     """
     Execute agent:
     - This is the tricky part with SaLinA, the one we need to understand in detail.
@@ -196,6 +196,8 @@ def execute_agent(cfg, epoch, workspace, agent):
     if epoch > 0:
         workspace.zero_grad()
         workspace.copy_n_last_steps(1)
-        agent(workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True)
+        tacq_agent(
+            workspace, t=1, n_steps=cfg.algorithm.n_timesteps - 1, stochastic=True
+        )
     else:
-        agent(workspace, t=0, n_steps=cfg.algorithm.n_timesteps, stochastic=True)
+        tacq_agent(workspace, t=0, n_steps=cfg.algorithm.n_timesteps, stochastic=True)

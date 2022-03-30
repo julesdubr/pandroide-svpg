@@ -43,7 +43,7 @@ def run_reinforce(cfg):
         workspace.clear()
         tacq_agent(workspace, stochastic=True, t=0, n_steps=cfg.algorithm.n_timesteps)
         # TODO: find a way to set the stop variables depending on the agent pid
-        # tacq_agent(workspace, stochastic=True, t=0, stop_variable="env{???}/done")
+        # tacq_agent(workspace, stochastic=True, t=0, stop_variable="env/done")
 
         critic_loss, entropy_loss, reinforce_loss = compute_losses(
             cfg, workspace, n_particles, epoch, logger
