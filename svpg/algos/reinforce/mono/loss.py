@@ -61,8 +61,12 @@ def compute_reinforce_loss(
     }
 
 
-def compute_losses(cfg, workspace, n_particles, epoch, logger):
-    losses = list()
+def compute_losses(cfg, workspace, n_particles, epoch, logger, alpha=None):
+    baseline_loss, entropy_loss, reinforce_loss = list(), list(), list()
+
+    const = 1
+    if alpha != None:
+        const /= alpha * n_particles
 
     for i in range(n_particles):
         baseline, done, action_probs, reward, action = workspace[
@@ -76,14 +80,9 @@ def compute_losses(cfg, workspace, n_particles, epoch, logger):
             reward, action_probs, baseline, action, done, cfg.algorithm.discount_factor
         )
 
-        # Log losses
-        # [logger.add_scalar(k, v.item(), epoch) for k, v in r_loss.items()]
-
-        losses.append(
-            -cfg.algorithm.entropy_coef * r_loss["entropy_loss"]
-            + cfg.algorithm.baseline_coef * r_loss["baseline_loss"]
-            - cfg.algorithm.reinforce_coef * r_loss["reinforce_loss"]
-        )
+        baseline_loss.append(r_loss["baseline_loss"])
+        entropy_loss.append(r_loss["entropy_loss"])
+        reinforce_loss.append(r_loss["reinforce_loss"] * const)
 
         # Compute the cumulated reward on final_state
         creward = workspace[f"env{i}/cumulated_reward"]
@@ -91,4 +90,4 @@ def compute_losses(cfg, workspace, n_particles, epoch, logger):
         creward = creward[tl, torch.arange(creward.size()[1])]
         logger.add_scalar(f"reward{i}", creward.mean().item(), epoch)
 
-    return losses
+    return baseline_loss, entropy_loss, reinforce_loss

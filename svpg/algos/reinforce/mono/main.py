@@ -10,6 +10,15 @@ from loss import compute_losses
 from optimizer import setup_optimizers
 
 
+def compute_total_loss(cfg, entropy_loss, critic_loss, reinforce_loss):
+    loss = (
+        -cfg.algorithm.entropy_coef * entropy_loss
+        + cfg.algorithm.critic_coef * critic_loss
+        - cfg.algorithm.a2c_coef * reinforce_loss
+    )
+    return loss
+
+
 def run_reinforce(cfg):
     logger = instantiate_class(cfg.logger)
 
@@ -36,12 +45,17 @@ def run_reinforce(cfg):
         # TODO: find a way to set the stop variables depending on the agent pid
         # tacq_agent(workspace, stochastic=True, t=0, stop_variable="env{???}/done")
 
-        losses = compute_losses(cfg, workspace, n_particles, epoch, logger)
+        critic_loss, entropy_loss, reinforce_loss = compute_losses(
+            cfg, workspace, n_particles, epoch, logger
+        )
 
-        for optimizer, loss in zip(optimizers, losses):
-            optimizer.zero_grad()
+        for i in range(n_particles):
+            loss = compute_total_loss(
+                cfg, i, critic_loss[i], entropy_loss[i], reinforce_loss[i]
+            )
+            optimizers[i].zero_grad()
             loss.backward()
-            optimizer.step()
+            optimizers[i].step()
 
 
 @hydra.main(config_path=".", config_name="main.yaml")

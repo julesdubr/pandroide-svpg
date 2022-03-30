@@ -17,7 +17,7 @@ from optimizer import setup_optimizers
 from svpg.helpers.visu.visu_gradient import visu_loss_along_time
 
 
-def run_svpg(cfg, alpha=10, show_losses=False, show_gradients=False):
+def run_svpg(cfg, alpha=10, show_loss=False, show_grad=False):
     # 1) Build the logger
     logger = Logger(cfg)
 
@@ -54,8 +54,8 @@ def run_svpg(cfg, alpha=10, show_losses=False, show_gradients=False):
             logger,
             epoch,
             alpha,
-            show_losses,
-            show_gradients,
+            show_loss,
+            show_grad,
         )
 
         optimizer.step()

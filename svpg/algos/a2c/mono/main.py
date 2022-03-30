@@ -9,6 +9,15 @@ from svpg.algos.a2c.mono.loss import compute_losses
 from svpg.algos.a2c.mono.optimizer import setup_optimizers
 
 
+def compute_total_loss(cfg, entropy_loss, critic_loss, a2c_loss):
+    loss = (
+        -cfg.algorithm.entropy_coef * entropy_loss
+        + cfg.algorithm.critic_coef * critic_loss
+        - cfg.algorithm.a2c_coef * a2c_loss
+    )
+    return loss
+
+
 def run_a2c(cfg):
     """Main training loop of A2C"""
 
@@ -45,15 +54,18 @@ def run_a2c(cfg):
         # Compute the critic value over the whole workspace
         tcritic_agent(workspace, n_steps=cfg.algorithm.n_timesteps)
 
-        losses = compute_losses(cfg, workspace, n_particles, epoch, logger)
+        critic_loss, entropy_loss, a2c_loss = compute_losses(
+            cfg, workspace, n_particles, epoch, logger
+        )
 
         # Store the losses for tensorboard display
         # logger.log_losses(cfg, epoch, critic_loss, entropy_loss, a2c_loss)
 
-        for optimizer, loss in zip(optimizers, losses):
-            optimizer.zero_grad()
+        for i in range(n_particles):
+            loss = compute_total_loss(cfg, entropy_loss[i], critic_loss[i], a2c_loss[i])
+            optimizers[i].zero_grad()
             loss.backward()
-            optimizer.step()
+            optimizers[i].step()
 
 
 @hydra.main(config_path=".", config_name="main.yaml")
@@ -61,9 +73,7 @@ def main(cfg):
     import torch.multiprocessing as mp
 
     mp.set_start_method("spawn")
-    epoch, duration = run_a2c(cfg)
-
-    print(f"terminated in {duration}s at epoch {epoch}")
+    run_a2c(cfg)
 
 
 if __name__ == "__main__":
