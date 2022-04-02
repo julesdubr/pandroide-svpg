@@ -72,7 +72,7 @@ class Algo():
         return torch.stack(policy_params)   
 
     def add_gradients(self, policy_loss, kernel):
-        policy_loss.backward()
+        policy_loss.backward(retain_graph=True)
 
         for i in range(self.n_particles):
             for j in range(self.n_particles):

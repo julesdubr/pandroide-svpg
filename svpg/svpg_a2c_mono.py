@@ -46,7 +46,7 @@ class SVPG_A2C_Mono(Algo):
             total_policy_loss = total_policy_loss - self.compute_policy_loss(action_probs, action, td) * (1 / alpha) * (1 / self.n_particles)
 
             # Log reward
-            creward = self.workspaces[pid]["cumulated_reward"]
+            creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
             if creward.size()[0] > 0 and verbose:

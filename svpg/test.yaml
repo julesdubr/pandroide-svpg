@@ -1,3 +1,6 @@
+env_name: CartPole-v1
+max_episode_step: 500
+
 logger:
   classname: salina.logger.TFLogger
   log_dir: ./tmp
@@ -6,32 +9,32 @@ logger:
   verbose: False
 
 action_agent:
-  classname: agents.ActionAgent
+  classname: a2c_agents.ActionAgent
   env:
-    classname: agents.make_env
-    env_name: CartPole-v1
-    max_episode_steps: 500
+    classname: a2c_agents.make_env
+    env_name: ${env_name}
+    max_episode_steps: ${max_episode_step}
   model:
-    classname: agents.make_model
+    classname: a2c_agents.make_model
     hidden_size: 32
 
 critic_agent:
-  classname: agents.CriticAgent
+  classname: a2c_agents.CriticAgent
   env:
-    classname: agents.make_env
-    env_name: CartPole-v1
-    max_episode_steps: 500
+    classname: a2c_agents.make_env
+    env_name: ${env_name}
+    max_episode_steps: ${max_episode_step}
   model:
-    classname: agents.make_model
+    classname: a2c_agents.make_model
     hidden_size: 32
 
 env_agent:
-  classname: agents.EnvAgent
+  classname: a2c_agents.EnvAgent
   n_envs: 8
   env:
-    classname: agents.make_env
-    env_name: CartPole-v1
-    max_episode_steps: 500
+    classname: a2c_agents.make_env
+    env_name: ${env_name}
+    max_episode_steps: ${max_episode_step}
 
 algorithm:
   classname: algo.Algo
