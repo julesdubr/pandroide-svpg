@@ -1,7 +1,7 @@
 import torch
 
-from algo import Algo
-from utils import _index
+from svpg.algo import Algo
+from svpg.utils import _index
 
 
 class SVPG_A2C_Mono(Algo):
