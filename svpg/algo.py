@@ -5,7 +5,7 @@ import torch, torch.nn as nn
 
 from hydra.utils import instantiate
 
-from logger import Logger
+from svpg.logger import Logger
 
 class Algo():
     def __init__(self, cfg):
