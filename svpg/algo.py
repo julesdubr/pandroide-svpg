@@ -71,7 +71,7 @@ class Algo():
 
         return torch.stack(policy_params)   
 
-    def add_gradients(self, policy_loss, kernels):
+    def add_gradients(self, policy_loss, kernel):
         policy_loss.backward()
 
         for i in range(self.n_particles):
@@ -83,14 +83,33 @@ class Algo():
                 theta_j = self.action_agents[j].model.parameters()
 
                 for (wi, wj) in zip(theta_i, theta_j):
-                    wi.grad = wi.grad + wj.grad * kernels[j, i].detach()
+                    wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
-    def compute_loss(self, alpha, logger, verbose=True):
+    def compute_loss(self, epoch, alpha=10, verbose=True):
         # Need to defined in inherited classes
         raise NotImplementedError
 
-    def run_svpg(self, alpha, logger, show_losses=True, show_gradient=True):
-        policy_loss, critic_loss = self.compute_loss(alpha, logger)
+    def run_svpg(self, alpha=10, show_losses=True, show_gradient=True):
+        for epoch in range(self.max_epochs):
+            # Run all particles
+            self.execute_acquisition_agent(epoch)
+            self.execute_critic_agent()
+
+            # Compute loss
+            policy_loss, critic_loss = self.compute_loss(epoch, alpha, show_losses)
+
+            # Compute gradients
+            thetas = self.get_policy_parameters()
+            kernel = self.kernel()(thetas, thetas.detach())
+            self.add_gradients(policy_loss, kernel)
+            critic_loss.backward()
+            
+            # Gradient descent
+            for pid in range(self.n_particles):
+                self.optimizers[pid].step()
+
+            for pid in range(self.n_particles):
+                self.optimizers[pid].zero_grad()
     
 
     
