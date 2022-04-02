@@ -5,62 +5,55 @@ import torch, torch.nn as nn
 
 from hydra.utils import instantiate
 
+from logger import Logger
+
 class Algo():
-    def __init__(self, **kwargs):
-        self.n_particles = kwargs["n_particles"]
-        self.n_steps = kwargs["n_timesteps"]
-        self.kernel = get_class(kwargs["kernel"])
-        self.max_epochs = kwargs["max_epochs"]
+    def __init__(self, cfg):
+        self.kernel = get_class(cfg.algorithm.kernel)
+        self.logger = Logger(cfg)
+
+        self.n_particles = cfg.algorithm.n_particles
+        self.n_steps = cfg.algorithm.n_timesteps
+        self.max_epochs = cfg.algorithm.max_epochs
+        self.discount_factor = cfg.algorithm.discount_factor
+        self.entropy_coef = cfg.algorithm.entropy_coef
+        self.critic_coef = cfg.algorithm.critic_coef
+        self.policy_coef = cfg.algorithm.policy_coef
 
         # Create agent
-        self.action_agents, self.critic_agents, self.env_agents, self.acquisition_agents, self.tcritic_agents = [], [], [], [], []
+        self.action_agents = [instantiate_class(cfg.action_agent) for _ in range(self.n_particles)]
+        self.critic_agents = [instantiate_class(cfg.critic_agent) for _ in range(self.n_particles)]
+        self.env_agents = [instantiate_class(cfg.env_agent) for _ in range(self.n_particles)]
+
+        self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
+        self.acquisition_agents = [TemporalAgent(Agents(env_agent, action_agent)) 
+                                  for env_agent, action_agent in zip(self.env_agents, self.action_agents)]
         for pid in range(self.n_particles):
-        #     print(kwargs["action_agent"])
-        #     instantiate(kwargs["action_agent"], _recursive_=False)
-
-        # self.action_agents = [instantiate_class(kwargs["action_agent"]) for _ in range(self.n_particles)]
-        # self.critic_agents = [instantiate_class(kwargs["critic_agent"]) for _ in range(self.n_particles)]
-        # self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
-        # self.env_agents = [instantiate_class(kwargs["env"]) for _ in range(self.n_particles)]
-            action_agent = instantiate_class(kwargs["action_agent"])
-            critic_agent = instantiate_class(kwargs["critic_agent"])
-            env_agent = instantiate_class(kwargs["env_agent"])
-
-            self.action_agents.append(action_agent)
-            self.critic_agents.append(critic_agent)
-            self.env_agents.append(env_agent)
-
-            self.tcritic_agents.append(TemporalAgent(critic_agent))
-            self.acquisition_agents.append(TemporalAgent(Agents(env_agent, action_agent)))
-            self.acquisition_agents[pid].seed(kwargs["env_seed"])
-
-        # self.acquisition_agents = []
-        # for pid in range(self.n_particles):
-        #     self.acquisition_agents.append(TemporalAgent(Agents(self.env_agents[pid], self.action_agents[pid])))
-        #     self.acquisition_agents[pid].seed(kwargs["env_seed"])
+            self.acquisition_agents[pid].seed(cfg.algorithm.env_seed)
 
         # Create workspace
         self.workspaces = [Workspace() for _ in range(self.n_particles)]
 
         # Setup optimizers
-        optimizer_args = get_arguments(kwargs["optimizer"])
+        optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
         for pid in range(self.n_particles):
             params = nn.Sequential(self.action_agents[pid], self.critic_agents[pid]).parameters()
-            self.optimizers.append(get_class(
-                kwargs["optimizer"](params, **optimizer_args)
+            self.optimizers.append(
+                get_class(cfg.algorithm.optimizer)(
+                    params, **optimizer_args
             ))
 
     def execute_acquisition_agent(self, epoch):
-        for pid in range(self.cfg.n_particles):
+        for pid in range(self.n_particles):
             if epoch > 0:
                 self.workspaces[pid].zero_grad()
                 self.workspaces[pid].copy_n_last_steps(1)
                 self.acquisition_agents[pid](
-                    self.workspace[pid], t=1, n_steps=self.n_steps - 1, stochastic=True
+                    self.workspaces[pid], t=1, n_steps=self.n_steps - 1, stochastic=True
                 )
             else:
-                self.acquisition_agents[pid](self.workspace[pid], t=0, n_steps=self.n_steps, stochastic=True)
+                self.acquisition_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True)
 
     def execute_critic_agent(self):
         for pid in range(self.n_particles):

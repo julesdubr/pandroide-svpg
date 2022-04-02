@@ -1,3 +1,38 @@
+logger:
+  classname: salina.logger.TFLogger
+  log_dir: ./tmp
+  every_n_seconds: 10000
+  modulo: 1
+  verbose: False
+
+action_agent:
+  classname: agents.ActionAgent
+  env:
+    classname: agents.make_env
+    env_name: CartPole-v1
+    max_episode_steps: 500
+  model:
+    classname: agents.make_model
+    hidden_size: 32
+
+critic_agent:
+  classname: agents.CriticAgent
+  env:
+    classname: agents.make_env
+    env_name: CartPole-v1
+    max_episode_steps: 500
+  model:
+    classname: agents.make_model
+    hidden_size: 32
+
+env_agent:
+  classname: agents.EnvAgent
+  n_envs: 8
+  env:
+    classname: agents.make_env
+    env_name: CartPole-v1
+    max_episode_steps: 500
+
 algorithm:
   classname: algo.Algo
   env_seed: 432
@@ -10,35 +45,6 @@ algorithm:
   policy_coef: 0.1
   kernel:
     classname: kernel.RBF
-
-  action_agent:
-    classname: agents.ActionAgent
-    env:
-      classname: agents.make_env
-      env_name: CartPole-v1
-      max_episode_steps: 500
-    model:
-      classname: agents.make_model
-      hidden_size: 32
-
-  critic_agent:
-    classname: agents.CriticAgent
-    env:
-      classname: agents.make_env
-      env_name: CartPole-v1
-      max_episode_steps: 500
-    model:
-      classname: agents.make_model
-      hidden_size: 32
-
-  env_agent:
-    classname: agents.EnvAgent
-    n_envs: 8
-    env:
-      classname: agents.make_env
-      env_name: CartPole-v1
-      max_episode_steps: 500
-
   optimizer:
     classname: torch.optim.Adam
     lr: 0.01

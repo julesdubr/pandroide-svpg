@@ -53,12 +53,11 @@ class CriticAgent(Agent):
         input_size = env.observation_space.shape[0]
         output_size = 1
         # Model
-        model_generator = get_class(kwargs["model"])
-        self.model = model_generator(input_size, output_size)
+        self.model = get_class(kwargs["model"])(input_size, output_size, **get_arguments(kwargs["model"]))
 
     def forward(self, t, **kwargs):
         observation = self.get(("env/env_obs", t))
-        critic = self.critic_model(observation).squeeze(-1)
+        critic = self.model(observation).squeeze(-1)
         self.set(("critic", t), critic)
 
 
@@ -80,11 +79,11 @@ class EnvAgent(AutoResetGymAgent):
         super().__init__(
             make_env_fn=get_class(kwargs["env"]),
             make_env_args=get_arguments(kwargs["env"]),
-            n_envs=kwargs["env.n_envs"]
+            n_envs=kwargs["n_envs"]
         )
 
 def make_model(input_size, output_size, **kwargs):
-    print(kwargs)
+    # print(kwargs)
     hidden_size = list(kwargs.values())
     # print(hidden_size)
     if len(hidden_size) > 1:
