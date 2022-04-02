@@ -12,8 +12,9 @@ from gym.spaces import Box, Discrete
 
 class ActionAgent(Agent):
     def __init__(self, **kwargs):
-        super.__init__()
+        super().__init__()
         # Environment
+        # print(kwargs)
         env = instantiate_class(kwargs["env"])
         # Model input and output size
         input_size = env.observation_space.shape[0]
@@ -22,8 +23,7 @@ class ActionAgent(Agent):
         elif isinstance(env.action_space, Discrete):
             output_size = env.action_space.n
         # Model
-        model_generator = get_class(kwargs["model"])
-        self.model = model_generator(input_size, output_size)
+        self.model = get_class(kwargs["model"])(input_size, output_size, **get_arguments(kwargs["model"]))
 
     def forward(self, t, stochastic, **kwargs):
         observation = self.get(("env/env_obs", t))
@@ -76,9 +76,30 @@ class EnvAgent(AutoResetGymAgent):
     This agent implements N gym environments with auto-reset
     """
 
-    def __init__(self, cfg):
+    def __init__(self, **kwargs):
         super().__init__(
-            get_class(cfg.algorithm.env),
-            get_arguments(cfg.algorithm.env),
-            n_envs=cfg.algorithm.n_envs
+            make_env_fn=get_class(kwargs["env"]),
+            make_env_args=get_arguments(kwargs["env"]),
+            n_envs=kwargs["env.n_envs"]
         )
+
+def make_model(input_size, output_size, **kwargs):
+    print(kwargs)
+    hidden_size = list(kwargs.values())
+    # print(hidden_size)
+    if len(hidden_size) > 1:
+        hidden_layers = [
+            [nn.Linear(hidden_size[i], hidden_size[i+1]), nn.ReLU()] 
+            for i in range(0, len(hidden_size) - 1)
+        ]
+
+        hidden_layers = [l for layers in hidden_layers for l in layers]
+    else:
+        hidden_layers = [nn.Identity()]
+
+    return nn.Sequential(
+        nn.Linear(input_size, hidden_size[0]),
+        nn.ReLU(),
+        *hidden_layers,
+        nn.Linear(hidden_size[-1], output_size)
+    )
