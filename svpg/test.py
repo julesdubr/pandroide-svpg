@@ -1,7 +1,4 @@
 import hydra
-from omegaconf import DictConfig
-
-from salina import instantiate_class
 
 from algo import Algo
 

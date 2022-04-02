@@ -85,24 +85,54 @@ class Algo():
                 for (wi, wj) in zip(theta_i, theta_j):
                     wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
+    def compute_gradient_norm(self, epoch):
+        policy_gradnorm, critic_gradnorm = 0, 0
+
+        for pid in range(self.n_particles):
+            # prob_params = particle["prob_agent"].model.parameters()
+            # critic_params = particle["critic_agent"].critic_model.parameters()
+            policy_params = self.action_agents[pid].model.parameters()
+            critic_params = self.critic_agents[pid].model.parameters()
+
+            for w_policy, w_critic in zip(policy_params, critic_params):
+                if w_policy.grad != None:
+                    policy_gradnorm += w_policy.grad.detach().data.norm(2) ** 2
+
+                if w_critic.grad != None:
+                    critic_gradnorm += w_critic.grad.detach().data.norm(2) ** 2
+
+        policy_gradnorm, critic_gradnorm = (
+            torch.sqrt(policy_gradnorm),
+            torch.sqrt(critic_gradnorm),
+        )
+
+        self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
+        self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
+
     def compute_loss(self, epoch, alpha=10, verbose=True):
         # Need to defined in inherited classes
         raise NotImplementedError
 
-    def run_svpg(self, alpha=10, show_losses=True, show_gradient=True):
+    def run_svpg(self, alpha=10, verbose=True):
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
             self.execute_critic_agent()
 
             # Compute loss
-            policy_loss, critic_loss = self.compute_loss(epoch, alpha, show_losses)
+            critic_loss, entropy_loss, policy_loss = self.compute_loss(epoch, alpha, verbose)
 
             # Compute gradients
             thetas = self.get_policy_parameters()
             kernel = self.kernel()(thetas, thetas.detach())
             self.add_gradients(policy_loss, kernel)
-            critic_loss.backward()
+            
+            loss = -self.entropy_coef * entropy_loss + self.critic_coef * critic_loss + kernel.sum() / self.n_particles
+            loss.backward()
+
+            # Log gradient norms
+            if verbose:
+                self.compute_gradient_norm(epoch)
             
             # Gradient descent
             for pid in range(self.n_particles):
