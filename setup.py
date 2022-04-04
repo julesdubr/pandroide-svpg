@@ -9,11 +9,17 @@ from setuptools import find_packages, setup
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-# Have a different version per commit to automatically update the package after each commit
+
+# Have a different version per commit to automatically update the package after each
+# commit
 with open("version.txt", "r") as file_handler:
     __version__ = file_handler.read().strip()
 
-hash = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=".").decode("ascii").strip()
+hash = (
+    subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=".")
+    .decode("ascii")
+    .strip()
+)
 
 
 setup(
