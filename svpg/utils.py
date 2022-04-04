@@ -1,5 +1,6 @@
 import torch
 
+
 def _index(tensor_3d, tensor_2d):
     """This function is used to index a 3d tensors using a 2d tensor"""
     x, y, z = tensor_3d.size()

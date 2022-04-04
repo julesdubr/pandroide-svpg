@@ -1,16 +1,18 @@
 import torch
 
-from svpg.algo import Algo
+from svpg.algos.algo import Algo
 from svpg.utils import _index
 
 
 class SVPG_A2C_Mono(Algo):
     def __init__(self, cfg):
         super().__init__(cfg)
-    
+
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error
-        target = reward[1:] + self.discount_factor * critic[1:].detach() * (1 - done[1:].float())
+        target = reward[1:] + self.discount_factor * critic[1:].detach() * (
+            1 - done[1:].float()
+        )
         td = target - critic[:-1]
 
         # Compute critic loss
@@ -30,20 +32,21 @@ class SVPG_A2C_Mono(Algo):
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
             critic, done, action_probs, reward, action = self.workspaces[pid][
-                "critic",
-                "env/done",
-                "action_probs",
-                "env/reward",
-                "action"
+                "critic", "env/done", "action_probs", "env/reward", "action"
             ]
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
             total_critic_loss = total_critic_loss + critic_loss
 
-            total_entropy_loss = total_entropy_loss + torch.distributions.Categorical(action_probs).entropy().mean()
+            total_entropy_loss = (
+                total_entropy_loss
+                + torch.distributions.Categorical(action_probs).entropy().mean()
+            )
 
-            total_policy_loss = total_policy_loss - self.compute_policy_loss(action_probs, action, td) * (1 / alpha) * (1 / self.n_particles)
+            total_policy_loss = total_policy_loss - self.compute_policy_loss(
+                action_probs, action, td
+            ) * (1 / alpha) * (1 / self.n_particles)
 
             # Log reward
             creward = self.workspaces[pid]["env/cumulated_reward"]
@@ -54,12 +57,7 @@ class SVPG_A2C_Mono(Algo):
 
         if verbose:
             self.logger.log_losses(
-                epoch,
-                total_critic_loss,
-                total_entropy_loss,
-                total_policy_loss
+                epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
         return total_critic_loss, total_entropy_loss, total_policy_loss
-
-

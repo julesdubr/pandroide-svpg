@@ -1,5 +1,4 @@
 from salina import Agent, get_arguments, get_class, instantiate_class
-from salina.agents import Agents, TemporalAgent
 from salina.agents.gyma import AutoResetGymAgent, GymAgent
 
 import torch
@@ -23,7 +22,9 @@ class ActionAgent(Agent):
         elif isinstance(env.action_space, Discrete):
             output_size = env.action_space.n
         # Model
-        self.model = get_class(kwargs["model"])(input_size, output_size, **get_arguments(kwargs["model"]))
+        self.model = get_class(kwargs["model"])(
+            input_size, output_size, **get_arguments(kwargs["model"])
+        )
 
     def forward(self, t, stochastic, **kwargs):
         observation = self.get(("env/env_obs", t))
@@ -41,7 +42,8 @@ class ActionAgent(Agent):
 class CriticAgent(Agent):
     """
     CriticAgent:
-    - A one hidden layer neural network which takes an observation as input and whose output is the value of this observation.
+    - A one hidden layer neural network which takes an observation as input and whose
+      output is the value of this observation.
     - It thus implements a  V(s)  function
     """
 
@@ -53,7 +55,9 @@ class CriticAgent(Agent):
         input_size = env.observation_space.shape[0]
         output_size = 1
         # Model
-        self.model = get_class(kwargs["model"])(input_size, output_size, **get_arguments(kwargs["model"]))
+        self.model = get_class(kwargs["model"])(
+            input_size, output_size, **get_arguments(kwargs["model"])
+        )
 
     def forward(self, t, **kwargs):
         observation = self.get(("env/env_obs", t))
@@ -79,17 +83,18 @@ class EnvAgentAutoReset(AutoResetGymAgent):
         super().__init__(
             make_env_fn=get_class(kwargs["env"]),
             make_env_args=get_arguments(kwargs["env"]),
-            n_envs=kwargs["n_envs"]
+            n_envs=kwargs["n_envs"],
         )
+
 
 class EnvAgent(GymAgent):
     def __init__(self, **kwargs):
         super().__init__(
             make_env_fn=get_class(kwargs["env"]),
             make_env_args=get_arguments(kwargs["env"]),
-            n_envs=kwargs["n_envs"]
+            n_envs=kwargs["n_envs"],
         )
-        
+
 
 def make_model(input_size, output_size, **kwargs):
     # print(kwargs)
@@ -97,7 +102,7 @@ def make_model(input_size, output_size, **kwargs):
     # print(hidden_size)
     if len(hidden_size) > 1:
         hidden_layers = [
-            [nn.Linear(hidden_size[i], hidden_size[i+1]), nn.ReLU()] 
+            [nn.Linear(hidden_size[i], hidden_size[i + 1]), nn.ReLU()]
             for i in range(0, len(hidden_size) - 1)
         ]
 
