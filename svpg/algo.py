@@ -11,9 +11,13 @@ class Algo():
     def __init__(self, cfg):
         self.kernel = get_class(cfg.algorithm.kernel)
         self.logger = Logger(cfg)
+        self.stop_variable = None
 
         self.n_particles = cfg.algorithm.n_particles
-        self.n_steps = cfg.algorithm.n_timesteps
+        try:
+            self.n_steps = cfg.algorithm.n_timesteps
+        except KeyError:
+            self.n_steps = None
         self.max_epochs = cfg.algorithm.max_epochs
         self.discount_factor = cfg.algorithm.discount_factor
         self.entropy_coef = cfg.algorithm.entropy_coef
@@ -48,16 +52,28 @@ class Algo():
         for pid in range(self.n_particles):
             if epoch > 0:
                 self.workspaces[pid].zero_grad()
+                self.workspaces[pid].clear()
                 self.workspaces[pid].copy_n_last_steps(1)
-                self.acquisition_agents[pid](
-                    self.workspaces[pid], t=1, n_steps=self.n_steps - 1, stochastic=True
-                )
+                if self.stop_variable is None:
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid], t=1, n_steps=self.n_steps - 1, stochastic=True
+                    )
+                else:
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid], stochastic=True, t=0, stop_variable=self.stop_variable
+                    )
             else:
-                self.acquisition_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True)
+                if self.stop_variable is None:
+                    self.acquisition_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True)
+                else:
+                    self.acquisition_agents[pid](self.workspaces[pid], stochastic=True, t=0, stop_variable=self.stop_variable)
 
     def execute_critic_agent(self):
         for pid in range(self.n_particles):
-            self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
+            if self.stop_variable is None:
+                self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
+            else:
+                self.tcritic_agents[pid](self.workspaces[pid], stop_variable=self.stop_variable)
 
     def get_policy_parameters(self):
         policy_params = []
