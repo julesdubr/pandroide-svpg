@@ -41,7 +41,10 @@ class SVPG_A2C_Mono(Algo):
 
             total_entropy_loss = total_entropy_loss + entropy.mean()
 
-            total_policy_loss = total_policy_loss - self.compute_policy_loss(action_logprobs, td) * (1 / alpha) * (1 / self.n_particles)
+            if alpha is not None:
+                total_policy_loss = total_policy_loss - self.compute_policy_loss(action_logprobs, td) * (1 / alpha) * (1 / self.n_particles)
+            else:
+                total_policy_loss = total_policy_loss - self.compute_policy_loss(action_logprobs, td)
 
             # Log reward
             creward = self.workspaces[pid]["env/cumulated_reward"]

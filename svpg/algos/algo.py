@@ -172,3 +172,32 @@ class Algo:
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
+
+    def run(self, verbose=True):
+        for epoch in range(self.max_epochs):
+            # Run all particles
+            self.execute_acquisition_agent(epoch)
+            self.execute_critic_agent()
+
+            # Compute loss
+            critic_loss, entropy_loss, policy_loss = self.compute_loss(
+                epoch, alpha=None, verbose=verbose
+            )
+
+            loss = (
+                - self.entropy_coef * entropy_loss
+                + self.critic_coef * critic_loss
+                + self.policy_coef * policy_loss
+            )
+            loss.backward()
+
+            # Log gradient norms
+            if verbose:
+                self.compute_gradient_norm(epoch)
+
+            # Gradient descent
+            for pid in range(self.n_particles):
+                self.optimizers[pid].step()
+
+            for pid in range(self.n_particles):
+                self.optimizers[pid].zero_grad()

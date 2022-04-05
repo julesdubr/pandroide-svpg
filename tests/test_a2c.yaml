@@ -1,12 +1,12 @@
-env_name: CartPole-v1
-max_episode_step: 500
+env_name: CartPole-v0
+max_episode_step: 100
 
 logger:
   classname: salina.logger.TFLogger
   log_dir: ./tmp
   every_n_seconds: 10000
   modulo: 1
-  verbose: False
+  verbose: True
 
 action_agent:
   classname: svpg.agents.ActionAgent
@@ -38,7 +38,7 @@ env_agent:
 
 algorithm:
   env_seed: 432
-  n_timesteps: 100
+  n_timesteps: 16
   n_particles: 4
   max_epochs: 10000
   discount_factor: 0.95
