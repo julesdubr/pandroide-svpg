@@ -30,7 +30,7 @@ class SVPG_A2C_Mono(Algo):
             critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
                 "critic", "env/done", "action_logprobs", "env/reward", "entropy"
             ]
-
+            
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
             total_critic_loss = total_critic_loss + critic_loss
