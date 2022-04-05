@@ -3,7 +3,7 @@ from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 import torch, torch.nn as nn
 
-from svpg.logger import Logger
+from svpg.helpers.logger import Logger
 
 
 class Algo:
