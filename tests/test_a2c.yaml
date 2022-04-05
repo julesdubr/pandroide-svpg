@@ -7,35 +7,33 @@ logger:
   log_dir: ./tmp
   every_n_seconds: 10000
   modulo: 1
-  verbose: True
+  verbose: False
 
 action_agent:
-  classname: svpg.agents.ActionAgent
-  activation: ${activation}
+  classname: svpg.agents.discrete.ActionAgent
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: svpg.agents.make_model
+    classname: svpg.agents.model.make_model
     hidden_size: 32
 
 critic_agent:
-  classname: svpg.agents.CriticAgent
-  activation: ${activation}
+  classname: svpg.agents.discrete.CriticAgent
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: svpg.agents.make_model
+    classname: svpg.agents.model.make_model
     hidden_size: 32
 
 env_agent:
-  classname: svpg.agents.EnvAgentAutoReset
+  classname: svpg.agents.env.EnvAgentAutoReset
   n_envs: 8
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
 
@@ -48,8 +46,10 @@ algorithm:
   entropy_coef: 0.001
   critic_coef: 1.0
   policy_coef: 0.1
+
   kernel:
     classname: svpg.kernel.RBF
+    
   optimizer:
     classname: torch.optim.Adam
     lr: 0.01

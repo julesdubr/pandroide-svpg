@@ -1,4 +1,4 @@
-from .algo import Algo
+from svpg.algos.algo import Algo
 
 import torch
 
@@ -9,8 +9,8 @@ class SVPG_Reinforce_Mono(Algo):
         self.stop_variable = "env/done"
 
     def compute_reinforce_loss(self, reward, action_logprobs, critic, entropy, done):
-        batch_size = reward.size()[1] # Number of env
-        max_trajectories_length = reward.size()[0] # Longest episode over all env
+        batch_size = reward.size()[1]  # Number of env
+        max_trajectories_length = reward.size()[0]  # Longest episode over all env
         v_done, trajectories_length = done.float().max(0)
         trajectories_length += 1  # Episode length of each env
         assert v_done.eq(1.0).all()
@@ -64,14 +64,13 @@ class SVPG_Reinforce_Mono(Algo):
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
             critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
-                "critic",
-                "env/done",
-                "action_logprobs",
-                "env/reward",
-                "entropy"
+                "critic", "env/done", "action_logprobs", "env/reward", "entropy"
             ]
-            # Compute loss by REINFORCE (using the reward cumulated until the end of episode)
-            critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(reward, action_logprobs, critic, entropy, done)
+            # Compute loss by REINFORCE
+            # (using the reward cumulated until the end of episode)
+            critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(
+                reward, action_logprobs, critic, entropy, done
+            )
             total_critic_loss = total_critic_loss + critic_loss
             total_entropy_loss = total_entropy_loss + entropy_loss
             if alpha is not None:
