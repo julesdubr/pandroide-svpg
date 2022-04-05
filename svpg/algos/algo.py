@@ -1,7 +1,8 @@
 from salina import instantiate_class, get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
-import torch, torch.nn as nn
+import torch
+import torch.nn as nn
 
 from svpg.helpers.logger import Logger
 
@@ -23,16 +24,12 @@ class Algo:
         self.critic_coef = cfg.algorithm.critic_coef
         self.policy_coef = cfg.algorithm.policy_coef
 
-        # Create agent
-        self.action_agents = [
-            instantiate_class(cfg.action_agent) for _ in range(self.n_particles)
-        ]
-        self.critic_agents = [
-            instantiate_class(cfg.critic_agent) for _ in range(self.n_particles)
-        ]
-        self.env_agents = [
-            instantiate_class(cfg.env_agent) for _ in range(self.n_particles)
-        ]
+        # Create agents
+        self.action_agents, self.critic_agents, self.env_agents = list(), list(), list()
+        for _ in range(self.n_particles):
+            self.action_agents.append(instantiate_class(cfg.action_agent))
+            self.critic_agents.append(instantiate_class(cfg.critic_agent))
+            self.env_agents.append(instantiate_class(cfg.env_agent))
 
         self.tcritic_agents = [
             TemporalAgent(critic_agent) for critic_agent in self.critic_agents
@@ -44,7 +41,7 @@ class Algo:
         for pid in range(self.n_particles):
             self.acquisition_agents[pid].seed(cfg.algorithm.env_seed)
 
-        # Create workspace
+        # Create workspaces
         self.workspaces = [Workspace() for _ in range(self.n_particles)]
 
         # Setup optimizers
@@ -165,6 +162,8 @@ class Algo:
                 epoch, alpha, verbose
             )
 
+            print(critic_loss)
+
             # Compute gradients
             thetas = self.get_policy_parameters()
             kernel = self.kernel()(thetas, thetas.detach())
@@ -184,9 +183,13 @@ class Algo:
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
-
-            for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
+
+        # plt.figure(figsize=(10, 10))
+        # plt.imshow(
+        #     portrait, cmap="inferno", extent=[x_min, x_max, y_min, y_max], aspect="auto"
+        # )
+        # plt.colorbar(label="critic value")
 
     def run(self, verbose=True):
         for epoch in range(self.max_epochs):
