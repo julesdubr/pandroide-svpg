@@ -59,7 +59,6 @@ class Algo:
             )
 
     def execute_acquisition_agent(self, epoch):
-        print(epoch)
         for pid in range(self.n_particles):
             if epoch > 0:
                 self.workspaces[pid].zero_grad()
