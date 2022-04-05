@@ -38,8 +38,8 @@ env_agent:
 
 algorithm:
   env_seed: 432
+  n_timesteps: 100
   n_particles: 4
-  n_timesteps: 16
   max_epochs: 10000
   discount_factor: 0.95
   entropy_coef: 0.001

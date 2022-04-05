@@ -50,7 +50,7 @@ class SVPG_Reinforce_Mono(Algo):
         ).mean()  # use the value function (critic) as a baseline
 
         # Policy loss
-        policy_loss = action_logprobs[:-1] * (cumulated_reward - critic).detach()
+        policy_loss = action_logprobs * (cumulated_reward - critic).detach()
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
