@@ -2,7 +2,6 @@ import hydra
 
 from svpg.algos.svpg_a2c_mono import SVPG_A2C_Mono
 
-
 @hydra.main(config_path=".", config_name="test_a2c.yaml")
 def main(cfg):
     import torch.multiprocessing as mp

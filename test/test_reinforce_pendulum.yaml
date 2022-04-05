@@ -6,33 +6,33 @@ logger:
   log_dir: ./tmp
   every_n_seconds: 10000
   modulo: 1
-  verbose: True
+  verbose: False
 
 action_agent:
-  classname: agents.ContinuousActionAgent
+  classname: svpg.agents.ContinuousActionAgent
   env:
-    classname: agents.make_env
+    classname: svpg.agents.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: agents.make_model
+    classname: svpg.agents.make_model
     hidden_size: 32
 
 critic_agent:
-  classname: agents.CriticAgent
+  classname: svpg.agents.CriticAgent
   env:
-    classname: agents.make_env
+    classname: svpg.agents.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: agents.make_model
+    classname: svpg.agents.make_model
     hidden_size: 32
 
 env_agent:
-  classname: agents.EnvAgent
+  classname: svpg.agents.EnvAgent
   n_envs: 8
   env:
-    classname: agents.make_env
+    classname: svpg.agents.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
 
@@ -46,7 +46,7 @@ algorithm:
   critic_coef: 1.0
   policy_coef: 0.1
   kernel:
-    classname: kernel.RBF
+    classname: svpg.kernel.RBF
   optimizer:
     classname: torch.optim.Adam
     lr: 0.01
