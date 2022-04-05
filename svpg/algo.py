@@ -3,9 +3,7 @@ from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 import torch, torch.nn as nn
 
-from hydra.utils import instantiate
-
-from svpg.logger import Logger
+from .logger import Logger
 
 class Algo():
     def __init__(self, cfg):
@@ -16,7 +14,7 @@ class Algo():
         self.n_particles = cfg.algorithm.n_particles
         try:
             self.n_steps = cfg.algorithm.n_timesteps
-        except KeyError:
+        except:
             self.n_steps = None
         self.max_epochs = cfg.algorithm.max_epochs
         self.discount_factor = cfg.algorithm.discount_factor
@@ -49,24 +47,21 @@ class Algo():
             ))
 
     def execute_acquisition_agent(self, epoch):
+        print(epoch)
         for pid in range(self.n_particles):
             if epoch > 0:
                 self.workspaces[pid].zero_grad()
-                self.workspaces[pid].clear()
-                self.workspaces[pid].copy_n_last_steps(1)
                 if self.stop_variable is None:
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid], t=1, n_steps=self.n_steps - 1, stochastic=True
-                    )
+                    self.workspaces[pid].copy_n_last_steps(1)
+                    self.acquisition_agents[pid](self.workspaces[pid], t=1, n_steps=self.n_steps-1, stochastic=True)
                 else:
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid], stochastic=True, t=0, stop_variable=self.stop_variable
-                    )
+                    self.workspaces[pid].clear()
+                    self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
             else:
                 if self.stop_variable is None:
                     self.acquisition_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True)
                 else:
-                    self.acquisition_agents[pid](self.workspaces[pid], stochastic=True, t=0, stop_variable=self.stop_variable)
+                    self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
 
     def execute_critic_agent(self):
         for pid in range(self.n_particles):

@@ -1,7 +1,4 @@
-import torch
-
-from svpg.algo import Algo
-from svpg.utils import _index
+from .algo import Algo
 
 
 class SVPG_A2C_Mono(Algo):
@@ -19,9 +16,8 @@ class SVPG_A2C_Mono(Algo):
 
         return critic_loss, td
 
-    def compute_policy_loss(self, action_probs, action, td):
-        action_logp = _index(action_probs, action).log()
-        policy_loss = action_logp[:-1] * td.detach()
+    def compute_policy_loss(self, action_logprobs, td):
+        policy_loss = action_logprobs[:-1] * td.detach()
 
         return policy_loss.mean()
 
@@ -29,21 +25,21 @@ class SVPG_A2C_Mono(Algo):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
-            critic, done, action_probs, reward, action = self.workspaces[pid][
+            critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
                 "critic",
                 "env/done",
-                "action_probs",
+                "action_logprobs",
                 "env/reward",
-                "action"
+                "entropy"
             ]
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
             total_critic_loss = total_critic_loss + critic_loss
 
-            total_entropy_loss = total_entropy_loss + torch.distributions.Categorical(action_probs).entropy().mean()
+            total_entropy_loss = total_entropy_loss + entropy.mean()
 
-            total_policy_loss = total_policy_loss - self.compute_policy_loss(action_probs, action, td) * (1 / alpha) * (1 / self.n_particles)
+            total_policy_loss = total_policy_loss - self.compute_policy_loss(action_logprobs, td) * (1 / alpha) * (1 / self.n_particles)
 
             # Log reward
             creward = self.workspaces[pid]["env/cumulated_reward"]

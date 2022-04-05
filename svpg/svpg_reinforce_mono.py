@@ -1,5 +1,4 @@
-from svpg.algo import Algo
-from svpg.utils import _index
+from .algo import Algo
 
 import torch
 
@@ -8,7 +7,7 @@ class SVPG_Reinforce_Mono(Algo):
         super().__init__(cfg)
         self.stop_variable = "env/done"
 
-    def compute_reinforce_loss(self, reward, action_probs, critic, action, done):
+    def compute_reinforce_loss(self, reward, action_logprobs, critic, entropy, done):
         batch_size = reward.size()[1] # Number of env
         max_trajectories_length = reward.size()[0] # Longest episode over all env
         v_done, trajectories_length = done.float().max(0)
@@ -38,14 +37,12 @@ class SVPG_Reinforce_Mono(Algo):
         critic_loss = (((critic - cumulated_reward) ** 2) * mask).mean() # use the value function (critic) as a baseline
 
         # Policy loss
-        log_J = _index(action_probs, action).log()
-        policy_loss = log_J * (cumulated_reward - critic).detach()
+        policy_loss = action_logprobs * (cumulated_reward - critic).detach()
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
         # entropy loss
-        entropy = torch.distributions.Categorical(action_probs).entropy() * mask
-        entropy_loss = entropy.mean()
+        entropy_loss = (entropy * mask).mean()
 
         return critic_loss, entropy_loss, policy_loss
 
@@ -54,15 +51,16 @@ class SVPG_Reinforce_Mono(Algo):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
-            critic, done, action_probs, reward, action = self.workspaces[pid][
+            critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
                 "critic",
                 "env/done",
-                "action_probs",
+                "action_logprobs",
                 "env/reward",
-                "action"
+                "entropy"
             ]
+            print(f"entropy shape: {entropy.size()}")
             # Compute loss by REINFORCE (using the reward cumulated until the end of episode)
-            critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(reward, action_probs, critic, action, done)
+            critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(reward, action_logprobs, critic, entropy, done)
             total_critic_loss = total_critic_loss + critic_loss
             total_entropy_loss = total_entropy_loss + entropy_loss
             total_policy_loss = total_policy_loss - policy_loss * (1 / alpha) * (1 / self.n_particles)
