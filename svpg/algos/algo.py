@@ -64,17 +64,32 @@ class Algo:
                 self.workspaces[pid].zero_grad()
                 if self.stop_variable is None:
                     self.workspaces[pid].copy_n_last_steps(1)
-                    self.acquisition_agents[pid](self.workspaces[pid], t=1, n_steps=self.n_steps-1, stochastic=True)
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid],
+                        t=1,
+                        n_steps=self.n_steps - 1,
+                        stochastic=True,
+                    )
                 else:
                     self.workspaces[pid].clear()
-                    self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid],
+                        t=0,
+                        stop_variable=self.stop_variable,
+                        stochastic=True,
+                    )
             else:
                 if self.stop_variable is None:
                     self.acquisition_agents[pid](
                         self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True
                     )
                 else:
-                    self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid],
+                        t=0,
+                        stop_variable=self.stop_variable,
+                        stochastic=True,
+                    )
 
     def execute_critic_agent(self):
         for pid in range(self.n_particles):
@@ -185,7 +200,7 @@ class Algo:
             )
 
             loss = (
-                - self.entropy_coef * entropy_loss
+                -self.entropy_coef * entropy_loss
                 + self.critic_coef * critic_loss
                 + self.policy_coef * policy_loss
             )
@@ -198,6 +213,4 @@ class Algo:
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
-
-            for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
