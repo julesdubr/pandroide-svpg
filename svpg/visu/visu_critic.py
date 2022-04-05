@@ -3,7 +3,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
-from svpg.helpers.visu.visu_policies import final_show
+from svpg.visu.visu_policies import final_show
 
 from stable_baselines3 import DDPG, REINFORCE
 from stable_baselines3.common.utils import obs_as_tensor
