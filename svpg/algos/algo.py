@@ -136,7 +136,7 @@ class Algo:
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
     def compute_loss(self, epoch, alpha=10, verbose=True):
-        # Need to defined in inherited classes
+        # Need to defined in child classes
         raise NotImplementedError
 
     def run_svpg(self, alpha=10, verbose=True):

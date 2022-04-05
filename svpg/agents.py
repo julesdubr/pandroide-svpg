@@ -24,7 +24,7 @@ class ActionAgent(Agent):
             output_size = env.action_space.n
         # Model
         self.model = get_class(kwargs["model"])(
-            input_size, output_size, **get_arguments(kwargs["model"])
+            input_size, output_size, activation=kwargs["activation"], **get_arguments(kwargs["model"])
         )
 
     def forward(self, t, stochastic, **kwargs):
@@ -53,7 +53,7 @@ class ContinuousActionAgent(Agent):
         input_size = env.observation_space.shape[0]
         output_size = env.action_space.shape[0]
         # Model for estimating the mean
-        self.model = get_class(kwargs["model"])(input_size, output_size, **get_arguments(kwargs["model"]))
+        self.model = get_class(kwargs["model"])(input_size, output_size, activation=kwargs["activation"], **get_arguments(kwargs["model"]))
         # The deviation is estimated by a vector
         self.std_param = nn.parameter.Parameter(torch.randn(output_size, 1))
         self.soft_plus = nn.Softplus()
@@ -91,7 +91,7 @@ class CriticAgent(Agent):
         output_size = 1
         # Model
         self.model = get_class(kwargs["model"])(
-            input_size, output_size, **get_arguments(kwargs["model"])
+            input_size, output_size, activation=kwargs["activation"], **get_arguments(kwargs["model"])
         )
 
     def forward(self, t, **kwargs):
@@ -131,13 +131,15 @@ class EnvAgent(GymAgent):
         )
 
 
-def make_model(input_size, output_size, **kwargs):
-    # print(kwargs)
+def make_model(input_size, output_size, activation="ReLU", **kwargs):
     hidden_size = list(kwargs.values())
-    # print(hidden_size)
+
     if len(hidden_size) > 1:
         hidden_layers = [
-            [nn.Linear(hidden_size[i], hidden_size[i + 1]), nn.ReLU()]
+            [nn.Linear(hidden_size[i], hidden_size[i+1]), nn.ReLU()]
+            for i in range(0, len(hidden_size) - 1)
+        ] if activation == "ReLU" else [
+            [nn.Linear(hidden_size[i], hidden_size[i+1]), nn.SiLU()]
             for i in range(0, len(hidden_size) - 1)
         ]
 
@@ -145,9 +147,15 @@ def make_model(input_size, output_size, **kwargs):
     else:
         hidden_layers = [nn.Identity()]
 
+    
     return nn.Sequential(
         nn.Linear(input_size, hidden_size[0]),
         nn.ReLU(),
+        *hidden_layers,
+        nn.Linear(hidden_size[-1], output_size)
+    ) if activation == "ReLU" else nn.Sequential(
+        nn.Linear(input_size, hidden_size[0]),
+        nn.SiLU(),
         *hidden_layers,
         nn.Linear(hidden_size[-1], output_size)
     )

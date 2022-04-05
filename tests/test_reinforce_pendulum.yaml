@@ -1,6 +1,7 @@
 env_name: Pendulum-v1
 max_episode_step: 100
 
+
 logger:
   classname: salina.logger.TFLogger
   log_dir: ./tmp
@@ -10,6 +11,7 @@ logger:
 
 action_agent:
   classname: svpg.agents.ContinuousActionAgent
+  activation: "ReLU"
   env:
     classname: svpg.agents.make_env
     env_name: ${env_name}
@@ -20,6 +22,7 @@ action_agent:
 
 critic_agent:
   classname: svpg.agents.CriticAgent
+  activation: "SiLU"
   env:
     classname: svpg.agents.make_env
     env_name: ${env_name}

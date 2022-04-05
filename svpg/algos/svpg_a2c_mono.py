@@ -35,6 +35,8 @@ class SVPG_A2C_Mono(Algo):
                 "entropy"
             ]
 
+            print(f"reward: {reward}\n reward size: {reward.size()}")
+
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
             total_critic_loss = total_critic_loss + critic_loss
@@ -48,6 +50,7 @@ class SVPG_A2C_Mono(Algo):
 
             # Log reward
             creward = self.workspaces[pid]["env/cumulated_reward"]
+            print(f"cumulated reward: {creward}\n cumulated reward size: {creward.size()}")
             creward = creward[done]
 
             if creward.size()[0] > 0 and verbose:
