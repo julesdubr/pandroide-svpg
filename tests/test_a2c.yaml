@@ -9,30 +9,30 @@ logger:
   verbose: True
 
 action_agent:
-  classname: svpg.agents.ActionAgent
+  classname: svpg.agents.discrete.ActionAgent
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: svpg.agents.make_model
+    classname: svpg.agents.model.make_model
     hidden_size: 32
 
 critic_agent:
-  classname: svpg.agents.CriticAgent
+  classname: svpg.agents.discrete.CriticAgent
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
   model:
-    classname: svpg.agents.make_model
+    classname: svpg.agents.model.make_model
     hidden_size: 32
 
 env_agent:
-  classname: svpg.agents.EnvAgentAutoReset
+  classname: svpg.agents.env.EnvAgentAutoReset
   n_envs: 8
   env:
-    classname: svpg.agents.make_env
+    classname: svpg.agents.env.make_env
     env_name: ${env_name}
     max_episode_steps: ${max_episode_step}
 
