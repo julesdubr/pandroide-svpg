@@ -2,9 +2,11 @@ import hydra
 
 from svpg.algos.svpg_reinforce_mono import SVPG_Reinforce_Mono
 
+
 @hydra.main(config_path=".", config_name="test_reinforce_pendulum.yaml")
 def main(cfg):
     import torch.multiprocessing as mp
+
     mp.set_start_method("spawn")
 
     algo = SVPG_Reinforce_Mono(cfg)
