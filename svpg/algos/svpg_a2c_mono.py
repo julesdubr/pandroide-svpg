@@ -1,13 +1,17 @@
-from .algo import Algo
+import torch
+
+from svpg.algos.algo import Algo
 
 
 class SVPG_A2C_Mono(Algo):
     def __init__(self, cfg):
         super().__init__(cfg)
-    
+
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error
-        target = reward[1:] + self.discount_factor * critic[1:].detach() * (1 - done[1:].float())
+        target = reward[1:] + self.discount_factor * critic[1:].detach() * (
+            1 - done[1:].float()
+        )
         td = target - critic[:-1]
 
         # Compute critic loss
@@ -50,12 +54,7 @@ class SVPG_A2C_Mono(Algo):
 
         if verbose:
             self.logger.log_losses(
-                epoch,
-                total_critic_loss,
-                total_entropy_loss,
-                total_policy_loss
+                epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
         return total_critic_loss, total_entropy_loss, total_policy_loss
-
-

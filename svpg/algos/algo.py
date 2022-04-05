@@ -3,9 +3,10 @@ from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 import torch, torch.nn as nn
 
-from .logger import Logger
+from ..logger import Logger
 
-class Algo():
+
+class Algo:
     def __init__(self, cfg):
         self.kernel = get_class(cfg.algorithm.kernel)
         self.logger = Logger(cfg)
@@ -23,13 +24,23 @@ class Algo():
         self.policy_coef = cfg.algorithm.policy_coef
 
         # Create agent
-        self.action_agents = [instantiate_class(cfg.action_agent) for _ in range(self.n_particles)]
-        self.critic_agents = [instantiate_class(cfg.critic_agent) for _ in range(self.n_particles)]
-        self.env_agents = [instantiate_class(cfg.env_agent) for _ in range(self.n_particles)]
+        self.action_agents = [
+            instantiate_class(cfg.action_agent) for _ in range(self.n_particles)
+        ]
+        self.critic_agents = [
+            instantiate_class(cfg.critic_agent) for _ in range(self.n_particles)
+        ]
+        self.env_agents = [
+            instantiate_class(cfg.env_agent) for _ in range(self.n_particles)
+        ]
 
-        self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
-        self.acquisition_agents = [TemporalAgent(Agents(env_agent, action_agent)) 
-                                  for env_agent, action_agent in zip(self.env_agents, self.action_agents)]
+        self.tcritic_agents = [
+            TemporalAgent(critic_agent) for critic_agent in self.critic_agents
+        ]
+        self.acquisition_agents = [
+            TemporalAgent(Agents(env_agent, action_agent))
+            for env_agent, action_agent in zip(self.env_agents, self.action_agents)
+        ]
         for pid in range(self.n_particles):
             self.acquisition_agents[pid].seed(cfg.algorithm.env_seed)
 
@@ -40,11 +51,12 @@ class Algo():
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
         for pid in range(self.n_particles):
-            params = nn.Sequential(self.action_agents[pid], self.critic_agents[pid]).parameters()
+            params = nn.Sequential(
+                self.action_agents[pid], self.critic_agents[pid]
+            ).parameters()
             self.optimizers.append(
-                get_class(cfg.algorithm.optimizer)(
-                    params, **optimizer_args
-            ))
+                get_class(cfg.algorithm.optimizer)(params, **optimizer_args)
+            )
 
     def execute_acquisition_agent(self, epoch):
         print(epoch)
@@ -59,7 +71,9 @@ class Algo():
                     self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
             else:
                 if self.stop_variable is None:
-                    self.acquisition_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True)
+                    self.acquisition_agents[pid](
+                        self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True
+                    )
                 else:
                     self.acquisition_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable, stochastic=True)
 
@@ -68,7 +82,9 @@ class Algo():
             if self.stop_variable is None:
                 self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
             else:
-                self.tcritic_agents[pid](self.workspaces[pid], stop_variable=self.stop_variable)
+                self.tcritic_agents[pid](
+                    self.workspaces[pid], stop_variable=self.stop_variable
+                )
 
     def get_policy_parameters(self):
         policy_params = []
@@ -80,7 +96,7 @@ class Algo():
 
             policy_params.append(l_concat)
 
-        return torch.stack(policy_params)   
+        return torch.stack(policy_params)
 
     def add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
@@ -131,35 +147,29 @@ class Algo():
             self.execute_critic_agent()
 
             # Compute loss
-            critic_loss, entropy_loss, policy_loss = self.compute_loss(epoch, alpha, verbose)
+            critic_loss, entropy_loss, policy_loss = self.compute_loss(
+                epoch, alpha, verbose
+            )
 
             # Compute gradients
             thetas = self.get_policy_parameters()
             kernel = self.kernel()(thetas, thetas.detach())
             self.add_gradients(policy_loss, kernel)
-            
-            loss = -self.entropy_coef * entropy_loss + self.critic_coef * critic_loss + kernel.sum() / self.n_particles
+
+            loss = (
+                -self.entropy_coef * entropy_loss
+                + self.critic_coef * critic_loss
+                + kernel.sum() / self.n_particles
+            )
             loss.backward()
 
             # Log gradient norms
             if verbose:
                 self.compute_gradient_norm(epoch)
-            
+
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
-    
-
-    
-
-
-    
-
-    
-
-        
-
-            

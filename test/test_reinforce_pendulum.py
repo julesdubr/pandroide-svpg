@@ -1,6 +1,6 @@
 import hydra
 
-from svpg.svpg_reinforce_mono import SVPG_Reinforce_Mono
+from svpg.algos.svpg_reinforce_mono import SVPG_Reinforce_Mono
 
 @hydra.main(config_path=".", config_name="test_reinforce_pendulum.yaml")
 def main(cfg):
