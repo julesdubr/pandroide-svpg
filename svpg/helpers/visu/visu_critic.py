@@ -24,40 +24,27 @@ def plot_critic(simu, model, study, default_string, num):
     env = simu.env
     obs_size = simu.obs_size
     deterministic = True
+
     if not simu.discrete:
         if obs_size == 1:
-            plot_qfunction_1d(
-                model,
-                env,
-                deterministic,
-                plot=False,
-                save_figure=True,
-                figname=picname,
-                foldername="/plots/",
-            )
+            plot_func = plot_qfunction_1d
         elif obs_size == 2:
-            plot_2d_critic(
-                model,
-                env,
-                deterministic,
-                plot=False,
-                save_figure=True,
-                figname=picname,
-                foldername="/plots/",
-            )
+            plot_func = plot_2d_critic
         else:
-            plot_nd_critic(
-                model,
-                env,
-                deterministic,
-                plot=False,
-                save_figure=True,
-                figname=picname,
-                foldername="/plots/",
-            )
+            plot_func = plot_nd_critic
+        plot_func(
+            model,
+            env,
+            deterministic,
+            plot=False,
+            save_figure=True,
+            figname=picname,
+            foldername="/plots/",
+        )
 
 
-# visualization of the V function for a 2D environment like continuous mountain car. The action does not matter.
+# Visualization of the V function for a 2D environment like continuous mountain car.
+# The action does not matter.
 def plot_2d_critic(
     model,
     env,
