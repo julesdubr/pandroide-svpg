@@ -4,7 +4,9 @@ from salina.workspace import Workspace
 import torch
 import torch.nn as nn
 
-from svpg.helpers.logger import Logger
+from svpg.common.logger import Logger
+
+import matplotlib.pyplot as plt
 
 
 class Algo:
@@ -162,7 +164,7 @@ class Algo:
                 epoch, alpha, verbose
             )
 
-            print(critic_loss)
+            # print(critic_loss)
 
             # Compute gradients
             thetas = self.get_policy_parameters()
@@ -177,19 +179,15 @@ class Algo:
             loss.backward()
 
             # Log gradient norms
-            if verbose:
-                self.compute_gradient_norm(epoch)
+            # if verbose:
+            #     self.compute_gradient_norm(epoch)
 
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
                 self.optimizers[pid].zero_grad()
 
-        # plt.figure(figsize=(10, 10))
-        # plt.imshow(
-        #     portrait, cmap="inferno", extent=[x_min, x_max, y_min, y_max], aspect="auto"
-        # )
-        # plt.colorbar(label="critic value")
+        print(self.env_agents[0].env.observation_space)
 
     def run(self, verbose=True):
         for epoch in range(self.max_epochs):

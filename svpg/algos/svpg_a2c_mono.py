@@ -53,9 +53,9 @@ class SVPG_A2C_Mono(Algo):
             if creward.size()[0] > 0 and verbose:
                 self.logger.add_log(f"reward_{pid}", creward.mean(), epoch)
 
-        if verbose:
-            self.logger.log_losses(
-                epoch, total_critic_loss, total_entropy_loss, total_policy_loss
-            )
+        # if verbose:
+        #     self.logger.log_losses(
+        #         epoch, total_critic_loss, total_entropy_loss, total_policy_loss
+        #     )
 
         return total_critic_loss, total_entropy_loss, total_policy_loss
