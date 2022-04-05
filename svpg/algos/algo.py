@@ -1,12 +1,13 @@
 from salina import instantiate_class, get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
+
 import torch
 import torch.nn as nn
 
-from svpg.common.logger import Logger
+import numpy as np
 
-import matplotlib.pyplot as plt
+from svpg.common.logger import Logger
 
 
 class Algo:
@@ -56,6 +57,8 @@ class Algo:
             self.optimizers.append(
                 get_class(cfg.algorithm.optimizer)(params, **optimizer_args)
             )
+
+        self.rewards = np.zeros(self.n_particles)
 
     def execute_acquisition_agent(self, epoch):
         for pid in range(self.n_particles):
@@ -153,7 +156,7 @@ class Algo:
         # Need to defined in inherited classes
         raise NotImplementedError
 
-    def run_svpg(self, alpha=10, verbose=True):
+    def run_svpg(self, alpha=10, show_loss=False, show_grad=False):
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
@@ -161,7 +164,7 @@ class Algo:
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss = self.compute_loss(
-                epoch, alpha, verbose
+                epoch, alpha, show_loss
             )
 
             # print(critic_loss)
@@ -177,19 +180,17 @@ class Algo:
                 + kernel.sum() / self.n_particles
             )
             loss.backward()
-
             # Log gradient norms
-            # if verbose:
-            #     self.compute_gradient_norm(epoch)
+
+            if show_grad:
+                self.compute_gradient_norm(epoch)
 
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
                 self.optimizers[pid].zero_grad()
 
-        print(self.env_agents[0].env.observation_space)
-
-    def run(self, verbose=True):
+    def run(self, show_loss=False, show_grad=False):
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
@@ -197,7 +198,7 @@ class Algo:
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss = self.compute_loss(
-                epoch, alpha=None, verbose=verbose
+                epoch, alpha=None, verbose=show_loss
             )
 
             loss = (
@@ -208,7 +209,7 @@ class Algo:
             loss.backward()
 
             # Log gradient norms
-            if verbose:
+            if show_grad:
                 self.compute_gradient_norm(epoch)
 
             # Gradient descent

@@ -50,12 +50,14 @@ class SVPG_A2C_Mono(Algo):
             creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
-            if creward.size()[0] > 0 and verbose:
-                self.logger.add_log(f"reward_{pid}", creward.mean(), epoch)
+            self.rewards[pid] = creward.mean()
 
-        # if verbose:
-        #     self.logger.log_losses(
-        #         epoch, total_critic_loss, total_entropy_loss, total_policy_loss
-        #     )
+            if creward.size()[0] > 0:
+                self.logger.add_log(f"reward_{pid}", self.rewards[pid], epoch)
+
+        if verbose:
+            self.logger.log_losses(
+                epoch, total_critic_loss, total_entropy_loss, total_policy_loss
+            )
 
         return total_critic_loss, total_entropy_loss, total_policy_loss
