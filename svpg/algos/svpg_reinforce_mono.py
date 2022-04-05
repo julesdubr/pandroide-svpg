@@ -1,4 +1,4 @@
-from svpg.algos.algo import Algo
+from .algo import Algo
 
 import torch
 
@@ -50,7 +50,7 @@ class SVPG_Reinforce_Mono(Algo):
         ).mean()  # use the value function (critic) as a baseline
 
         # Policy loss
-        policy_loss = action_logprobs * (cumulated_reward - critic).detach()
+        policy_loss = action_logprobs[:-1] * (cumulated_reward - critic).detach()
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
@@ -70,7 +70,6 @@ class SVPG_Reinforce_Mono(Algo):
                 "env/reward",
                 "entropy"
             ]
-            print(f"entropy shape: {entropy.size()}")
             # Compute loss by REINFORCE (using the reward cumulated until the end of episode)
             critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(reward, action_logprobs, critic, entropy, done)
             total_critic_loss = total_critic_loss + critic_loss

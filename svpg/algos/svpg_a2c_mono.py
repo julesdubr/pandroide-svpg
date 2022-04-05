@@ -1,6 +1,4 @@
-import torch
-
-from svpg.algos.algo import Algo
+from .algo import Algo
 
 
 class SVPG_A2C_Mono(Algo):
