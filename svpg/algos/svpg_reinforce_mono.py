@@ -84,8 +84,10 @@ class SVPG_Reinforce_Mono(Algo):
             creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
-            if creward.size()[0] > 0 and verbose:
-                self.logger.add_log(f"reward_{pid}", creward.mean(), epoch)
+            self.rewards[pid] = creward.mean()
+
+            if creward.size()[0] > 0:
+                self.logger.add_log(f"reward_{pid}", self.rewards[pid], epoch)
 
         if verbose:
             self.logger.log_losses(

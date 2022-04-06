@@ -32,7 +32,7 @@ critic_agent:
     hidden_size: 32
 
 env_agent:
-  classname: svpg.agents.EnvAgent
+  classname: svpg.agents.env.EnvAgent
   n_envs: 8
   env:
     classname: svpg.agents.env.make_env
