@@ -199,7 +199,7 @@ class Algo:
             )
 
             loss = (
-                -self.entropy_coef * entropy_loss
+                - self.entropy_coef * entropy_loss
                 + self.critic_coef * critic_loss
                 + self.policy_coef * policy_loss
             )
