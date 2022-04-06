@@ -36,7 +36,7 @@ class ContinuousActionAgent(Agent):
         self.set(("action", t), action)
         self.set(("action_logprobs", t), action_logprobs)
 
-class ContinousCriticAgent(Agent):
+class ContinuousCriticAgent(Agent):
     """
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose
