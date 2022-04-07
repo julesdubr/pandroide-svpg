@@ -7,7 +7,7 @@ from torch.distributions.normal import Normal
 from svpg.agents.model import make_model
 
 
-class ContinuousActionAgent(Agent):
+class CActionAgent(Agent):
     def __init__(self, cfg, env):
         super().__init__()
         # Model input and output size
@@ -37,7 +37,7 @@ class ContinuousActionAgent(Agent):
         self.set(("action_logprobs", t), action_logprobs)
 
 
-class ContinuousCriticAgent(Agent):
+class CCriticAgent(Agent):
     """
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose

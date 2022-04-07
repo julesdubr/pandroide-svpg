@@ -1,14 +1,13 @@
+import torch
+import torch.nn as nn
+
 from salina import get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
-import torch
-import torch.nn as nn
-
 from gym.spaces import Box, Discrete
 
-from svpg.agents.discrete import ActionAgent, CriticAgent
-from svpg.agents.continuous import ContinuousActionAgent, ContinuousCriticAgent
+from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
 from svpg.agents.env import EnvAgent
 from svpg.common.logger import Logger
 
@@ -49,8 +48,8 @@ class Algo:
                 action_agent = ActionAgent(cfg, env_agent.env)
                 critic_agent = CriticAgent(cfg, env_agent.env)
             elif isinstance(env_agent.env.action_space, Box):
-                action_agent = ContinuousActionAgent(cfg, env_agent.env)
-                critic_agent = ContinuousCriticAgent(cfg, env_agent.env)
+                action_agent = CActionAgent(cfg, env_agent.env)
+                critic_agent = CCriticAgent(cfg, env_agent.env)
             else:
                 raise ValueError
             del env_agent.env
