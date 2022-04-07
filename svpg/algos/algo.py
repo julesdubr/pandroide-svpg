@@ -72,33 +72,25 @@ class Algo:
             )
 
     def execute_acquisition_agent(self, epoch):
-        if hasattr(self, "stop_variable"):
+        if not hasattr(self, "stop_variable"):
             for pid in range(self.n_particles):
-                if epoch > 0:
-                    self.workspaces[pid].clear()
+                kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
 
-                self.acquisition_agents[pid](
-                    self.workspaces[pid],
-                    t=0,
-                    stochastic=True,
-                    stop_variable=self.stop_variable,
-                )
+                if epoch > 0:
+                    self.workspaces[pid].copy_n_last_steps(1)
+                    kwargs["t"] = 1
+                    kwargs["n_steps"] = self.n_steps - 1
+
+                self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+
             return
 
         for pid in range(self.n_particles):
-            kwargs = {
-                "workspace": self.workspaces[pid],
-                "t": 0,
-                "stochastic": True,
-                "n_steps": self.n_steps,
-            }
-
+            kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
-                self.workspaces[pid].copy_n_last_steps(1)
-                kwargs["t"] = 1
-                kwargs["n_steps"] = self.n_steps - 1
+                self.workspaces[pid].clear()
 
-            self.acquisition_agents[pid](**kwargs)
+            self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
 
     def execute_critic_agent(self):
         if hasattr(self, "stop_variable"):
