@@ -1,6 +1,6 @@
 import torch
 from svpg.algos.algo import Algo
-from svpg.kernel import RBF
+from svpg.algos.kernel import RBF
 
 
 class SVPG(Algo):
