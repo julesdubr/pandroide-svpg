@@ -1,8 +1,6 @@
 import hydra
 
-from svpg.algos.svpg import SVPG
-from svpg.algos.a2c import A2C
-
+from svpg.algos import A2C, SVPG
 from svpg.common.visu import plot_histograms, plot_cartpole
 
 
