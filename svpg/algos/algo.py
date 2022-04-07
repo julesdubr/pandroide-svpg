@@ -19,6 +19,7 @@ class Algo:
         self.n_particles = cfg.algorithm.n_particles
         self.max_epochs = cfg.algorithm.max_epochs
 
+        self.discount_factor = cfg.algorithm.discount_factor
         self.entropy_coef = cfg.algorithm.entropy_coef
         self.critic_coef = cfg.algorithm.critic_coef
         self.policy_coef = cfg.algorithm.policy_coef
@@ -50,8 +51,6 @@ class Algo:
             elif isinstance(env_agent.env.action_space, Box):
                 action_agent = CActionAgent(cfg, env_agent.env)
                 critic_agent = CCriticAgent(cfg, env_agent.env)
-            else:
-                raise ValueError
             del env_agent.env
 
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
@@ -73,31 +72,40 @@ class Algo:
             )
 
     def execute_acquisition_agent(self, epoch):
+        if hasattr(self, "stop_variable"):
+            for pid in range(self.n_particles):
+                if epoch > 0:
+                    self.workspaces[pid].clear()
+
+                self.acquisition_agents[pid](
+                    self.workspaces[pid],
+                    t=0,
+                    stochastic=True,
+                    stop_variable=self.stop_variable,
+                )
+            return
+
         for pid in range(self.n_particles):
             kwargs = {"workspace": self.workspaces[pid], "t": 0, "stochastic": True}
 
-            if hasattr(self, "stop_variable"):
-                if epoch > 0:
-                    self.workspaces[pid].clear()
-                kwargs["stop_variable"] = self.stop_variable
-
-            else:
+            if epoch > 0:
+                self.workspaces[pid].copy_n_last_steps(1)
                 kwargs["t"] = 1
-                if epoch > 0:
-                    self.workspaces[pid].copy_n_last_steps(1)
-                    kwargs["n_steps"] = self.n_steps - 1
-                else:
-                    kwargs["n_steps"] = self.n_steps
+                kwargs["n_steps"] = self.n_steps - 1
+            else:
+                kwargs["n_steps"] = self.n_steps
 
-            self.acquisition_agents[pid](**kwargs)
+        self.acquisition_agents[pid](**kwargs)
 
     def execute_critic_agent(self):
-        for pid in range(self.n_particles):
-            tcritic_agent = self.tcritic_agents[pid]
-            if hasattr(self, "stop_variable"):
-                tcritic_agent(self.workspaces[pid], stop_variable=self.stop_variable)
-            else:
-                tcritic_agent(self.workspaces[pid], n_steps=self.n_steps)
+        if hasattr(self, "stop_variable"):
+            for pid in range(self.n_particles):
+                self.tcritic_agents[pid](
+                    self.workspaces[pid], stop_variable=self.stop_variable
+                )
+        else:
+            for pid in range(self.n_particles):
+                self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0

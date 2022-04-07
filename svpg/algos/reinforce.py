@@ -90,7 +90,7 @@ class REINFORCE(Algo):
             rewards[pid] = creward.mean()
 
             if creward.size()[0] > 0:
-                self.logger.add_log(f"reward_{pid}", self.rewards[pid], epoch)
+                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
 
         if verbose:
             self.logger.log_losses(

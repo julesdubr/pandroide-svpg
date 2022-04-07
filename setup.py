@@ -30,5 +30,5 @@ setup(
     python_requires=">=3.7",
     packages=find_packages(),
     version=f"{__version__}.dev0+{hash}",
-    long_description=read("README.md"),
+    # long_description=read("README.md"),
 )
