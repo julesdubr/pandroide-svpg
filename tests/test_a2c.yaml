@@ -1,5 +1,5 @@
-env_name: CartPole-v0
-max_episode_step: 100
+env_name: CartPole-v1
+max_episode_step: 500
 activation: "ReLU"
 
 logger:
@@ -7,7 +7,7 @@ logger:
   log_dir: ./tmp
   every_n_seconds: 10000
   modulo: 1
-  verbose: False
+  verbose: True
 
 action_agent:
   classname: svpg.agents.discrete.ActionAgent
@@ -31,7 +31,7 @@ critic_agent:
 
 env_agent:
   classname: svpg.agents.env.EnvAgentAutoReset
-  n_envs: 8
+  n_envs: 128
   env:
     classname: svpg.agents.env.make_env
     env_name: ${env_name}
