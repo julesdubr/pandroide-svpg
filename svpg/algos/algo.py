@@ -28,7 +28,7 @@ class Algo:
             try:
                 self.n_steps = cfg.algorithm.n_timesteps
             except:
-                raise NotImplemented
+                raise ValueError
 
         # Setup particles
         self.env_agents = []
@@ -51,6 +51,8 @@ class Algo:
             elif isinstance(env_agent.env.action_space, Box):
                 action_agent = ContinuousActionAgent(cfg, env_agent.env)
                 critic_agent = ContinuousCriticAgent(cfg, env_agent.env)
+            else:
+                raise ValueError
             del env_agent.env
 
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
