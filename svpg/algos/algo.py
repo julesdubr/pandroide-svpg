@@ -5,16 +5,16 @@ from salina.workspace import Workspace
 import torch
 import torch.nn as nn
 
-import numpy as np
+from gym.spaces import Box, Discrete
 
 from svpg.agents.discrete import ActionAgent, CriticAgent
-from svpg.agents.continuous import ContinuousActionAgent
+from svpg.agents.continuous import ContinuousActionAgent, ContinuousCriticAgent
 from svpg.agents.env import EnvAgent
 from svpg.common.logger import Logger
 
 
 class Algo:
-    def __init__(self, cfg, continuous=False):
+    def __init__(self, cfg):
         self.logger = Logger(cfg)
 
         self.n_particles = cfg.algorithm.n_particles
@@ -37,9 +37,6 @@ class Algo:
         self.tcritic_agents = []
         self.acquisition_agents = []
 
-        actionAgent = ContinuousActionAgent if continuous else ActionAgent
-        criticAgent = CriticAgent
-
         self.workspaces = []
 
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
@@ -48,8 +45,12 @@ class Algo:
         for _ in range(self.n_particles):
             # Create agents
             env_agent = EnvAgent(cfg)
-            action_agent = actionAgent(cfg, env_agent.env)
-            critic_agent = criticAgent(cfg, env_agent.env)
+            if isinstance(env_agent.env.action_space, Discrete):
+                action_agent = ActionAgent(cfg, env_agent.env)
+                critic_agent = CriticAgent(cfg, env_agent.env)
+            elif isinstance(env_agent.env.action_space, Box):
+                action_agent = ContinuousActionAgent(cfg, env_agent.env)
+                critic_agent = ContinuousCriticAgent(cfg, env_agent.env)
             del env_agent.env
 
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))

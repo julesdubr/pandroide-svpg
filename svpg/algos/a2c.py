@@ -3,8 +3,8 @@ import numpy as np
 
 
 class A2C(Algo):
-    def __init__(self, cfg, continuous=False):
-        super().__init__(cfg, continuous)
+    def __init__(self, cfg):
+        super().__init__(cfg)
 
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error

@@ -1,17 +1,11 @@
 import torch
+from svpg.algos.algo import Algo
 from svpg.kernel import RBF
 
-import numpy as np
 
-
-class SVPG:
+class SVPG(Algo):
     def __init__(self, cfg, algo):
-        self.n_particles = cfg.algorithm.n_particles
-        self.max_epochs = cfg.algorithm.max_epochs
-
-        self.entropy_coef = cfg.algorithm.entropy_coef
-        self.critic_coef = cfg.algorithm.critic_coef
-
+        super().__init__(cfg)
         self.algo = algo
         self.kernel = RBF
 
@@ -43,9 +37,9 @@ class SVPG:
 
     def run(self, alpha=10, show_loss=False, show_grad=False):
         for epoch in range(self.max_epochs):
-            # Run all particles
-            self.algo.execute_acquisition_agent(epoch)
-            self.algo.execute_critic_agent()
+            # Execute particles' agents
+            self.execute_acquisition_agent(epoch)
+            self.execute_critic_agent()
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss, rewards = self.algo.compute_loss(
@@ -63,14 +57,14 @@ class SVPG:
                 + kernel.sum() / self.n_particles
             )
             loss.backward()
-            # Log gradient norms
 
+            # Log gradient norms
             if show_grad:
-                self.algo.compute_gradient_norm(epoch)
+                self.compute_gradient_norm(epoch)
 
             # Gradient descent
             for pid in range(self.n_particles):
-                self.algo.optimizers[pid].step()
-                self.algo.optimizers[pid].zero_grad()
+                self.optimizers[pid].step()
+                self.optimizers[pid].zero_grad()
 
         return rewards
