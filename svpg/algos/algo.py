@@ -75,14 +75,12 @@ class Algo:
         if not hasattr(self, "stop_variable"):
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
-
                 if epoch > 0:
                     self.workspaces[pid].copy_n_last_steps(1)
                     kwargs["t"] = 1
                     kwargs["n_steps"] = self.n_steps - 1
 
                 self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
-
             return
 
         for pid in range(self.n_particles):
@@ -93,23 +91,22 @@ class Algo:
             self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
 
     def execute_critic_agent(self):
-        if hasattr(self, "stop_variable"):
-            for pid in range(self.n_particles):
-                self.tcritic_agents[pid](
-                    self.workspaces[pid], stop_variable=self.stop_variable
-                )
-        else:
+        if not hasattr(self, "stop_variable"):
             for pid in range(self.n_particles):
                 self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
+            return
+
+        for pid in range(self.n_particles):
+            self.tcritic_agents[pid](
+                self.workspaces[pid], stop_variable=self.stop_variable
+            )
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
 
-        for pid in range(self.n_particles):
-            # prob_params = particle["prob_agent"].model.parameters()
-            # critic_params = particle["critic_agent"].critic_model.parameters()
-            policy_params = self.action_agents[pid].model.parameters()
-            critic_params = self.critic_agents[pid].model.parameters()
+        for action_agent, critic_agent in zip(self.action_agents, self.critic_agents):
+            policy_params = action_agent.model.parameters()
+            critic_params = critic_agent.model.parameters()
 
             for w_policy, w_critic in zip(policy_params, critic_params):
                 if w_policy.grad != None:
@@ -127,7 +124,7 @@ class Algo:
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
     def compute_loss(self, epoch, alpha=10, verbose=True):
-        # Need to defined in child classes
+        # Needs to be defined by the child
         raise NotImplementedError
 
     def run(self, show_loss=False, show_grad=False):
@@ -148,13 +145,13 @@ class Algo:
             )
             loss.backward()
 
+            # Gradient descent
+            for pid in range(self.n_particles):
+                self.optimizers[pid].zero_grad()
+                self.optimizers[pid].step()
+
             # Log gradient norms
             if show_grad:
                 self.compute_gradient_norm(epoch)
-
-            # Gradient descent
-            for pid in range(self.n_particles):
-                self.optimizers[pid].step()
-                self.optimizers[pid].zero_grad()
 
         return rewards
