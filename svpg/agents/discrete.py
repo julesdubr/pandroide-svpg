@@ -1,21 +1,21 @@
 import torch
 from salina import Agent, get_arguments, get_class, instantiate_class
 
+from svpg.agents.model import make_model
+
 
 class ActionAgent(Agent):
-    def __init__(self, **kwargs):
+    def __init__(self, cfg, env):
         super().__init__()
-        # Environment
-        env = instantiate_class(kwargs["env"])
         # Model input and output size
         input_size = env.observation_space.shape[0]
         output_size = env.action_space.n
         # Model
-        self.model = get_class(kwargs["model"])(
-            input_size, output_size, **get_arguments(kwargs["model"])
+        self.model = make_model(
+            input_size, output_size, **get_arguments(cfg.algorithm.architecture)
         )
 
-    def forward(self, t, stochastic, **kwargs):
+    def forward(self, t, stochastic):
         observation = self.get(("env/env_obs", t))
         scores = self.model(observation)
         probs = torch.softmax(scores, dim=-1)
@@ -41,19 +41,17 @@ class CriticAgent(Agent):
     - It thus implements a V(s)  function
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, cfg, env):
         super().__init__()
-        # Environment
-        env = instantiate_class(kwargs["env"])
         # Model input and output size
         input_size = env.observation_space.shape[0]
         output_size = 1
         # Model
-        self.model = get_class(kwargs["model"])(
-            input_size, output_size, **get_arguments(kwargs["model"])
+        self.model = make_model(
+            input_size, output_size, **get_arguments(cfg.algorithm.architecture)
         )
 
-    def forward(self, t, **kwargs):
+    def forward(self, t):
         observation = self.get(("env/env_obs", t))
         critic = self.model(observation).squeeze(-1)
         self.set(("critic", t), critic)

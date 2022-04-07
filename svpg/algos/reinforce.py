@@ -1,11 +1,12 @@
 from svpg.algos.algo import Algo
 
 import torch
+import numpy as np
 
 
-class SVPG_Reinforce_Mono(Algo):
-    def __init__(self, cfg):
-        super().__init__(cfg)
+class REINFORCE(Algo):
+    def __init__(self, cfg, continuous=False):
+        super().__init__(cfg, continuous)
         self.stop_variable = "env/done"
 
     def compute_reinforce_loss(self, reward, action_logprobs, critic, entropy, done):
@@ -61,6 +62,8 @@ class SVPG_Reinforce_Mono(Algo):
 
     def compute_loss(self, epoch, alpha=10, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
+        rewards = np.zeros(self.n_particles)
+
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
             critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
@@ -84,7 +87,7 @@ class SVPG_Reinforce_Mono(Algo):
             creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
-            self.rewards[pid] = creward.mean()
+            rewards[pid] = creward.mean()
 
             if creward.size()[0] > 0:
                 self.logger.add_log(f"reward_{pid}", self.rewards[pid], epoch)
@@ -94,4 +97,4 @@ class SVPG_Reinforce_Mono(Algo):
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
-        return total_critic_loss, total_entropy_loss, total_policy_loss
+        return total_critic_loss, total_entropy_loss, total_policy_loss, rewards

@@ -5,7 +5,6 @@ import numpy as np
 class RBF(nn.Module):
     def __init__(self, sigma=None):
         super(RBF, self).__init__()
-
         self.sigma = sigma
 
     def forward(self, X, Y):

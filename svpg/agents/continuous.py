@@ -4,18 +4,18 @@ import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
+from svpg.agents.model import make_model
+
 
 class ContinuousActionAgent(Agent):
-    def __init__(self, **kwargs):
+    def __init__(self, cfg, env):
         super().__init__()
-        # Environment
-        env = instantiate_class(kwargs["env"])
         # Model input and output size
         input_size = env.observation_space.shape[0]
         output_size = env.action_space.shape[0]
         # Model for estimating the mean
-        self.model = get_class(kwargs["model"])(
-            input_size, output_size, **get_arguments(kwargs["model"])
+        self.model = make_model(
+            input_size, output_size, **get_arguments(cfg.algorithm.architecture)
         )
         # The deviation is estimated by a vector
         self.std_param = nn.parameter.Parameter(torch.randn(output_size, 1))
@@ -36,6 +36,7 @@ class ContinuousActionAgent(Agent):
         self.set(("action", t), action)
         self.set(("action_logprobs", t), action_logprobs)
 
+
 class ContinuousCriticAgent(Agent):
     """
     CriticAgent:
@@ -44,16 +45,17 @@ class ContinuousCriticAgent(Agent):
     - It thus implements a V(s)  function
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, cfg, env):
         super().__init__()
-        # Environment
-        env = instantiate_class(kwargs["env"])
         # Model input and output size
         input_size = env.observation_space.shape[0]
         output_size = 1
         # Model
-        self.model = get_class(kwargs["model"])(
-            input_size, output_size, activation="SiLU", **get_arguments(kwargs["model"])
+        self.model = make_model(
+            input_size,
+            output_size,
+            activation=nn.SiLU,
+            **get_arguments(cfg.algorithm.architecture)
         )
 
     def forward(self, t, **kwargs):
