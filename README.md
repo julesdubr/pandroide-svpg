@@ -1,6 +1,8 @@
 # pandroide-svpg
 
-A more modern implementation of the SVPG algorithm using PyTorch, SaLiNa and OpenIA Gym as part of our ANDROIDE project.
+Stein Variational Policy Gradient (or SVPG) is a reinforcement learning (RL) method of learning and exploring multiple policies. Several agents (“workers”) work in parallel, which speeds up the exploration. The goal of SVPG is to prevent these workers from learning the same solution by distancing them from each other, allowing for a greater diversity of exploration.
+
+Thus, the goal of our project is to modernize this algorithm using more modern tools such as PyTorch, SaLiNa and OpenIA Gym, and to compare it with others (Impala, Gorilla, etc.) in order to highlight the relevant use cases.
 
 ## Resources
 
@@ -12,7 +14,7 @@ A more modern implementation of the SVPG algorithm using PyTorch, SaLiNa and Ope
 
 Our code was inspired from [this github repo](https://github.com/largelymfs/svpg_REINFORCE). It was written by one of the authors of [this paper](https://arxiv.org/pdf/1704.02399.pdf) (Yang Liu).
 
-## Team
+## Team PANDROIDE
 - CANITROT Julien
 - DUBREUIL Jules
 - HUYNH Tan Khiem
