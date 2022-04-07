@@ -34,7 +34,7 @@ def plot_histograms(indep_rewards, svpg_rewards, title, save_figure=True, plot=T
     x = np.arange(len(svpg_rewards))
     plt.bar(x + 0.1, indep_rewards, width=0.2, color="red")
     plt.bar(x - 0.1, svpg_rewards, width=0.2, color="blue")
-    plt.legend(labels=[f"{title}-SVPG", f"{title}-independent"])
+    plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
     final_show(
         save_figure,
         plot,
