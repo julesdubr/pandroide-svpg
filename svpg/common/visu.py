@@ -23,7 +23,7 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
     plt.ylabel(y_label)
     plt.title(title)
     if save_figure:
-        directory = os.getcwd() + "./data" + directory
+        directory = os.getcwd() + "./data/plots/" + directory
         if not os.path.exists(directory):
             os.makedirs(directory)
         plt.savefig(directory + figure_name)
@@ -38,13 +38,7 @@ def plot_histograms(indep_rewards, svpg_rewards, title, save_figure=True, plot=T
     plt.bar(x - 0.1, svpg_rewards, width=0.2, color="blue")
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
     final_show(
-        save_figure,
-        plot,
-        f"{title}-indep_vs_svpg.pdf",
-        "particules",
-        "rewards",
-        title,
-        "./plots/",
+        save_figure, plot, f"{title}-indep_vs_svpg.pdf", "particules", "rewards", title
     )
 
 
@@ -53,7 +47,7 @@ def plot_pendulum(
 ):
     """
     Plot a critic for the Pendulum environment
-    :param model: the policy and critic specifying the action to be plotted
+    :param agent: the policy / critic agent specifying the action to be plotted
     :param env: the evaluation environment
     :param plot: whether the plot should be interactive
     :param figname: the name of the file to save the figure
@@ -102,7 +96,6 @@ def plot_pendulum(
         x_label,
         y_label,
         "Critic phase portrait",
-        "/plots/",
     )
 
 
@@ -118,7 +111,7 @@ def plot_cartpole(
     The N-dimensional state space is projected into its first two dimensions.
     A FeatureInverter wrapper should be used to select which features to put first so as
     to plot them
-    :param model: the policy and critic to be plotted
+    :param agent: the policy / critic agent to be plotted
     :param env: the environment
     :param plot: whether the plot should be interactive
     :param figname: the name of the file where to plot the function
@@ -170,4 +163,4 @@ def plot_cartpole(
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(save_figure, plot, figname, x_label, y_label, "V Function", "/plots/")
+    final_show(save_figure, plot, figname, x_label, y_label, "V Function")

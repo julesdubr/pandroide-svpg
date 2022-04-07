@@ -2,8 +2,8 @@ import hydra
 
 from svpg.algos.svpg import SVPG
 from svpg.algos.a2c import A2C
-from svpg.visu.visu_critic import plot_cartpole_critic
-from svpg.visu.visu_policies import plot_histograms
+
+from svpg.common.visu import plot_histograms, plot_cartpole
 
 
 @hydra.main(config_path=".", config_name="config.yaml")
@@ -19,7 +19,7 @@ def main(cfg):
     svpg_rewards = svpg.run()
 
     plot_histograms(indep_rewards, svpg_rewards, "A2C")
-    # plot_cartpole_critic(algo.critic_agents[0].model, algo.env_agents[0].env)
+    # plot_cartpole(algo.critic_agents[0], algo.env_agents[0].env)
 
 
 if __name__ == "__main__":
