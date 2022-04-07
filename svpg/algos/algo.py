@@ -86,16 +86,19 @@ class Algo:
             return
 
         for pid in range(self.n_particles):
-            kwargs = {"workspace": self.workspaces[pid], "t": 0, "stochastic": True}
+            kwargs = {
+                "workspace": self.workspaces[pid],
+                "t": 0,
+                "stochastic": True,
+                "n_steps": self.n_steps,
+            }
 
             if epoch > 0:
                 self.workspaces[pid].copy_n_last_steps(1)
                 kwargs["t"] = 1
                 kwargs["n_steps"] = self.n_steps - 1
-            else:
-                kwargs["n_steps"] = self.n_steps
 
-        self.acquisition_agents[pid](**kwargs)
+            self.acquisition_agents[pid](**kwargs)
 
     def execute_critic_agent(self):
         if hasattr(self, "stop_variable"):
