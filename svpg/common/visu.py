@@ -1,14 +1,56 @@
+import os
 import random
 
 import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
-from svpg.visu.visu_policies import final_show
 
 
-def plot_pendulum_critic(
-    model, env, plot=True, figname="pendulum_critic.pdf", save_figure=True
-) -> None:
+def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
+    """
+    Finalize all plots, adding labels and putting the corresponding file in the
+    specified directory
+    :param save_figure: boolean stating whether the figure should be saved
+    :param plot: whether the plot should be shown interactively
+    :param figure_name: the name of the file where to save the figure
+    :param x_label: label on the x axis
+    :param y_label: label on the y axis
+    :param title: title of the figure
+    :param directory: the directory where to save the file
+    :return: nothing
+    """
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.title(title)
+    if save_figure:
+        directory = os.getcwd() + "./data" + directory
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        plt.savefig(directory + figure_name)
+    if plot:
+        plt.show()
+    plt.close()
+
+
+def plot_histograms(indep_rewards, svpg_rewards, title, save_figure=True, plot=True):
+    x = np.arange(len(svpg_rewards))
+    plt.bar(x + 0.1, indep_rewards, width=0.2, color="red")
+    plt.bar(x - 0.1, svpg_rewards, width=0.2, color="blue")
+    plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
+    final_show(
+        save_figure,
+        plot,
+        f"{title}-indep_vs_svpg.pdf",
+        "particules",
+        "rewards",
+        title,
+        "./plots/",
+    )
+
+
+def plot_pendulum(
+    agent, env, plot=True, figname="pendulum_critic.pdf", save_figure=True
+):
     """
     Plot a critic for the Pendulum environment
     :param model: the policy and critic specifying the action to be plotted
@@ -38,7 +80,7 @@ def plot_pendulum_critic(
             obs = np.array([[np.cos(t), np.sin(t), td]])
             with th.no_grad():
                 obs = th.from_numpy(obs.astype(np.float32))
-                value = model(obs).squeeze(-1)
+                value = agent.model(obs).squeeze(-1)
 
             portrait[definition - (1 + index_td), index_t] = value.item()
 
@@ -60,22 +102,22 @@ def plot_pendulum_critic(
         x_label,
         y_label,
         "Critic phase portrait",
-        "./plots/",
+        "/plots/",
     )
 
 
-def plot_cartpole_critic(
-    model,
+def plot_cartpole(
+    agent,
     env,
     plot=True,
     figname="cartpole_critic.pdf",
-    foldername="./plots/",
     save_figure=True,
-) -> None:
+):
     """
     Visualization of the critic in a N-dimensional state space
     The N-dimensional state space is projected into its first two dimensions.
-    A FeatureInverter wrapper should be used to select which features to put first so as to plot them
+    A FeatureInverter wrapper should be used to select which features to put first so as
+    to plot them
     :param model: the policy and critic to be plotted
     :param env: the environment
     :param plot: whether the plot should be interactive
@@ -113,7 +155,7 @@ def plot_cartpole_critic(
             obs = obs.reshape(1, -1)
             with th.no_grad():
                 obs = th.from_numpy(obs.astype(np.float32))
-                value = model(obs).squeeze(-1)
+                value = agent.model(obs).squeeze(-1)
 
             portrait[definition - (1 + index_y), index_x] = value.item()
 
@@ -128,4 +170,4 @@ def plot_cartpole_critic(
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(save_figure, plot, figname, x_label, y_label, "V Function", foldername)
+    final_show(save_figure, plot, figname, x_label, y_label, "V Function", "/plots/")
