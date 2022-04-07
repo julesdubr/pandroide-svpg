@@ -1,4 +1,4 @@
-from salina import instantiate_class, get_arguments, get_class
+from salina import get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
