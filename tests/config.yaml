@@ -7,6 +7,7 @@ logger:
 
 algorithm:
   env_seed: 432
+  n_envs: 8
   n_timesteps: 16
   n_particles: 1
   max_epochs: 100

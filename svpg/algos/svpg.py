@@ -7,7 +7,7 @@ import numpy as np
 class SVPG:
     def __init__(self, cfg, algo):
         self.n_particles = cfg.algorithm.n_particles
-        self.max_epoch = cfg.algorithm.max_epoch
+        self.max_epochs = cfg.algorithm.max_epochs
 
         self.entropy_coef = cfg.algorithm.entropy_coef
         self.critic_coef = cfg.algorithm.critic_coef

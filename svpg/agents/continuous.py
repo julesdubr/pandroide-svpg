@@ -1,4 +1,4 @@
-from salina import Agent, get_arguments, get_class, instantiate_class
+from salina import Agent, get_arguments
 
 import torch
 import torch.nn as nn

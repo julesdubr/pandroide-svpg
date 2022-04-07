@@ -11,22 +11,23 @@ class EnvAgentAutoReset(AutoResetGymAgent):
     This agent implements N gym environments with auto-reset.
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, cfg):
         super().__init__(
-            make_env_fn=get_class(kwargs["env"]),
-            make_env_args=get_arguments(kwargs["env"]),
-            n_envs=kwargs["n_envs"],
+            get_class(cfg.algorithm.env),
+            get_arguments(cfg.algorithm.env),
+            n_envs=cfg.algorithm.n_envs,
         )
-        self.env = instantiate_class(kwargs["env"])
+        self.env = instantiate_class(cfg.algorithm.env)
 
 
 class EnvAgent(GymAgent):
-    def __init__(self, **kwargs):
+    def __init__(self, cfg):
         super().__init__(
-            make_env_fn=get_class(kwargs["env"]),
-            make_env_args=get_arguments(kwargs["env"]),
-            n_envs=kwargs["n_envs"],
+            get_class(cfg.algorithm.env),
+            get_arguments(cfg.algorithm.env),
+            n_envs=cfg.algorithm.n_envs,
         )
+        self.env = instantiate_class(cfg.algorithm.env)
 
 
 def make_env(env_name, max_episode_steps):

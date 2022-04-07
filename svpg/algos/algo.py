@@ -9,6 +9,7 @@ import numpy as np
 
 from svpg.agents.discrete import ActionAgent, CriticAgent
 from svpg.agents.continuous import ContinuousActionAgent
+from svpg.agents.env import EnvAgent
 from svpg.common.logger import Logger
 
 
@@ -19,18 +20,17 @@ class Algo:
         self.n_particles = cfg.algorithm.n_particles
         self.max_epochs = cfg.algorithm.max_epochs
 
-        try:
-            self.n_steps = cfg.algorithm.n_timesteps
-        except:
-            if not hasattr(self, "stop_variable"):
-                raise NotImplemented
-
         self.entropy_coef = cfg.algorithm.entropy_coef
         self.critic_coef = cfg.algorithm.critic_coef
         self.policy_coef = cfg.algorithm.policy_coef
 
-        # Setup particles
+        if not hasattr(self, "stop_variable"):
+            try:
+                self.n_steps = cfg.algorithm.n_timesteps
+            except:
+                raise NotImplemented
 
+        # Setup particles
         self.env_agents = []
         self.action_agents = []
         self.critic_agents = []
@@ -47,17 +47,19 @@ class Algo:
 
         for _ in range(self.n_particles):
             # Create agents
-            env_agent = instantiate_class(cfg.algorithm.env)
-            action_agent = actionAgent(cfg, env_agent)
-            critic_agent = criticAgent(cfg, env_agent)
-            acq_agent = TemporalAgent(Agents(env_agent, action_agent))
-            acq_agent.seed(cfg.algorithm.env_seed)
+            env_agent = EnvAgent(cfg)
+            action_agent = actionAgent(cfg, env_agent.env)
+            critic_agent = criticAgent(cfg, env_agent.env)
+            del env_agent.env
+
+            tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
+            tacq_agent.seed(cfg.algorithm.env_seed)
 
             self.env_agents.append(env_agent)
             self.action_agents.append(action_agent)
             self.critic_agents.append(critic_agent)
-            self.tcritic_agents(TemporalAgent(critic_agent))
-            self.acquisition_agents(acq_agent)
+            self.tcritic_agents.append(TemporalAgent(critic_agent))
+            self.acquisition_agents.append(tacq_agent)
 
             # Create workspaces
             self.workspaces.append(Workspace())
@@ -70,22 +72,22 @@ class Algo:
 
     def execute_acquisition_agent(self, epoch):
         for pid in range(self.n_particles):
-            args = {"workspace": self.workspaces[pid], "t": 0, "stochastic": True}
+            kwargs = {"workspace": self.workspaces[pid], "t": 0, "stochastic": True}
 
             if hasattr(self, "stop_variable"):
                 if epoch > 0:
                     self.workspaces[pid].clear()
-                args["stop_variable"] = self.stop_variable
+                kwargs["stop_variable"] = self.stop_variable
 
             else:
-                args["t"] = 1
+                kwargs["t"] = 1
                 if epoch > 0:
                     self.workspaces[pid].copy_n_last_steps(1)
-                    args["n_steps"] = self.n_steps - 1
+                    kwargs["n_steps"] = self.n_steps - 1
                 else:
-                    args["n_steps"] = self.n_steps
+                    kwargs["n_steps"] = self.n_steps
 
-            self.acquisition_agents[pid](**args)
+            self.acquisition_agents[pid](**kwargs)
 
     def execute_critic_agent(self):
         for pid in range(self.n_particles):
