@@ -14,6 +14,7 @@ from svpg.common.logger import Logger
 
 class Algo:
     def __init__(self, cfg):
+        # --------------- Config infos --------------- #
         self.logger = Logger(cfg)
 
         self.n_particles = cfg.algorithm.n_particles
@@ -30,8 +31,15 @@ class Algo:
             except:
                 raise ValueError
 
-        # Setup particles
-        self.env_agents = []
+        # --------- Setup environment agents --------- #
+        self.env_agents = [EnvAgent(cfg) for _ in range(self.n_particles)]
+        # Get the corresponding action/critic agents classes
+        if isinstance(self.env_agents[0].env.action_space, Discrete):
+            actionAgent, criticAgent = ActionAgent, CriticAgent
+        elif isinstance(self.env_agents[0].env.action_space, Box):
+            actionAgent, criticAgent = CActionAgent, CCriticAgent
+
+        # -------------- Setup particles ------------- #
         self.action_agents = []
         self.critic_agents = []
         self.tcritic_agents = []
@@ -42,15 +50,10 @@ class Algo:
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
 
-        for _ in range(self.n_particles):
+        for env_agent in range(self.env_agents):
             # Create agents
-            env_agent = EnvAgent(cfg)
-            if isinstance(env_agent.env.action_space, Discrete):
-                action_agent = ActionAgent(cfg, env_agent.env)
-                critic_agent = CriticAgent(cfg, env_agent.env)
-            elif isinstance(env_agent.env.action_space, Box):
-                action_agent = CActionAgent(cfg, env_agent.env)
-                critic_agent = CCriticAgent(cfg, env_agent.env)
+            action_agent = actionAgent(cfg, env_agent.env)
+            critic_agent = criticAgent(cfg, env_agent.env)
             del env_agent.env
 
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
