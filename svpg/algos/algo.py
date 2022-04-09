@@ -59,6 +59,7 @@ class Algo:
             self.env_agents.append(env_agent)
             self.action_agents.append(action_agent)
             self.critic_agents.append(critic_agent)
+
             self.tcritic_agents.append(TemporalAgent(critic_agent))
             self.acquisition_agents.append(tacq_agent)
 
