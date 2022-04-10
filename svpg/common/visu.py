@@ -6,7 +6,7 @@ import numpy as np
 import torch as th
 
 
-def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
+def final_show(save_figure, plot, figure_name, x_label, y_label, title):
     """
     Finalize all plots, adding labels and putting the corresponding file in the
     specified directory
@@ -16,14 +16,13 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
     :param x_label: label on the x axis
     :param y_label: label on the y axis
     :param title: title of the figure
-    :param directory: the directory where to save the file
     :return: nothing
     """
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)
     if save_figure:
-        directory = os.getcwd() + "./data/plots/" + directory
+        directory = os.getcwd() + "./data/plots/"
         if not os.path.exists(directory):
             os.makedirs(directory)
         plt.savefig(directory + figure_name)
