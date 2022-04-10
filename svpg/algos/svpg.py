@@ -15,7 +15,7 @@ class SVPG(Algo):
     def get_policy_parameters(self):
         policy_params = []
         for pid in range(self.n_particles):
-            l = list(self.algo.action_agents[pid].model.parameters())
+            l = list(self.action_agents[pid].model.parameters())
             l_flatten = [torch.flatten(p) for p in l]
             l_flatten = tuple(l_flatten)
             l_concat = torch.cat(l_flatten)
@@ -30,8 +30,8 @@ class SVPG(Algo):
         # Get all the couples (i,j) st. i /= j
         for i, j in list(permutations(range(self.n_particles), r=2)):
 
-            theta_i = self.algo.action_agents[i].model.parameters()
-            theta_j = self.algo.action_agents[j].model.parameters()
+            theta_i = self.action_agents[i].model.parameters()
+            theta_j = self.action_agents[j].model.parameters()
 
             for (wi, wj) in zip(theta_i, theta_j):
                 wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
