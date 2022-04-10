@@ -47,8 +47,8 @@ class SVPG(Algo):
             )
 
             # Compute gradients
-            thetas = self.get_policy_parameters()
-            kernel = self.kernel()(thetas, thetas.detach())
+            params = self.get_policy_parameters()
+            kernel = self.kernel()(params, params.detach())
             self.add_gradients(policy_loss, kernel)
 
             loss = (
