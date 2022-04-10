@@ -1,6 +1,9 @@
 import torch
+
 from svpg.algos.algo import Algo
 from svpg.common.kernel import RBF
+
+from itertools import permutations
 
 
 class SVPG(Algo):
@@ -24,16 +27,14 @@ class SVPG(Algo):
     def add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
 
-        for i in range(self.n_particles):
-            for j in range(self.n_particles):
-                if j == i:
-                    continue
+        # Get all the couples (i,j) st. i /= j
+        for i, j in list(permutations(range(self.n_particles), r=2)):
 
-                theta_i = self.algo.action_agents[i].model.parameters()
-                theta_j = self.algo.action_agents[j].model.parameters()
+            theta_i = self.algo.action_agents[i].model.parameters()
+            theta_j = self.algo.action_agents[j].model.parameters()
 
-                for (wi, wj) in zip(theta_i, theta_j):
-                    wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
+            for (wi, wj) in zip(theta_i, theta_j):
+                wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
     def run(self, alpha=10, show_loss=False, show_grad=False):
         for epoch in range(self.max_epochs):
