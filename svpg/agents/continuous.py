@@ -1,9 +1,8 @@
-from salina import Agent, get_arguments
-
 import torch as th
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
+from salina import Agent, get_arguments
 from svpg.agents.model import make_model
 
 

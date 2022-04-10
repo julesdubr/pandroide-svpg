@@ -1,7 +1,6 @@
 import torch as th
 
 from salina import Agent, get_arguments
-
 from svpg.agents.model import make_model
 
 

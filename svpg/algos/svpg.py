@@ -15,7 +15,7 @@ class SVPG(Algo):
     def get_policy_parameters(self):
         policy_params = [
             parameters_to_vector(action_agent.model.parameters())
-            for action_agent in range(self.action_agents)
+            for action_agent in self.action_agents
         ]
         return th.stack(policy_params)
 
