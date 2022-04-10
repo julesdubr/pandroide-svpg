@@ -50,7 +50,7 @@ class Algo:
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
 
-        for env_agent in range(self.env_agents):
+        for env_agent in self.env_agents:
             # Create agents
             action_agent = actionAgent(cfg, env_agent.env)
             critic_agent = criticAgent(cfg, env_agent.env)
@@ -59,10 +59,8 @@ class Algo:
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
             tacq_agent.seed(cfg.algorithm.env_seed)
 
-            self.env_agents.append(env_agent)
             self.action_agents.append(action_agent)
             self.critic_agents.append(critic_agent)
-
             self.tcritic_agents.append(TemporalAgent(critic_agent))
             self.acquisition_agents.append(tacq_agent)
 
