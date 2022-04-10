@@ -8,7 +8,7 @@ from salina.workspace import Workspace
 from gym.spaces import Box, Discrete
 
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
-from svpg.agents.env import EnvAgent
+from svpg.agents.env import EnvAgentAutoReset
 from svpg.common.logger import Logger
 
 
@@ -32,7 +32,7 @@ class Algo:
                 raise ValueError
 
         # --------- Setup environment agents --------- #
-        self.env_agents = [EnvAgent(cfg) for _ in range(self.n_particles)]
+        self.env_agents = [EnvAgentAutoReset(cfg) for _ in range(self.n_particles)]
         # Get the corresponding action/critic agents classes
         if isinstance(self.env_agents[0].env.action_space, Discrete):
             actionAgent, criticAgent = ActionAgent, CriticAgent
@@ -78,6 +78,7 @@ class Algo:
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
                 if epoch > 0:
+                    self.workspaces[pid].zero_grad()
                     self.workspaces[pid].copy_n_last_steps(1)
                     kwargs["t"] = 1
                     kwargs["n_steps"] = self.n_steps - 1
@@ -88,6 +89,7 @@ class Algo:
         for pid in range(self.n_particles):
             kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
+                self.workspaces[pid].zero_grad()
                 self.workspaces[pid].clear()
 
             self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
