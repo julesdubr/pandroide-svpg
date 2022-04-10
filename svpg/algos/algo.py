@@ -2,58 +2,73 @@ from salina import instantiate_class, get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
-import torch
+import torch as th
 import torch.nn as nn
+
+from torch.nn.utils import parameters_to_vector
 
 import numpy as np
 
 from svpg.common.logger import Logger
+from svpg.agents.discrete import ActionAgent, CriticAgent
+from svpg.agents.env import EnvAgentAutoReset
+from svpg.kernel import RBF
+
+from itertools import permutations
 
 
 class Algo:
     def __init__(self, cfg):
-        self.kernel = get_class(cfg.algorithm.kernel)
+        self.kernel = RBF
         self.logger = Logger(cfg)
-        self.stop_variable = None
 
         self.n_particles = cfg.algorithm.n_particles
-        try:
-            self.n_steps = cfg.algorithm.n_timesteps
-        except:
-            self.n_steps = None
         self.max_epochs = cfg.algorithm.max_epochs
+
         self.discount_factor = cfg.algorithm.discount_factor
         self.entropy_coef = cfg.algorithm.entropy_coef
         self.critic_coef = cfg.algorithm.critic_coef
         self.policy_coef = cfg.algorithm.policy_coef
 
-        # Create agents
-        self.action_agents, self.critic_agents, self.env_agents = list(), list(), list()
-        for _ in range(self.n_particles):
-            self.action_agents.append(instantiate_class(cfg.action_agent))
-            self.critic_agents.append(instantiate_class(cfg.critic_agent))
-            self.env_agents.append(instantiate_class(cfg.env_agent))
+        if not hasattr(self, "stop_variable"):
+            try:
+                self.n_steps = cfg.algorithm.n_timesteps
+            except:
+                raise ValueError
 
-        self.tcritic_agents = [
-            TemporalAgent(critic_agent) for critic_agent in self.critic_agents
-        ]
-        self.acquisition_agents = [
-            TemporalAgent(Agents(env_agent, action_agent))
-            for env_agent, action_agent in zip(self.env_agents, self.action_agents)
-        ]
-        for pid in range(self.n_particles):
-            self.acquisition_agents[pid].seed(cfg.algorithm.env_seed)
+        # --------- Setup environment agents --------- #
+        self.env_agents = [EnvAgentAutoReset(cfg) for _ in range(self.n_particles)]
 
-        # Create workspaces
-        self.workspaces = [Workspace() for _ in range(self.n_particles)]
+        # -------------- Setup particles ------------- #
+        self.action_agents = []
+        self.critic_agents = []
+        self.tcritic_agents = []
+        self.acquisition_agents = []
 
-        # Setup optimizers
+        self.workspaces = []
+
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
-        for pid in range(self.n_particles):
-            params = nn.Sequential(
-                self.action_agents[pid], self.critic_agents[pid]
-            ).parameters()
+
+        for env_agent in self.env_agents:
+            # Create agents
+            action_agent = ActionAgent(cfg, env_agent.env)
+            critic_agent = CriticAgent(cfg, env_agent.env)
+            del env_agent.env
+
+            tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
+            tacq_agent.seed(cfg.algorithm.env_seed)
+
+            self.action_agents.append(action_agent)
+            self.critic_agents.append(critic_agent)
+            self.tcritic_agents.append(TemporalAgent(critic_agent))
+            self.acquisition_agents.append(tacq_agent)
+
+            # Create workspaces
+            self.workspaces.append(Workspace())
+
+            # Create optimizers
+            params = nn.Sequential(action_agent, critic_agent).parameters()
             self.optimizers.append(
                 get_class(cfg.algorithm.optimizer)(params, **optimizer_args)
             )
@@ -61,92 +76,102 @@ class Algo:
         self.rewards = np.zeros(self.n_particles)
 
     def execute_acquisition_agent(self, epoch):
+        if not hasattr(self, "stop_variable"):
+            for pid in range(self.n_particles):
+                kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
+                if epoch > 0:
+                    self.workspaces[pid].zero_grad()
+                    self.workspaces[pid].copy_n_last_steps(1)
+                    kwargs["t"] = 1
+                    kwargs["n_steps"] = self.n_steps - 1
+
+                self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+            return
+
         for pid in range(self.n_particles):
+            kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
                 self.workspaces[pid].zero_grad()
-                if self.stop_variable is None:
-                    self.workspaces[pid].copy_n_last_steps(1)
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid],
-                        t=1,
-                        n_steps=self.n_steps - 1,
-                        stochastic=True,
-                    )
-                else:
-                    self.workspaces[pid].clear()
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid],
-                        t=0,
-                        stop_variable=self.stop_variable,
-                        stochastic=True,
-                    )
-            else:
-                if self.stop_variable is None:
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True
-                    )
-                else:
-                    self.acquisition_agents[pid](
-                        self.workspaces[pid],
-                        t=0,
-                        stop_variable=self.stop_variable,
-                        stochastic=True,
-                    )
+                self.workspaces[pid].clear()
+
+            self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+
+    # def execute_acquisition_agent(self, epoch):
+    #     for pid in range(self.n_particles):
+    #         if epoch > 0:
+    #             self.workspaces[pid].zero_grad()
+    #             if not hasattr(self, "stop_variable"):
+    #                 self.workspaces[pid].copy_n_last_steps(1)
+    #                 self.acquisition_agents[pid](
+    #                     self.workspaces[pid],
+    #                     t=1,
+    #                     n_steps=self.n_steps - 1,
+    #                     stochastic=True,
+    #                 )
+    #             else:
+    #                 self.workspaces[pid].clear()
+    #                 self.acquisition_agents[pid](
+    #                     self.workspaces[pid],
+    #                     t=0,
+    #                     stop_variable=self.stop_variable,
+    #                     stochastic=True,
+    #                 )
+    #         else:
+    #             if not hasattr(self, "stop_variable"):
+    #                 self.acquisition_agents[pid](
+    #                     self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True
+    #                 )
+    #             else:
+    #                 self.acquisition_agents[pid](
+    #                     self.workspaces[pid],
+    #                     t=0,
+    #                     stop_variable=self.stop_variable,
+    #                     stochastic=True,
+    #                 )
 
     def execute_critic_agent(self):
-        for pid in range(self.n_particles):
-            if self.stop_variable is None:
+        if not hasattr(self, "stop_variable"):
+            for pid in range(self.n_particles):
                 self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
-            else:
-                self.tcritic_agents[pid](
-                    self.workspaces[pid], stop_variable=self.stop_variable
-                )
+            return
+
+        for pid in range(self.n_particles):
+            self.tcritic_agents[pid](
+                self.workspaces[pid], stop_variable=self.stop_variable
+            )
 
     def get_policy_parameters(self):
-        policy_params = []
-        for pid in range(self.n_particles):
-            l = list(self.action_agents[pid].model.parameters())
-            l_flatten = [torch.flatten(p) for p in l]
-            l_flatten = tuple(l_flatten)
-            l_concat = torch.cat(l_flatten)
-
-            policy_params.append(l_concat)
-
-        return torch.stack(policy_params)
+        policy_params = [
+            parameters_to_vector(action_agent.model.parameters())
+            for action_agent in self.action_agents
+        ]
+        return th.stack(policy_params)
 
     def add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
 
-        for i in range(self.n_particles):
-            for j in range(self.n_particles):
-                if j == i:
-                    continue
+        # Get all the couples of particules (i,j) st. i /= j
+        for i, j in list(permutations(range(self.n_particles), r=2)):
 
-                theta_i = self.action_agents[i].model.parameters()
-                theta_j = self.action_agents[j].model.parameters()
+            theta_i = self.action_agents[i].model.parameters()
+            theta_j = self.action_agents[j].model.parameters()
 
-                for (wi, wj) in zip(theta_i, theta_j):
-                    wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
+            for (wi, wj) in zip(theta_i, theta_j):
+                wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
 
-        for pid in range(self.n_particles):
-            # prob_params = particle["prob_agent"].model.parameters()
-            # critic_params = particle["critic_agent"].critic_model.parameters()
-            policy_params = self.action_agents[pid].model.parameters()
-            critic_params = self.critic_agents[pid].model.parameters()
+        for action_agent, critic_agent in zip(self.action_agents, self.critic_agents):
+            policy_params = action_agent.model.parameters()
+            critic_params = critic_agent.model.parameters()
 
-            for w_policy, w_critic in zip(policy_params, critic_params):
-                if w_policy.grad != None:
-                    policy_gradnorm += w_policy.grad.detach().data.norm(2) ** 2
-
-                if w_critic.grad != None:
-                    critic_gradnorm += w_critic.grad.detach().data.norm(2) ** 2
+            for w in policy_params + critic_params:
+                if w.grad != None:
+                    policy_gradnorm += w.grad.detach().data.norm(2) ** 2
 
         policy_gradnorm, critic_gradnorm = (
-            torch.sqrt(policy_gradnorm),
-            torch.sqrt(critic_gradnorm),
+            th.sqrt(th.stack([policy_gradnorm, critic_gradnorm])),
         )
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
