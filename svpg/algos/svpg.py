@@ -1,4 +1,5 @@
-import torch
+import torch as th
+from torch.nn.utils import parameters_to_vector
 
 from svpg.algos.algo import Algo
 from svpg.common.kernel import RBF
@@ -13,16 +14,11 @@ class SVPG(Algo):
         self.kernel = RBF
 
     def get_policy_parameters(self):
-        policy_params = []
-        for pid in range(self.n_particles):
-            l = list(self.action_agents[pid].model.parameters())
-            l_flatten = [torch.flatten(p) for p in l]
-            l_flatten = tuple(l_flatten)
-            l_concat = torch.cat(l_flatten)
-
-            policy_params.append(l_concat)
-
-        return torch.stack(policy_params)
+        policy_params = [
+            parameters_to_vector(action_agent.model.parameters())
+            for action_agent in range(self.action_agents)
+        ]
+        return th.stack(policy_params)
 
     def add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
