@@ -74,14 +74,15 @@ class REINFORCE(Algo):
             critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(
                 reward, action_logprobs, critic, entropy, done
             )
+
             total_critic_loss = total_critic_loss + critic_loss
             total_entropy_loss = total_entropy_loss + entropy_loss
+            total_policy_loss = total_policy_loss - policy_loss
+
             if alpha is not None:
-                total_policy_loss = total_policy_loss - policy_loss * (1 / alpha) * (
-                    1 / self.n_particles
+                total_policy_loss = (
+                    total_policy_loss * (1 / alpha) * (1 / self.n_particles)
                 )
-            else:
-                total_policy_loss = total_policy_loss - policy_loss
 
             # Log reward
             creward = workspaces[pid]["env/cumulated_reward"]

@@ -3,6 +3,8 @@ import torch as th
 from salina import Agent, get_arguments
 from svpg.agents.model import make_model
 
+import torch.nn as nn
+
 
 class ActionAgent(Agent):
     def __init__(self, cfg, env):

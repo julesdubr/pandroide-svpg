@@ -36,17 +36,16 @@ class A2C(Algo):
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
-            total_critic_loss = total_critic_loss + critic_loss
 
+            total_critic_loss = total_critic_loss + critic_loss
             total_entropy_loss = total_entropy_loss + entropy.mean()
+            total_policy_loss = total_policy_loss - self.compute_policy_loss(
+                action_logprobs, td
+            )
 
             if alpha is not None:
-                total_policy_loss = total_policy_loss - self.compute_policy_loss(
-                    action_logprobs, td
-                ) * (1 / alpha) * (1 / self.n_particles)
-            else:
-                total_policy_loss = total_policy_loss - self.compute_policy_loss(
-                    action_logprobs, td
+                total_policy_loss = (
+                    total_policy_loss * (1 / alpha) * (1 / self.n_particles)
                 )
 
             # Log reward
