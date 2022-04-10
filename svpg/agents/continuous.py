@@ -1,6 +1,6 @@
 from salina import Agent, get_arguments
 
-import torch
+import torch as th
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
@@ -18,7 +18,7 @@ class CActionAgent(Agent):
             input_size, output_size, **get_arguments(cfg.algorithm.architecture)
         )
         # The deviation is estimated by a vector
-        self.std_param = nn.parameter.Parameter(torch.randn(output_size, 1))
+        self.std_param = nn.parameter.Parameter(th.randn(output_size, 1))
         self.soft_plus = nn.Softplus()
 
     def forward(self, t, stochastic, **kwargs):
@@ -28,9 +28,9 @@ class CActionAgent(Agent):
         self.set(("entropy", t), dist.entropy().squeeze(-1))
 
         if stochastic:
-            action = torch.tanh(dist.sample())
+            action = th.tanh(dist.sample())
         else:
-            action = torch.tanh(mean)
+            action = th.tanh(mean)
 
         action_logprobs = dist.log_prob(action).sum(axis=-1)
         self.set(("action", t), action)

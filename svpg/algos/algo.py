@@ -1,4 +1,4 @@
-import torch
+import torch as th
 import torch.nn as nn
 
 from salina import get_arguments, get_class
@@ -115,7 +115,7 @@ class Algo:
                     policy_gradnorm += w.grad.detach().data.norm(2) ** 2
 
         policy_gradnorm, critic_gradnorm = (
-            torch.sqrt(torch.stack([policy_gradnorm, critic_gradnorm])),
+            th.sqrt(th.stack([policy_gradnorm, critic_gradnorm])),
         )
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)

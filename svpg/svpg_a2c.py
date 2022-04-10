@@ -1,6 +1,7 @@
 import hydra
 
 from svpg.algos import A2C, SVPG
+from svpg.common.kernel import RBF
 from svpg.common.visu import plot_histograms, plot_cartpole
 
 
@@ -13,7 +14,7 @@ def main(cfg):
     a2c = A2C(cfg)
     # indep_rewards = a2c.run()
 
-    svpg = SVPG(cfg, a2c)
+    svpg = SVPG(cfg, a2c, RBF)
     svpg_rewards = svpg.run()
 
     # plot_histograms(indep_rewards, svpg_rewards, "A2C")

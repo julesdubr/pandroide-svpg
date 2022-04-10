@@ -2,16 +2,15 @@ import torch as th
 from torch.nn.utils import parameters_to_vector
 
 from svpg.algos.algo import Algo
-from svpg.common.kernel import RBF
 
 from itertools import permutations
 
 
 class SVPG(Algo):
-    def __init__(self, cfg, algo):
+    def __init__(self, cfg, algo, kernel):
         super().__init__(cfg)
         self.algo = algo
-        self.kernel = RBF
+        self.kernel = kernel
 
     def get_policy_parameters(self):
         policy_params = [
@@ -23,7 +22,7 @@ class SVPG(Algo):
     def add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
 
-        # Get all the couples (i,j) st. i /= j
+        # Get all the couples of particules (i,j) st. i /= j
         for i, j in list(permutations(range(self.n_particles), r=2)):
 
             theta_i = self.action_agents[i].model.parameters()

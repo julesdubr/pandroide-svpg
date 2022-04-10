@@ -1,6 +1,6 @@
 from svpg.algos.algo import Algo
 
-import torch
+import torch as th
 import numpy as np
 
 
@@ -21,7 +21,7 @@ class REINFORCE(Algo):
         # Create a matrix arange with size (max_trajectories_length, number of env).
         # arange(i, j) = i with 0 < i < max_trajectories_length
         arange = (
-            torch.arange(max_trajectories_length, device=done.device)
+            th.arange(max_trajectories_length, device=done.device)
             .unsqueeze(-1)
             .repeat(1, batch_size)
         )
@@ -37,13 +37,13 @@ class REINFORCE(Algo):
         # Compute discounted cumulated reward
         # cumulated_reward[t] = reward[t] + discount_factor * reward[t+1]
         #   + ... + (discount_factor ^ episode_length) * reward[episode_length]
-        cumulated_reward = [torch.zeros_like(reward[-1])]
+        cumulated_reward = [th.zeros_like(reward[-1])]
         for t in range(max_trajectories_length - 1, 0, -1):
             cumulated_reward.append(
                 self.discount_factor * cumulated_reward[-1] + reward[t]
             )
         cumulated_reward.reverse()
-        cumulated_reward = torch.cat([c.unsqueeze(0) for c in cumulated_reward])
+        cumulated_reward = th.cat([c.unsqueeze(0) for c in cumulated_reward])
 
         # Critic loss
         critic_loss = (

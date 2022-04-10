@@ -1,4 +1,5 @@
-import torch
+import torch as th
+
 from salina import Agent, get_arguments
 
 from svpg.agents.model import make_model
@@ -18,15 +19,15 @@ class ActionAgent(Agent):
     def forward(self, t, stochastic):
         observation = self.get(("env/env_obs", t))
         scores = self.model(observation)
-        probs = torch.softmax(scores, dim=-1)
+        probs = th.softmax(scores, dim=-1)
 
         if stochastic:
-            action = torch.distributions.Categorical(probs).sample()
+            action = th.distributions.Categorical(probs).sample()
         else:
             action = probs.argmax(1)
 
-        entropy = torch.distributions.Categorical(probs).entropy()
-        probs = probs[torch.arange(probs.size()[0]), action]
+        entropy = th.distributions.Categorical(probs).entropy()
+        probs = probs[th.arange(probs.size()[0]), action]
 
         self.set(("action", t), action)
         self.set(("action_logprobs", t), probs.log())

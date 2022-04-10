@@ -1,5 +1,6 @@
-from svpg.algos.algo import Algo
 import numpy as np
+
+from svpg.algos.algo import Algo
 
 
 class A2C(Algo):
