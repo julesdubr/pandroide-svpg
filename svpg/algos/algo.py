@@ -110,16 +110,12 @@ class Algo:
             policy_params = action_agent.model.parameters()
             critic_params = critic_agent.model.parameters()
 
-            for w_policy, w_critic in zip(policy_params, critic_params):
-                if w_policy.grad != None:
-                    policy_gradnorm += w_policy.grad.detach().data.norm(2) ** 2
-
-                if w_critic.grad != None:
-                    critic_gradnorm += w_critic.grad.detach().data.norm(2) ** 2
+            for w in policy_params + critic_params:
+                if w.grad != None:
+                    policy_gradnorm += w.grad.detach().data.norm(2) ** 2
 
         policy_gradnorm, critic_gradnorm = (
-            torch.sqrt(policy_gradnorm),
-            torch.sqrt(critic_gradnorm),
+            torch.sqrt(torch.stack([policy_gradnorm, critic_gradnorm])),
         )
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)

@@ -13,8 +13,8 @@ def main(cfg):
     a2c = A2C(cfg)
     indep_rewards = a2c.run()
 
-    svpg = SVPG(cfg, a2c)
-    svpg_rewards = svpg.run()
+    # svpg = SVPG(cfg, a2c)
+    # svpg_rewards = svpg.run()
 
     # plot_histograms(indep_rewards, svpg_rewards, "A2C")
     # plot_cartpole(algo.critic_agents[0], algo.env_agents[0].env)
