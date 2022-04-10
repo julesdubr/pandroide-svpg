@@ -121,7 +121,7 @@ class Algo:
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
-    def compute_loss(self, epoch, alpha=10, verbose=True):
+    def compute_loss(self, workspaces, logger, epoch, alpha=10, verbose=True):
         # Needs to be defined by the child
         raise NotImplementedError
 
@@ -133,7 +133,7 @@ class Algo:
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss, rewards = self.compute_loss(
-                epoch, alpha=None, verbose=show_loss
+                self.workspaces, self.logger, epoch, alpha=None, verbose=show_loss
             )
 
             loss = (

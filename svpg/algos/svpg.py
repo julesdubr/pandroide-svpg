@@ -44,7 +44,7 @@ class SVPG(Algo):
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss, rewards = self.algo.compute_loss(
-                epoch, alpha, show_loss
+                self.workspaces, self.logger, epoch, alpha, show_loss
             )
 
             # Compute gradients

@@ -60,13 +60,13 @@ class REINFORCE(Algo):
 
         return critic_loss, entropy_loss, policy_loss
 
-    def compute_loss(self, epoch, alpha=10, verbose=True):
+    def compute_loss(self, workspaces, logger, epoch, alpha=10, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
         rewards = np.zeros(self.n_particles)
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
-            critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
+            critic, done, action_logprobs, reward, entropy = workspaces[pid][
                 "critic", "env/done", "action_logprobs", "env/reward", "entropy"
             ]
             # Compute loss by REINFORCE
@@ -84,16 +84,16 @@ class REINFORCE(Algo):
                 total_policy_loss = total_policy_loss - policy_loss
 
             # Log reward
-            creward = self.workspaces[pid]["env/cumulated_reward"]
+            creward = workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
             rewards[pid] = creward.mean()
 
             if creward.size()[0] > 0:
-                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
+                logger.add_log(f"reward_{pid}", rewards[pid], epoch)
 
         if verbose:
-            self.logger.log_losses(
+            logger.log_losses(
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
