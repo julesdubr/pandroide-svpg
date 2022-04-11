@@ -41,8 +41,8 @@ def plot_histograms(
 ):
     x = np.arange(len(svpg_rewards))
 
-    plt.bar(x + 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
-    plt.bar(x - 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
+    plt.bar(x - 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
+    plt.bar(x + 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
 
     final_show(
