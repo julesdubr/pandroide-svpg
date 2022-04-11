@@ -23,7 +23,7 @@ def main(cfg):
     svpg_rewards = svpg.run()
 
     d = datetime.datetime.today()
-    directory = d.strftime(str(Path(__file__).parents[1]) + "/plots/%m-%d_%H-%M/")
+    directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
     plot_histograms(indep_rewards, svpg_rewards, "A2C", directory, plot=False)
     env = svpg.env
 
