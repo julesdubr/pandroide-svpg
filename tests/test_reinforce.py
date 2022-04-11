@@ -1,7 +1,10 @@
 import hydra
+from hydra.utils import instantiate
 
-from svpg.algos.svpg_reinforce_mono import SVPG_Reinforce_Mono
-from svpg.visu.visu_critic import plot_cartpole_critic
+from svpg.algos.reinforce import REINFORCE
+
+from omegaconf import OmegaConf
+OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)
 
 
 @hydra.main(config_path=".", config_name="test_reinforce.yaml")
@@ -10,10 +13,8 @@ def main(cfg):
 
     mp.set_start_method("spawn")
 
-    algo = SVPG_Reinforce_Mono(cfg)
-    algo.run_svpg()
-
-    plot_cartpole_critic(algo.critic_agents[0].model, algo.env_agents[0].env)
+    algo = instantiate(cfg.algorithm)
+    algo.run()
 
 
 if __name__ == "__main__":

@@ -1,8 +1,12 @@
 import hydra
+from hydra.utils import instantiate
 
-from svpg.algos.svpg_a2c_mono import SVPG_A2C_Mono
-from svpg.common.visu import plot_histograms, plot_cartpole
+from svpg.algos.svpg import SVPG
 
+from omegaconf import OmegaConf
+OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)
+
+from torch import autograd
 
 @hydra.main(config_path=".", config_name="test_a2c.yaml")
 def main(cfg):
@@ -10,18 +14,13 @@ def main(cfg):
 
     mp.set_start_method("spawn")
 
-    algo = SVPG_A2C_Mono(cfg)
+    algo = instantiate(cfg.algorithm)
 
-    algo.run()
-    indep_rewards = algo.rewards
-
-    algo = SVPG_A2C_Mono(cfg)
-
-    algo.run_svpg()
-    svpg_rewards = algo.rewards
-
-    plot_histograms(indep_rewards, svpg_rewards, "A2C")
+    svpg = SVPG(algo)
+    svpg.run()
 
 
 if __name__ == "__main__":
+    # with autograd.detect_anomaly():
+    #     main()
     main()

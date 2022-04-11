@@ -1,3 +1,5 @@
+from functools import partial
+
 import torch as th
 import torch.nn as nn
 
@@ -5,79 +7,62 @@ from salina import get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
-from gym.spaces import Box, Discrete
+from gym.spaces import Discrete
 
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
-from svpg.agents.env import EnvAgent
-from svpg.common.logger import Logger
+from svpg.agents.env import make_env
 
 
 class Algo:
-    def __init__(self, cfg):
-        # --------------- Config infos --------------- #
-        self.logger = Logger(cfg)
+    def __init__(self, 
+                 n_particles, 
+                 max_epochs, discount_factor,
+                 env_name, max_episode_steps, n_envs, env_seed,
+                 logger,
+                 env_agent,
+                 env, 
+                 model, 
+                 optimizer):
+        # --------------- Hyper parameters --------------- #
+        self.n_particles = n_particles
+        self.max_epochs = max_epochs
+        self.discount_factor = discount_factor
+        self.n_env = n_envs
 
-        self.n_particles = cfg.algorithm.n_particles
-        self.max_epochs = cfg.algorithm.max_epochs
+        # --------------- Logger --------------- #
+        self.logger = logger
 
-        self.discount_factor = cfg.algorithm.discount_factor
-        self.entropy_coef = cfg.algorithm.entropy_coef
-        self.critic_coef = cfg.algorithm.critic_coef
-        self.policy_coef = cfg.algorithm.policy_coef
+        # --------------- Agents --------------- #
+        self.env_agents = [env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
 
-        if not hasattr(self, "stop_variable"):
-            try:
-                self.n_steps = cfg.algorithm.n_timesteps
-            except:
-                raise ValueError
+        if isinstance(env.action_space, Discrete):
+            input_size, output_size = env.observation_space.shape[0], env.action_space.n
+            self.action_agents = [ActionAgent(model(input_size, output_size)) for _ in range(n_particles)]
+            self.critic_agents = [CriticAgent(model(input_size, 1)) for _ in range(n_particles)]
+        else:
+            input_size, output_size = env.observation_space.shape[0], env.action_space.shape[0]
+            self.action_agents = [CActionAgent(output_size, model(input_size, output_size)) for _ in range(n_particles)]
+            self.critic_agents = [CriticAgent(model(input_size, 1, activation=nn.SiLU)) for _ in range(n_particles)]
 
-        # --------- Setup environment agents --------- #
-        self.env_agents = [EnvAgent(cfg) for _ in range(self.n_particles)]
-        # Get the corresponding action/critic agents classes
-        if isinstance(self.env_agents[0].env.action_space, Discrete):
-            actionAgent, criticAgent = ActionAgent, CriticAgent
-        elif isinstance(self.env_agents[0].env.action_space, Box):
-            actionAgent, criticAgent = CActionAgent, CCriticAgent
+        self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
+        self.acquisition_agents = [TemporalAgent(Agents(env_agent, action_agent)) for env_agent, action_agent in zip(self.env_agents, self.action_agents)]
+        
+        for acquisition_agent in self.acquisition_agents:
+            acquisition_agent.seed(env_seed)
 
-        # -------------- Setup particles ------------- #
-        self.action_agents = []
-        self.critic_agents = []
-        self.tcritic_agents = []
-        self.acquisition_agents = []
+        # ---------------- Workspaces ------------ #
+        self.workspaces = [Workspace() for _ in range(n_particles)]
 
-        self.workspaces = []
-
-        optimizer_args = get_arguments(cfg.algorithm.optimizer)
-        self.optimizers = []
-
-        for env_agent in self.env_agents:
-            # Create agents
-            action_agent = actionAgent(cfg, env_agent.env)
-            critic_agent = criticAgent(cfg, env_agent.env)
-            del env_agent.env
-
-            tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
-            tacq_agent.seed(cfg.algorithm.env_seed)
-
-            self.action_agents.append(action_agent)
-            self.critic_agents.append(critic_agent)
-            self.tcritic_agents.append(TemporalAgent(critic_agent))
-            self.acquisition_agents.append(tacq_agent)
-
-            # Create workspaces
-            self.workspaces.append(Workspace())
-
-            # Create optimizers
-            params = nn.Sequential(action_agent, critic_agent).parameters()
-            self.optimizers.append(
-                get_class(cfg.algorithm.optimizer)(params, **optimizer_args)
-            )
+        # ---------------- Optimizers ------------ #
+        self.optimizers = [optimizer(nn.Sequential(action_agent, critic_agent).parameters()) 
+                           for action_agent, critic_agent in zip(self.action_agents, self.critic_agents)]
 
     def execute_acquisition_agent(self, epoch):
         if not hasattr(self, "stop_variable"):
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
                 if epoch > 0:
+                    self.workspaces[pid].zero_grad()
                     self.workspaces[pid].copy_n_last_steps(1)
                     kwargs["t"] = 1
                     kwargs["n_steps"] = self.n_steps - 1
@@ -107,49 +92,54 @@ class Algo:
         policy_gradnorm, critic_gradnorm = 0, 0
 
         for action_agent, critic_agent in zip(self.action_agents, self.critic_agents):
-            policy_params = action_agent.model.parameters()
-            critic_params = critic_agent.model.parameters()
+            policy_params = action_agent.parameters()
+            critic_params = critic_agent.parameters()
 
-            for w in policy_params + critic_params:
+            for w in policy_params:
                 if w.grad != None:
                     policy_gradnorm += w.grad.detach().data.norm(2) ** 2
 
-        policy_gradnorm, critic_gradnorm = (
-            th.sqrt(th.stack([policy_gradnorm, critic_gradnorm])),
-        )
+            for w in critic_params:
+                if w.grad != None:
+                    critic_gradnorm += w.grad.detach().data.norm(2) ** 2
+
+        policy_gradnorm, critic_gradnorm = th.sqrt(policy_gradnorm), th.sqrt(critic_gradnorm)
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
-    def compute_loss(self, workspaces, logger, epoch, alpha=10, verbose=True):
+    def compute_loss(self, epoch, verbose=True):
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def run(self, show_loss=False, show_grad=False):
+    def run(self, show_loss=True, show_grad=True):
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
             self.execute_critic_agent()
 
             # Compute loss
-            critic_loss, entropy_loss, policy_loss, rewards = self.compute_loss(
-                self.workspaces, self.logger, epoch, alpha=None, verbose=show_loss
+            policy_loss, critic_loss, entropy_loss, rewards = self.compute_loss(
+                epoch, verbose=show_loss
             )
 
-            loss = (
-                -self.entropy_coef * entropy_loss
-                + self.critic_coef * critic_loss
+            total_loss = (
                 + self.policy_coef * policy_loss
+                + self.critic_coef * critic_loss
+                + self.entropy_coef * entropy_loss
             )
-            loss.backward()
 
-            # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
-                self.optimizers[pid].step()
+            
+            total_loss.backward()
 
             # Log gradient norms
             if show_grad:
                 self.compute_gradient_norm(epoch)
+            
+            # Gradient descent
+            for pid in range(self.n_particles):
+                self.optimizers[pid].step()
 
         return rewards

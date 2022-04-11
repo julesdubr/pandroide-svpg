@@ -5,11 +5,29 @@ import numpy as np
 
 
 class REINFORCE(Algo):
-    def __init__(self, cfg, continuous=False):
-        super().__init__(cfg, continuous)
+    def __init__(self,
+                 policy_coef, critic_coef, 
+                 n_particles, 
+                 max_epochs, discount_factor,
+                 env_name, max_episode_steps, n_envs, env_seed,
+                 logger,
+                 env_agent,
+                 env, 
+                 model, 
+                 optimizer):
+        super().__init__(n_particles, 
+                        max_epochs, discount_factor,
+                        env_name, max_episode_steps, n_envs, env_seed,
+                        logger,
+                        env_agent,
+                        env, 
+                        model, 
+                        optimizer)
+
+        self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, 0
         self.stop_variable = "env/done"
 
-    def compute_reinforce_loss(self, reward, action_logprobs, critic, entropy, done):
+    def compute_reinforce_loss(self, reward, action_logprobs, critic, done):
         batch_size = reward.size()[1]  # Number of env
         max_trajectories_length = reward.size()[0]  # Longest episode over all env
         v_done, trajectories_length = done.float().max(0)
@@ -55,46 +73,38 @@ class REINFORCE(Algo):
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
-        # entropy loss
-        entropy_loss = (entropy * mask).mean()
+        return policy_loss, critic_loss
 
-        return critic_loss, entropy_loss, policy_loss
-
-    def compute_loss(self, workspaces, logger, epoch, alpha=10, verbose=True):
+    def compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
         rewards = np.zeros(self.n_particles)
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
-            critic, done, action_logprobs, reward, entropy = workspaces[pid][
-                "critic", "env/done", "action_logprobs", "env/reward", "entropy"
+            critic, done, action_logprobs, reward = self.workspaces[pid][
+                "critic", "env/done", "action_logprobs", "env/reward"
             ]
             # Compute loss by REINFORCE
             # (using the reward cumulated until the end of episode)
-            critic_loss, entropy_loss, policy_loss = self.compute_reinforce_loss(
-                reward, action_logprobs, critic, entropy, done
+            policy_loss, critic_loss = self.compute_reinforce_loss(
+                reward, action_logprobs, critic, done
             )
             total_critic_loss = total_critic_loss + critic_loss
-            total_entropy_loss = total_entropy_loss + entropy_loss
-            if alpha is not None:
-                total_policy_loss = total_policy_loss - policy_loss * (1 / alpha) * (
-                    1 / self.n_particles
-                )
-            else:
-                total_policy_loss = total_policy_loss - policy_loss
+            total_policy_loss = total_policy_loss - policy_loss
 
             # Log reward
-            creward = workspaces[pid]["env/cumulated_reward"]
+            creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
             rewards[pid] = creward.mean()
 
             if creward.size()[0] > 0:
-                logger.add_log(f"reward_{pid}", rewards[pid], epoch)
+                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
 
         if verbose:
-            logger.log_losses(
-                epoch, total_critic_loss, total_entropy_loss, total_policy_loss
-            )
+            self.logger.add_log("policy_loss", total_policy_loss, epoch)
+            self.logger.add_log("critic_loss", total_critic_loss, epoch)
 
-        return total_critic_loss, total_entropy_loss, total_policy_loss, rewards
+
+        return total_policy_loss, total_critic_loss, 0, rewards
+    

@@ -1,21 +1,15 @@
 import torch as th
 
-from salina import Agent, get_arguments
-from svpg.agents.model import make_model
+from salina import TAgent
 
 
-class ActionAgent(Agent):
-    def __init__(self, cfg, env):
+class ActionAgent(TAgent):
+    def __init__(self, model):
         super().__init__()
-        # Model input and output size
-        input_size = env.observation_space.shape[0]
-        output_size = env.action_space.n
         # Model
-        self.model = make_model(
-            input_size, output_size, **get_arguments(cfg.algorithm.architecture)
-        )
+        self.model = model
 
-    def forward(self, t, stochastic):
+    def forward(self, t, stochastic, **kwargs):
         observation = self.get(("env/env_obs", t))
         scores = self.model(observation)
         probs = th.softmax(scores, dim=-1)
@@ -33,7 +27,7 @@ class ActionAgent(Agent):
         self.set(("entropy", t), entropy)
 
 
-class CriticAgent(Agent):
+class CriticAgent(TAgent):
     """
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose
@@ -41,17 +35,11 @@ class CriticAgent(Agent):
     - It thus implements a V(s)  function
     """
 
-    def __init__(self, cfg, env):
+    def __init__(self, model):
         super().__init__()
-        # Model input and output size
-        input_size = env.observation_space.shape[0]
-        output_size = 1
-        # Model
-        self.model = make_model(
-            input_size, output_size, **get_arguments(cfg.algorithm.architecture)
-        )
+        self.model = model
 
-    def forward(self, t):
+    def forward(self, t, **kwargs):
         observation = self.get(("env/env_obs", t))
         critic = self.model(observation).squeeze(-1)
         self.set(("critic", t), critic)

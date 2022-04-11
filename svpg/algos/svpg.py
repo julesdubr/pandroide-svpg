@@ -1,21 +1,21 @@
+from email import policy
 import torch as th
 from torch.nn.utils import parameters_to_vector
 
-from svpg.algos.algo import Algo
-
 from itertools import permutations
 
+from svpg.common.kernel import RBF
 
-class SVPG(Algo):
-    def __init__(self, cfg, algo, kernel):
-        super().__init__(cfg)
+
+class SVPG():
+    def __init__(self, algo):
         self.algo = algo
-        self.kernel = kernel
+        self.kernel = RBF
 
     def get_policy_parameters(self):
         policy_params = [
-            parameters_to_vector(action_agent.model.parameters())
-            for action_agent in self.action_agents
+            parameters_to_vector(action_agent.parameters())
+            for action_agent in self.algo.action_agents
         ]
         return th.stack(policy_params)
 
@@ -23,44 +23,42 @@ class SVPG(Algo):
         policy_loss.backward(retain_graph=True)
 
         # Get all the couples of particules (i,j) st. i /= j
-        for i, j in list(permutations(range(self.n_particles), r=2)):
+        for i, j in list(permutations(range(self.algo.n_particles), r=2)):
 
-            theta_i = self.action_agents[i].model.parameters()
-            theta_j = self.action_agents[j].model.parameters()
+            theta_i = self.algo.action_agents[i].parameters()
+            theta_j = self.algo.action_agents[j].parameters()
 
             for (wi, wj) in zip(theta_i, theta_j):
                 wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
-    def run(self, alpha=10, show_loss=False, show_grad=False):
-        for epoch in range(self.max_epochs):
+    def run(self, alpha=10, show_loss=True, show_grad=True):
+        for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
-            self.execute_acquisition_agent(epoch)
-            self.execute_critic_agent()
+            self.algo.execute_acquisition_agent(epoch)
+            self.algo.execute_critic_agent()
 
             # Compute loss
-            critic_loss, entropy_loss, policy_loss, rewards = self.algo.compute_loss(
-                self.workspaces, self.logger, epoch, alpha, show_loss
-            )
+            policy_loss, critic_loss, entropy_loss, rewards = self.algo.compute_loss(epoch, show_loss)
 
             # Compute gradients
             params = self.get_policy_parameters()
             kernel = self.kernel()(params, params.detach())
-            self.add_gradients(policy_loss, kernel)
+            self.add_gradients(policy_loss * (1 / alpha) * (1 / self.algo.n_particles), kernel)
 
             loss = (
-                -self.entropy_coef * entropy_loss
-                + self.critic_coef * critic_loss
-                + kernel.sum() / self.n_particles
+                + self.algo.entropy_coef * entropy_loss
+                + self.algo.critic_coef * critic_loss
+                + kernel.sum() / self.algo.n_particles
             )
             loss.backward()
 
             # Log gradient norms
             if show_grad:
-                self.compute_gradient_norm(epoch)
+                self.algo.compute_gradient_norm(epoch)
 
             # Gradient descent
-            for pid in range(self.n_particles):
-                self.optimizers[pid].step()
-                self.optimizers[pid].zero_grad()
+            for pid in range(self.algo.n_particles):
+                self.algo.optimizers[pid].step()
+                self.algo.optimizers[pid].zero_grad()
 
         return rewards
