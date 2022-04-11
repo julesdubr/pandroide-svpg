@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from svpg.algos.algo import Algo
 
@@ -50,12 +51,11 @@ class A2C(Algo):
 
             # Log reward
             creward = workspaces[pid]["env/cumulated_reward"]
-            creward = creward[done]
+            tl = done.float().argmax(0)
+            creward = creward[tl, torch.arange(creward.size()[1])]
+            rewards[pid] = creward.mean().item()
 
-            rewards[pid] = creward.mean()
-
-            if creward.size()[0] > 0:
-                logger.add_log(f"reward_{pid}", rewards[pid], epoch)
+            logger.add_log(f"reward_{pid}", rewards[pid], epoch)
 
         if verbose:
             logger.log_losses(

@@ -40,5 +40,4 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    # with autograd.detect_anomaly():
     main()
