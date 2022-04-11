@@ -1,5 +1,7 @@
 import hydra
 
+from torch import autograd
+
 from svpg.algos import A2C, SVPG
 from svpg.common.kernel import RBF
 from svpg.common.visu import plot_histograms, plot_cartpole
@@ -21,24 +23,20 @@ def main(cfg):
 
     directory = str(Path(__file__).parents[1]) + "/plots/"
     plot_histograms(indep_rewards, svpg_rewards, "A2C", directory, plot=False)
+    env = svpg.env
 
     for pid in range(a2c.n_particles):
+        action_model = svpg.action_agents[pid].model
+        figname = f"policy_{pid}.png"
         plot_cartpole(
-            a2c.action_agents[pid],
-            a2c.env,
-            f"policy_{pid}.png",
-            directory,
-            plot=False,
-            stochastic=True,
+            action_model, env, figname, directory, plot=False, stochastic=True
         )
-        plot_cartpole(
-            a2c.critic_agents[pid],
-            a2c.env,
-            f"critic_{pid}.png",
-            directory,
-            plot=False,
-        )
+
+        critic_model = svpg.critic_agents[pid].model
+        figname = f"critic_{pid}.png"
+        plot_cartpole(critic_model, env, figname, directory, plot=False)
 
 
 if __name__ == "__main__":
+    # with autograd.detect_anomaly():
     main()

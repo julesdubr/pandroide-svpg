@@ -146,11 +146,11 @@ class Algo:
                 + self.critic_coef * critic_loss
                 + self.policy_coef * policy_loss
             )
-            loss.backward()
-
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
+            loss.backward()
+            for pid in range(self.n_particles):
                 self.optimizers[pid].step()
 
             # Log gradient norms

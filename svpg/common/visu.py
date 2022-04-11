@@ -49,7 +49,7 @@ def plot_histograms(
     final_show(save_figure, plot, figname, "particules", "rewards", title, directory)
 
 
-def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
+def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
     """
     Plot a critic for the Pendulum environment
     :param agent: the policy / critic agent specifying the action to be plotted
@@ -60,11 +60,8 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
     :return: nothing
     """
     if env.observation_space.shape[0] <= 2:
-        raise (
-            ValueError(
-                f"Observation space dimension {env.observation_space.shape[0]}, should be > 2"
-            )
-        )
+        msg = f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
+        raise (ValueError(msg))
     definition = 100
     portrait = np.zeros((definition, definition))
     state_min = env.observation_space.low
@@ -76,7 +73,7 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
         ):
             obs = np.array([[np.cos(t), np.sin(t), td]])
             obs = th.from_numpy(obs.astype(np.float32))
-            value = agent.model(obs).squeeze(-1)
+            value = model(obs).squeeze(-1)
             portrait[definition - (1 + index_td), index_t] = value.item()
 
     plt.figure(figsize=(10, 10))
@@ -102,7 +99,7 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
 
 
 def plot_cartpole(
-    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
+    model, env, figname, directory, plot=True, save_figure=True, stochastic=None
 ):
     """
     Visualization of the critic in a N-dimensional state space
@@ -118,11 +115,8 @@ def plot_cartpole(
     :return: nothing
     """
     if env.observation_space.shape[0] <= 2:
-        raise (
-            ValueError(
-                f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
-            )
-        )
+        msg = f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
+        raise (ValueError(msg))
     definition = 100
     portrait = np.zeros((definition, definition))
     state_min = env.observation_space.low
@@ -144,12 +138,12 @@ def plot_cartpole(
                 # Add batch dim
                 obs = obs.reshape(1, -1)
                 obs = th.from_numpy(obs.astype(np.float32))
-                value = agent.model(obs).squeeze(-1)
+                value = model(obs).squeeze(-1)
                 portrait[definition - (1 + index_y), index_x] = value.item()
 
             else:
                 obs = th.from_numpy(obs.astype(np.float32))
-                scores = agent.model(obs)
+                scores = model(obs)
                 probs = th.softmax(scores, dim=-1)
                 if stochastic:
                     action = th.distributions.Categorical(probs).sample()
