@@ -1,7 +1,7 @@
 import torch as th
 import torch.nn as nn
 
-from salina import get_arguments, get_class
+from salina import get_arguments, get_class, instantiate_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
@@ -16,6 +16,7 @@ class Algo:
     def __init__(self, cfg):
         # --------------- Config infos --------------- #
         self.logger = Logger(cfg)
+        self.env = instantiate_class(cfg.algorithm.env)
 
         self.n_particles = cfg.algorithm.n_particles
         self.max_epochs = cfg.algorithm.max_epochs
@@ -31,15 +32,15 @@ class Algo:
             except:
                 raise ValueError
 
-        # --------- Setup environment agents --------- #
-        self.env_agents = [EnvAgentAutoReset(cfg) for _ in range(self.n_particles)]
+        # ---------  --------- #
         # Get the corresponding action/critic agents classes
-        if isinstance(self.env_agents[0].env.action_space, Discrete):
+        if isinstance(self.env.action_space, Discrete):
             actionAgent, criticAgent = ActionAgent, CriticAgent
-        elif isinstance(self.env_agents[0].env.action_space, Box):
+        elif isinstance(self.env.action_space, Box):
             actionAgent, criticAgent = CActionAgent, CCriticAgent
 
         # -------------- Setup particles ------------- #
+        self.env_agents = []
         self.action_agents = []
         self.critic_agents = []
         self.tcritic_agents = []
@@ -50,12 +51,14 @@ class Algo:
         optimizer_args = get_arguments(cfg.algorithm.optimizer)
         self.optimizers = []
 
-        for env_agent in self.env_agents:
-            # Create agents
-            action_agent = actionAgent(cfg, env_agent.env)
-            critic_agent = criticAgent(cfg, env_agent.env)
-            del env_agent.env
+        for _ in range(self.n_particles):
+            # Create envs
+            env_agent = EnvAgentAutoReset(cfg)
+            self.env_agents.append(env_agent)
 
+            # Create agents
+            action_agent = actionAgent(cfg, self.env)
+            critic_agent = criticAgent(cfg, self.env)
             tacq_agent = TemporalAgent(Agents(env_agent, action_agent))
             tacq_agent.seed(cfg.algorithm.env_seed)
 

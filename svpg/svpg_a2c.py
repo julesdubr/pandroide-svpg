@@ -17,8 +17,13 @@ def main(cfg):
     svpg = SVPG(cfg, a2c, RBF)
     svpg_rewards = svpg.run()
 
-    plot_histograms(indep_rewards, svpg_rewards, "A2C")
-    # plot_cartpole(algo.critic_agents[0], algo.env_agents[0].env)
+    plot_histograms(indep_rewards, svpg_rewards, "A2C", plot=False)
+
+    for pid in range(svpg.n_particles):
+        # plot_cartpole(svpg.action_agents[pid], svpg.env, figname=f"policy_{pid}.png")
+        plot_cartpole(
+            svpg.critic_agents[pid], svpg.env, figname=f"critic_{pid}.png", plot=False
+        )
 
 
 if __name__ == "__main__":

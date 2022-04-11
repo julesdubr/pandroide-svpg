@@ -1,4 +1,4 @@
-from salina import get_arguments, get_class, instantiate_class
+from salina import get_arguments, get_class
 from salina.agents.gyma import AutoResetGymAgent, GymAgent
 
 import gym
@@ -17,7 +17,6 @@ class EnvAgentAutoReset(AutoResetGymAgent):
             get_arguments(cfg.algorithm.env),
             n_envs=cfg.algorithm.n_envs,
         )
-        self.env = instantiate_class(cfg.algorithm.env)
 
 
 class EnvAgent(GymAgent):
@@ -27,7 +26,6 @@ class EnvAgent(GymAgent):
             get_arguments(cfg.algorithm.env),
             n_envs=cfg.algorithm.n_envs,
         )
-        self.env = instantiate_class(cfg.algorithm.env)
 
 
 def make_env(env_name, max_episode_steps):
