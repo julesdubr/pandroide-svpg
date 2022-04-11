@@ -45,15 +45,8 @@ def plot_histograms(
     plt.bar(x + 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
 
-    final_show(
-        save_figure,
-        plot,
-        f"{title}-indep_vs_svpg.png",
-        "particules",
-        "rewards",
-        title,
-        directory,
-    )
+    figname = f"{title}-indep_vs_svpg.png"
+    final_show(save_figure, plot, figname, "particules", "rewards", title, directory)
 
 
 def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
@@ -69,9 +62,7 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
     if env.observation_space.shape[0] <= 2:
         raise (
             ValueError(
-                "Observation space dimension {}, should be > 2".format(
-                    env.observation_space.shape[0]
-                )
+                f"Observation space dimension {env.observation_space.shape[0]}, should be > 2"
             )
         )
     definition = 100
@@ -84,10 +75,8 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
             np.linspace(state_min[2], state_max[2], num=definition)
         ):
             obs = np.array([[np.cos(t), np.sin(t), td]])
-            with th.no_grad():
-                obs = th.from_numpy(obs.astype(np.float32))
-                value = agent.model(obs).squeeze(-1)
-
+            obs = th.from_numpy(obs.astype(np.float32))
+            value = agent.model(obs).squeeze(-1)
             portrait[definition - (1 + index_td), index_t] = value.item()
 
     plt.figure(figsize=(10, 10))
@@ -113,12 +102,7 @@ def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
 
 
 def plot_cartpole(
-    agent,
-    env,
-    figname,
-    directory,
-    plot=True,
-    save_figure=True,
+    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
 ):
     """
     Visualization of the critic in a N-dimensional state space
@@ -136,9 +120,7 @@ def plot_cartpole(
     if env.observation_space.shape[0] <= 2:
         raise (
             ValueError(
-                "Observation space dimension {}, should be > 2".format(
-                    env.observation_space.shape[0]
-                )
+                f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
             )
         )
     definition = 100
@@ -158,13 +140,23 @@ def plot_cartpole(
             obs = np.append(obs, z1)
             obs = np.append(obs, y)
             obs = np.append(obs, z2)
-            # Add batch dim
-            obs = obs.reshape(1, -1)
-            with th.no_grad():
+            if stochastic is None:
+                # Add batch dim
+                obs = obs.reshape(1, -1)
                 obs = th.from_numpy(obs.astype(np.float32))
                 value = agent.model(obs).squeeze(-1)
+                portrait[definition - (1 + index_y), index_x] = value.item()
 
-            portrait[definition - (1 + index_y), index_x] = value.item()
+            else:
+                obs = th.from_numpy(obs.astype(np.float32))
+                scores = agent.model(obs)
+                probs = th.softmax(scores, dim=-1)
+                if stochastic:
+                    action = th.distributions.Categorical(probs).sample()
+                else:
+                    action = probs.argmax(1)
+
+                portrait[definition - (1 + index_y), index_x] = action.item()
 
     plt.figure(figsize=(10, 10))
     plt.imshow(
@@ -173,16 +165,17 @@ def plot_cartpole(
         extent=[state_min[0], state_max[0], state_min[2], state_max[2]],
         aspect="auto",
     )
-    plt.colorbar(label="critic value")
+
+    if stochastic is None:
+        directory += "/cartpole_critics/"
+        title = "Cartpole Critic"
+        plt.colorbar(label="critic value")
+    else:
+        directory += "/cartpole_policies/"
+        title = "Cartpole Actor"
+        plt.colorbar(label="action")
+
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(
-        save_figure,
-        plot,
-        figname,
-        x_label,
-        y_label,
-        "V Function",
-        directory + "/cartpole_critics/",
-    )
+    final_show(save_figure, plot, figname, x_label, y_label, title, directory)

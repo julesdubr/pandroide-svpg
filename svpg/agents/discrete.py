@@ -3,8 +3,6 @@ import torch as th
 from salina import Agent, get_arguments
 from svpg.agents.model import make_model
 
-import torch.nn as nn
-
 
 class ActionAgent(Agent):
     def __init__(self, cfg, env):
@@ -28,10 +26,10 @@ class ActionAgent(Agent):
             action = probs.argmax(1)
 
         entropy = th.distributions.Categorical(probs).entropy()
-        probs = probs[th.arange(probs.size()[0]), action]
+        logprobs = probs[th.arange(probs.size()[0]), action].log()
 
         self.set(("action", t), action)
-        self.set(("action_logprobs", t), probs.log())
+        self.set(("action_logprobs", t), logprobs)
         self.set(("entropy", t), entropy)
 
 
@@ -40,7 +38,7 @@ class CriticAgent(Agent):
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose
       output is the value of this observation.
-    - It thus implements a V(s)  function
+    - It thus implements a V(s) function
     """
 
     def __init__(self, cfg, env):
