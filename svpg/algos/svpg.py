@@ -52,12 +52,13 @@ class SVPG(Algo):
                 + self.critic_coef * critic_loss
                 + kernel.sum() / self.n_particles
             )
+
             # Gradient descent
-            for pid in range(self.n_particles):
-                self.optimizers[pid].zero_grad()
+            for optimizer in self.optimizers:
+                optimizer.zero_grad()
             loss.backward()
-            for pid in range(self.n_particles):
-                self.optimizers[pid].step()
+            for optimizer in self.optimizers:
+                optimizer.step()
 
             # Log gradient norms
             if show_grad:
