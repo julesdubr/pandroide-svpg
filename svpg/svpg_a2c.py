@@ -4,6 +4,8 @@ from svpg.algos import A2C, SVPG
 from svpg.common.kernel import RBF
 from svpg.common.visu import plot_histograms, plot_cartpole
 
+from pathlib import Path
+
 
 @hydra.main(config_path=".", config_name="config.yaml")
 def main(cfg):
@@ -17,12 +19,17 @@ def main(cfg):
     svpg = SVPG(cfg, a2c, RBF)
     svpg_rewards = svpg.run()
 
-    plot_histograms(indep_rewards, svpg_rewards, "A2C", plot=False)
+    directory = str(Path(__file__).parents[1]) + "/plots/"
+    plot_histograms(indep_rewards, svpg_rewards, "A2C", directory, plot=False)
 
     for pid in range(svpg.n_particles):
         # plot_cartpole(svpg.action_agents[pid], svpg.env, figname=f"policy_{pid}.png")
         plot_cartpole(
-            svpg.critic_agents[pid], svpg.env, figname=f"critic_{pid}.png", plot=False
+            svpg.critic_agents[pid],
+            svpg.env,
+            figname=f"critic_{pid}.png",
+            directory=directory,
+            plot=False,
         )
 
 

@@ -8,7 +8,7 @@ import torch as th
 from pathlib import Path
 
 
-def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory=""):
+def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
     """
     Finalize all plots, adding labels and putting the corresponding file in the
     specified directory
@@ -25,7 +25,6 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
     plt.title(title)
 
     if save_figure:
-        directory = os.getcwd() + f"/data/" + directory
         if not os.path.exists(directory):
             os.makedirs(directory)
         directory = Path(directory + figure_name)
@@ -37,7 +36,9 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
     plt.close()
 
 
-def plot_histograms(indep_rewards, svpg_rewards, title, plot=True, save_figure=True):
+def plot_histograms(
+    indep_rewards, svpg_rewards, title, directory, plot=True, save_figure=True
+):
     x = np.arange(len(svpg_rewards))
 
     plt.bar(x + 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
@@ -45,11 +46,17 @@ def plot_histograms(indep_rewards, svpg_rewards, title, plot=True, save_figure=T
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
 
     final_show(
-        save_figure, plot, f"{title}-indep_vs_svpg.png", "particules", "rewards", title
+        save_figure,
+        plot,
+        f"{title}-indep_vs_svpg.png",
+        "particules",
+        "rewards",
+        title,
+        directory,
     )
 
 
-def plot_pendulum(agent, env, figname, plot=True, save_figure=True):
+def plot_pendulum(agent, env, figname, directory, plot=True, save_figure=True):
     """
     Plot a critic for the Pendulum environment
     :param agent: the policy / critic agent specifying the action to be plotted
@@ -94,14 +101,23 @@ def plot_pendulum(agent, env, figname, plot=True, save_figure=True):
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(save_figure, plot, figname, x_label, y_label, "V Function", "critics/")
+    final_show(
+        save_figure,
+        plot,
+        figname,
+        x_label,
+        y_label,
+        "V Function",
+        directory + "/pendulum_critics/",
+    )
 
 
 def plot_cartpole(
     agent,
     env,
+    figname,
+    directory,
     plot=True,
-    figname="cartpole_critic.pdf",
     save_figure=True,
 ):
     """
@@ -161,4 +177,12 @@ def plot_cartpole(
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(save_figure, plot, figname, x_label, y_label, "V Function", "critics/")
+    final_show(
+        save_figure,
+        plot,
+        figname,
+        x_label,
+        y_label,
+        "V Function",
+        directory + "/cartpole_critics/",
+    )
