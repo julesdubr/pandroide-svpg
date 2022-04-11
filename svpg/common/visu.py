@@ -44,9 +44,10 @@ def plot_histograms(
     plt.bar(x - 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
     plt.bar(x + 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
+    plt.xticks([], [])
 
     figname = f"{title}-indep_vs_svpg.png"
-    final_show(save_figure, plot, figname, "particules", "rewards", title, directory)
+    final_show(save_figure, plot, figname, "", "rewards", title, directory)
 
 
 def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):

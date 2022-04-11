@@ -13,8 +13,8 @@ class EnvAgentAutoReset(AutoResetGymAgent):
 
     def __init__(self, cfg):
         super().__init__(
-            get_class(cfg.algorithm.env),
-            get_arguments(cfg.algorithm.env),
+            get_class(cfg.env),
+            get_arguments(cfg.env),
             n_envs=cfg.algorithm.n_envs,
         )
 
@@ -22,8 +22,8 @@ class EnvAgentAutoReset(AutoResetGymAgent):
 class EnvAgent(GymAgent):
     def __init__(self, cfg):
         super().__init__(
-            get_class(cfg.algorithm.env),
-            get_arguments(cfg.algorithm.env),
+            get_class(cfg.env),
+            get_arguments(cfg.env),
             n_envs=cfg.algorithm.n_envs,
         )
 

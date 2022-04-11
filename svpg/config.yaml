@@ -5,12 +5,17 @@ logger:
   modulo: 1
   verbose: True
 
+env:
+  classname: svpg.agents.env.make_env
+  env_name: CartPole-v1
+  max_episode_steps: 500
+
 algorithm:
   env_seed: 432
   n_envs: 8
   n_timesteps: 16
-  n_particles: 16
-  max_epochs: 500
+  n_particles: 2
+  max_epochs: 200
   discount_factor: 0.95
   entropy_coef: 0.001
   critic_coef: 1.0
@@ -18,11 +23,6 @@ algorithm:
 
   architecture:
     hidden_size: 32
-    
-  env:
-    classname: svpg.agents.env.make_env
-    env_name: CartPole-v1
-    max_episode_steps: 500
 
   optimizer:
     classname: torch.optim.Adam

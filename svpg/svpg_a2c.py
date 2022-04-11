@@ -7,6 +7,7 @@ from svpg.common.kernel import RBF
 from svpg.common.visu import plot_histograms, plot_cartpole
 
 from pathlib import Path
+import datetime
 
 
 @hydra.main(config_path=".", config_name="config.yaml")
@@ -21,7 +22,8 @@ def main(cfg):
     svpg = SVPG(cfg, a2c, RBF)
     svpg_rewards = svpg.run()
 
-    directory = str(Path(__file__).parents[1]) + "/plots/"
+    d = datetime.datetime.today()
+    directory = d.strftime(str(Path(__file__).parents[1]) + "/plots/%m-%d_%H-%M/")
     plot_histograms(indep_rewards, svpg_rewards, "A2C", directory, plot=False)
     env = svpg.env
 
@@ -38,5 +40,5 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    with autograd.detect_anomaly():
-        main()
+    # with autograd.detect_anomaly():
+    main()

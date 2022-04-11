@@ -16,7 +16,7 @@ class Algo:
     def __init__(self, cfg):
         # --------------- Config infos --------------- #
         self.logger = Logger(cfg)
-        self.env = instantiate_class(cfg.algorithm.env)
+        self.env = instantiate_class(cfg.env)
 
         self.n_particles = cfg.algorithm.n_particles
         self.max_epochs = cfg.algorithm.max_epochs
