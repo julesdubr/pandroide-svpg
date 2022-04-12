@@ -1,6 +1,6 @@
 import hydra
 
-from svpg.algos import A2C, SVPG
+from svpg.algos import REINFORCE, SVPG
 from svpg.common.kernel import RBF
 from svpg.common.visu import plot_histograms, plot_cartpole
 
@@ -14,15 +14,15 @@ def main(cfg):
 
     mp.set_start_method("spawn")
 
-    a2c = A2C(cfg)
-    # indep_rewards = a2c.run()
+    reinforce = REINFORCE(cfg)
+    indep_rewards = reinforce.run()
 
-    svpg = SVPG(cfg, a2c, RBF)
+    svpg = SVPG(cfg, reinforce, RBF)
     svpg_rewards = svpg.run()
 
     d = datetime.datetime.today()
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
-    # plot_histograms(indep_rewards, svpg_rewards, "A2C", directory, plot=False)
+    plot_histograms(indep_rewards, svpg_rewards, "REINFORCE", directory, plot=False)
     env = svpg.env
 
     for pid in range(svpg.n_particles):

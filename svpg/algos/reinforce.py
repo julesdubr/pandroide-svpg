@@ -5,8 +5,8 @@ import numpy as np
 
 
 class REINFORCE(Algo):
-    def __init__(self, cfg, continuous=False):
-        super().__init__(cfg, continuous)
+    def __init__(self, cfg):
+        super().__init__(cfg)
         self.stop_variable = "env/done"
 
     def compute_reinforce_loss(self, reward, action_logprobs, critic, entropy, done):

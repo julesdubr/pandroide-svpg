@@ -8,7 +8,7 @@ from salina.workspace import Workspace
 from gym.spaces import Box, Discrete
 
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
-from svpg.agents.env import EnvAgentAutoReset
+from svpg.agents.env import EnvAgentAutoReset, EnvAgent
 from svpg.common.logger import Logger
 
 
@@ -27,13 +27,11 @@ class Algo:
         self.policy_coef = cfg.algorithm.policy_coef
 
         if not hasattr(self, "stop_variable"):
-            try:
-                self.n_steps = cfg.algorithm.n_timesteps
-            except:
-                raise ValueError
+            self.n_steps = cfg.algorithm.n_timesteps
+            envAgent = EnvAgentAutoReset
+        else:
+            envAgent = EnvAgent
 
-        # ---------  --------- #
-        # Get the corresponding action/critic agents classes
         if isinstance(self.env.action_space, Discrete):
             actionAgent, criticAgent = ActionAgent, CriticAgent
         elif isinstance(self.env.action_space, Box):
@@ -53,7 +51,7 @@ class Algo:
 
         for _ in range(self.n_particles):
             # Create envs
-            env_agent = EnvAgentAutoReset(cfg)
+            env_agent = envAgent(cfg)
             self.env_agents.append(env_agent)
 
             # Create agents
@@ -77,7 +75,9 @@ class Algo:
             )
 
     def execute_acquisition_agent(self, epoch):
+        print("hehe 1")
         if not hasattr(self, "stop_variable"):
+            print("hehe ????")
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
                 if epoch > 0:
@@ -90,12 +90,16 @@ class Algo:
             return
 
         for pid in range(self.n_particles):
+            print("hehe 2")
             kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
+                print("hehe 3")
                 self.workspaces[pid].zero_grad()
                 self.workspaces[pid].clear()
 
+            print("hehe 4")
             self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+            print("hehe 5")
 
     def execute_critic_agent(self):
         if not hasattr(self, "stop_variable"):
@@ -132,30 +136,37 @@ class Algo:
 
     def run(self, show_loss=False, show_grad=False):
         for epoch in range(self.max_epochs):
+            print("bonjour 1")
             # Run all particles
             self.execute_acquisition_agent(epoch)
+            print("bonjour 2")
             self.execute_critic_agent()
+            print("bonjour 3")
 
             # Compute loss
             critic_loss, entropy_loss, policy_loss, rewards = self.compute_loss(
                 self.workspaces, self.logger, epoch, alpha=None, verbose=show_loss
             )
+            print("bonjour 4")
 
             loss = (
                 -self.entropy_coef * entropy_loss
                 + self.critic_coef * critic_loss
                 + self.policy_coef * policy_loss
             )
+            print("bonjour 5")
 
-            # Gradient descent
             for optimizer in self.optimizers:
                 optimizer.zero_grad()
+
             loss.backward()
-            for optimizer in self.optimizers:
-                optimizer.step()
 
             # Log gradient norms
             if show_grad:
                 self.compute_gradient_norm(epoch)
+
+            # Gradient descent
+            for optimizer in self.optimizers:
+                optimizer.step()
 
         return rewards
