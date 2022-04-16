@@ -1,6 +1,7 @@
 from salina import get_arguments, get_class, instantiate_class
 from salina.agents.gyma import AutoResetGymAgent, GymAgent
 
+import my_gym
 import gym
 from gym.wrappers import TimeLimit
 

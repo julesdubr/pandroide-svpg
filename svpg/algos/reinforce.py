@@ -7,7 +7,7 @@ import numpy as np
 class REINFORCE(Algo):
     def __init__(self,
                  policy_coef, critic_coef, 
-                 n_particles, 
+                 n_particles, n_samples,
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
                  logger,
@@ -15,7 +15,7 @@ class REINFORCE(Algo):
                  env, 
                  model, 
                  optimizer):
-        super().__init__(n_particles, 
+        super().__init__(n_particles, n_samples,
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         logger,
@@ -32,6 +32,7 @@ class REINFORCE(Algo):
         max_trajectories_length = reward.size()[0]  # Longest episode over all env
         v_done, trajectories_length = done.float().max(0)
         trajectories_length += 1  # Episode length of each env
+        n_samples = sum(trajectories_length)
         assert v_done.eq(1.0).all()
 
         # Create mask to mask useless values (values that are enregistred into the
@@ -73,7 +74,7 @@ class REINFORCE(Algo):
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
-        return policy_loss, critic_loss
+        return policy_loss, critic_loss, n_samples
 
     def compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
@@ -86,7 +87,7 @@ class REINFORCE(Algo):
             ]
             # Compute loss by REINFORCE
             # (using the reward cumulated until the end of episode)
-            policy_loss, critic_loss = self.compute_reinforce_loss(
+            policy_loss, critic_loss, n_samples = self.compute_reinforce_loss(
                 reward, action_logprobs, critic, done
             )
             total_critic_loss = total_critic_loss + critic_loss
@@ -106,5 +107,5 @@ class REINFORCE(Algo):
             self.logger.add_log("critic_loss", total_critic_loss, epoch)
 
 
-        return total_policy_loss, total_critic_loss, 0, rewards
+        return total_policy_loss, total_critic_loss, 0, n_samples, rewards
     

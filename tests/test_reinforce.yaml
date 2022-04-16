@@ -1,10 +1,10 @@
-env_name: CartPole-v1
+env_name: CartPoleContinuous-v1
 max_episode_steps: 500
-n_envs: 32
+n_envs: 16
 
 algorithm:
   _target_: svpg.algos.reinforce.REINFORCE
-  reinforce_coef: 0.1
+  policy_coef: 0.1
   critic_coef: 1.0
   n_particles: 1
   max_epochs: 10000
@@ -33,7 +33,9 @@ algorithm:
     # _target_: svpg.agents.model.make_model
     _target_: functools.partial
     _args_: ["${get_method:svpg.agents.model.make_model}"]
-    hidden_size: 32
+    hidden_size_0: 100
+    hidden_size_1: 50
+    hidden_size_2: 25
 
   optimizer:
     _target_: functools.partial

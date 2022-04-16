@@ -33,24 +33,30 @@ class SVPG():
 
     def run(self, alpha=10, show_loss=True, show_grad=True):
         for epoch in range(self.algo.max_epochs):
-            # Execute particles' agents
-            self.algo.execute_acquisition_agent(epoch)
-            self.algo.execute_critic_agent()
+            n_samples = 0
+            total_loss = 0
+            while n_samples < self.algo.n_samples:
+                # Execute particles' agents
+                self.algo.execute_acquisition_agent(epoch)
+                self.algo.execute_critic_agent()
 
-            # Compute loss
-            policy_loss, critic_loss, entropy_loss, rewards = self.algo.compute_loss(epoch, show_loss)
+                # Compute loss
+                policy_loss, critic_loss, entropy_loss, n = self.algo.compute_loss(epoch, show_loss)
 
-            # Compute gradients
-            params = self.get_policy_parameters()
-            kernel = self.kernel()(params, params.detach())
-            self.add_gradients(policy_loss * (1 / alpha) * (1 / self.algo.n_particles), kernel)
+                # Compute gradients
+                params = self.get_policy_parameters()
+                kernel = self.kernel()(params, params.detach())
+                self.add_gradients(policy_loss * (1 / alpha) * (1 / self.algo.n_particles), kernel)
 
-            loss = (
-                + self.algo.entropy_coef * entropy_loss
-                + self.algo.critic_coef * critic_loss
-                + kernel.sum() / self.algo.n_particles
-            )
-            loss.backward()
+                total_loss = total_loss + (
+                    + self.algo.entropy_coef * entropy_loss
+                    + self.algo.critic_coef * critic_loss
+                    + kernel.sum() / self.algo.n_particles
+                )
+
+                n_samples += n
+            
+            total_loss.backward()
 
             # Log gradient norms
             if show_grad:
@@ -59,6 +65,6 @@ class SVPG():
             # Gradient descent
             for pid in range(self.algo.n_particles):
                 self.algo.optimizers[pid].step()
+            
+            for pid in range(self.algo.n_particles):
                 self.algo.optimizers[pid].zero_grad()
-
-        return rewards

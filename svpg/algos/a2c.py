@@ -8,7 +8,7 @@ from svpg.algos.algo import Algo
 class A2C(Algo):
     def __init__(self,
                  policy_coef, critic_coef, entropy_coef, gae_coef, 
-                 n_particles, 
+                 n_particles, n_samples, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
                  n_steps,
@@ -17,7 +17,7 @@ class A2C(Algo):
                  env, 
                  model, 
                  optimizer):
-        super().__init__(n_particles, 
+        super().__init__(n_particles, n_samples, 
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         logger,
@@ -35,6 +35,9 @@ class A2C(Algo):
         td = RLF.gae(critic, reward, done, self.discount_factor, self.gae)
         # Compute critic loss
         td_error = td ** 2
+
+        print(td_error.size())
+
         critic_loss = td_error.mean()
 
         return critic_loss, td
@@ -42,11 +45,12 @@ class A2C(Algo):
     def compute_policy_loss(self, action_logprobs, td):
         policy_loss = action_logprobs[:-1] * td.detach()
 
+        print(policy_loss.size())
+
         return policy_loss.mean()
 
     def compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
-        rewards = np.zeros(self.n_particles)
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
@@ -68,14 +72,16 @@ class A2C(Algo):
             creward = self.workspaces[pid]["env/cumulated_reward"]
             creward = creward[done]
 
-            rewards[pid] = creward.mean()
+            self.rewards[epoch, pid] = creward.mean()
 
             if creward.size()[0] > 0:
-                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
+                self.logger.add_log(f"reward_{pid}", self.rewards[epoch, pid], epoch)
 
         if verbose:
             self.logger.log_losses(
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
-        return total_policy_loss, total_critic_loss, total_entropy_loss, rewards
+        n_samples = critic.size()[0] * critic.size()[1]
+
+        return total_policy_loss, total_critic_loss, total_entropy_loss, n_samples

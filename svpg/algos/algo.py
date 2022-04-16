@@ -12,10 +12,13 @@ from gym.spaces import Discrete
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
 from svpg.agents.env import make_env
 
+import numpy as np
+
 
 class Algo:
     def __init__(self, 
-                 n_particles, 
+                 n_particles,
+                 n_samples, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
                  logger,
@@ -28,6 +31,8 @@ class Algo:
         self.max_epochs = max_epochs
         self.discount_factor = discount_factor
         self.n_env = n_envs
+        self.n_samples = n_samples
+        self.rewards = np.zeros((max_epochs, n_particles))
 
         # --------------- Logger --------------- #
         self.logger = logger
@@ -41,8 +46,14 @@ class Algo:
             self.critic_agents = [CriticAgent(model(input_size, 1)) for _ in range(n_particles)]
         else:
             input_size, output_size = env.observation_space.shape[0], env.action_space.shape[0]
-            self.action_agents = [CActionAgent(output_size, model(input_size, output_size)) for _ in range(n_particles)]
-            self.critic_agents = [CriticAgent(model(input_size, 1, activation=nn.SiLU)) for _ in range(n_particles)]
+            self.action_agents = [CActionAgent(input_size, output_size, model(input_size, output_size, activation=nn.Tanh)) for _ in range(n_particles)]
+            self.critic_agents = [CCriticAgent(model(input_size, 1, activation=nn.SiLU)) for _ in range(n_particles)]
+            for p in self.action_agents[0].parameters():
+                print(p.size())
+            print("model:\n")
+            for p in self.action_agents[0].model.parameters():
+                print(p.size())
+            # print(self.action_agents[0].model.parameters())
 
         self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
         self.acquisition_agents = [TemporalAgent(Agents(env_agent, action_agent)) for env_agent, action_agent in zip(self.env_agents, self.action_agents)]
@@ -114,20 +125,25 @@ class Algo:
 
     def run(self, show_loss=True, show_grad=True):
         for epoch in range(self.max_epochs):
-            # Run all particles
-            self.execute_acquisition_agent(epoch)
-            self.execute_critic_agent()
+            n_samples = 0
+            total_loss = 0
+            while n_samples < self.n_samples:
+                # Run all particles
+                self.execute_acquisition_agent(epoch)
+                self.execute_critic_agent()
 
-            # Compute loss
-            policy_loss, critic_loss, entropy_loss, rewards = self.compute_loss(
-                epoch, verbose=show_loss
-            )
+                # Compute loss
+                policy_loss, critic_loss, entropy_loss, n = self.compute_loss(
+                    epoch, verbose=show_loss
+                )
 
-            total_loss = (
-                + self.policy_coef * policy_loss
-                + self.critic_coef * critic_loss
-                + self.entropy_coef * entropy_loss
-            )
+                total_loss = total_loss + (
+                    + self.policy_coef * policy_loss
+                    + self.critic_coef * critic_loss
+                    + self.entropy_coef * entropy_loss
+                )
+
+                n_samples += n
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
@@ -141,5 +157,3 @@ class Algo:
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
-
-        return rewards

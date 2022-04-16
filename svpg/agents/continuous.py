@@ -6,19 +6,22 @@ from salina import TAgent
 
 
 class CActionAgent(TAgent):
-    def __init__(self, output_size, model):
+    def __init__(self, input_size, output_size, model):
         super().__init__()
         # Model input and output size
         # Model for estimating the mean
+        print(f"output size: {output_size}")
         self.model = model
         # The deviation is estimated by a vector
-        self.std_param = nn.parameter.Parameter(th.randn(output_size, 1))
+        # self.std_param = nn.parameter.Parameter(th.randn(intput_size, output_size))
+        self.std_param = nn.Linear(input_size, output_size)
         self.soft_plus = nn.Softplus()
 
     def forward(self, t, stochastic, **kwargs):
         observation = self.get(("env/env_obs", t))
         mean = self.model(observation)
-        dist = Normal(mean, self.soft_plus(self.std_param))
+        std = self.std_param(observation)
+        dist = Normal(mean, self.soft_plus(std))
         self.set(("entropy", t), dist.entropy().squeeze(-1))
 
         if stochastic:
