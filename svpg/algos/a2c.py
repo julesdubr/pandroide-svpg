@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 import salina.rl.functional as RLF
 
@@ -56,7 +57,6 @@ class A2C(Algo):
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
-            total_critic_loss = total_critic_loss + critic_loss
 
             total_entropy_loss = total_entropy_loss - entropy.mean()
 

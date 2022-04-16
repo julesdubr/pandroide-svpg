@@ -3,7 +3,7 @@ from functools import partial
 import torch as th
 import torch.nn as nn
 
-from salina import get_arguments, get_class
+from salina import get_arguments, get_class, instantiate_class
 from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
@@ -58,7 +58,9 @@ class Algo:
                            for action_agent, critic_agent in zip(self.action_agents, self.critic_agents)]
 
     def execute_acquisition_agent(self, epoch):
+        print("hehe 1")
         if not hasattr(self, "stop_variable"):
+            print("hehe ????")
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
                 if epoch > 0:
@@ -71,11 +73,16 @@ class Algo:
             return
 
         for pid in range(self.n_particles):
+            print("hehe 2")
             kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
+                print("hehe 3")
+                self.workspaces[pid].zero_grad()
                 self.workspaces[pid].clear()
 
+            print("hehe 4")
             self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+            print("hehe 5")
 
     def execute_critic_agent(self):
         if not hasattr(self, "stop_variable"):
@@ -114,14 +121,18 @@ class Algo:
 
     def run(self, show_loss=True, show_grad=True):
         for epoch in range(self.max_epochs):
+            print("bonjour 1")
             # Run all particles
             self.execute_acquisition_agent(epoch)
+            print("bonjour 2")
             self.execute_critic_agent()
+            print("bonjour 3")
 
             # Compute loss
             policy_loss, critic_loss, entropy_loss, rewards = self.compute_loss(
                 epoch, verbose=show_loss
             )
+            print("bonjour 4")
 
             total_loss = (
                 + self.policy_coef * policy_loss
@@ -141,5 +152,9 @@ class Algo:
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
+
+            # Gradient descent
+            for optimizer in self.optimizers:
+                optimizer.step()
 
         return rewards

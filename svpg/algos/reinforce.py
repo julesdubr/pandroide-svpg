@@ -89,6 +89,7 @@ class REINFORCE(Algo):
             policy_loss, critic_loss = self.compute_reinforce_loss(
                 reward, action_logprobs, critic, done
             )
+
             total_critic_loss = total_critic_loss + critic_loss
             total_policy_loss = total_policy_loss - policy_loss
 

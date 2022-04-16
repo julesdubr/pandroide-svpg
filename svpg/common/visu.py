@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch as th
 
+from pathlib import Path
+
 
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
     """
@@ -16,37 +18,39 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
     :param x_label: label on the x axis
     :param y_label: label on the y axis
     :param title: title of the figure
-    :param directory: the directory where to save the file
     :return: nothing
     """
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.title(title)
+
     if save_figure:
-        directory = os.getcwd() + "./data/plots/" + directory
         if not os.path.exists(directory):
             os.makedirs(directory)
-        plt.savefig(directory + figure_name)
+        directory = Path(directory + figure_name)
+        plt.savefig(directory)
+
     if plot:
         plt.show()
+
     plt.close()
 
 
-def plot_histograms(indep_rewards, svpg_rewards, title, save_figure=True, plot=True):
+def plot_histograms(
+    indep_rewards, svpg_rewards, title, directory, plot=True, save_figure=True
+):
     x = np.arange(len(svpg_rewards))
 
-    plt.bar(x + 0.1, np.sort(indep_rewards), width=0.2, color="red")
-    plt.bar(x - 0.1, np.sort(svpg_rewards), width=0.2, color="blue")
+    plt.bar(x - 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
+    plt.bar(x + 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
     plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
+    plt.xticks([], [])
 
-    final_show(
-        save_figure, plot, f"{title}-indep_vs_svpg.pdf", "particules", "rewards", title
-    )
+    figname = f"{title}-indep_vs_svpg.png"
+    final_show(save_figure, plot, figname, "", "rewards", title, directory)
 
 
-def plot_pendulum(
-    agent, env, plot=True, figname="pendulum_critic.pdf", save_figure=True
-):
+def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
     """
     Plot a critic for the Pendulum environment
     :param agent: the policy / critic agent specifying the action to be plotted
@@ -57,13 +61,8 @@ def plot_pendulum(
     :return: nothing
     """
     if env.observation_space.shape[0] <= 2:
-        raise (
-            ValueError(
-                "Observation space dimension {}, should be > 2".format(
-                    env.observation_space.shape[0]
-                )
-            )
-        )
+        msg = f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
+        raise (ValueError(msg))
     definition = 100
     portrait = np.zeros((definition, definition))
     state_min = env.observation_space.low
@@ -74,10 +73,8 @@ def plot_pendulum(
             np.linspace(state_min[2], state_max[2], num=definition)
         ):
             obs = np.array([[np.cos(t), np.sin(t), td]])
-            with th.no_grad():
-                obs = th.from_numpy(obs.astype(np.float32))
-                value = agent.model(obs).squeeze(-1)
-
+            obs = th.from_numpy(obs.astype(np.float32))
+            value = model(obs).squeeze(-1)
             portrait[definition - (1 + index_td), index_t] = value.item()
 
     plt.figure(figsize=(10, 10))
@@ -97,16 +94,13 @@ def plot_pendulum(
         figname,
         x_label,
         y_label,
-        "Critic phase portrait",
+        "V Function",
+        directory + "/pendulum_critics/",
     )
 
 
 def plot_cartpole(
-    agent,
-    env,
-    plot=True,
-    figname="cartpole_critic.pdf",
-    save_figure=True,
+    model, env, figname, directory, plot=True, save_figure=True, stochastic=None
 ):
     """
     Visualization of the critic in a N-dimensional state space
@@ -122,13 +116,8 @@ def plot_cartpole(
     :return: nothing
     """
     if env.observation_space.shape[0] <= 2:
-        raise (
-            ValueError(
-                "Observation space dimension {}, should be > 2".format(
-                    env.observation_space.shape[0]
-                )
-            )
-        )
+        msg = f"Observation space dim {env.observation_space.shape[0]}, should be > 2"
+        raise (ValueError(msg))
     definition = 100
     portrait = np.zeros((definition, definition))
     state_min = env.observation_space.low
@@ -146,13 +135,23 @@ def plot_cartpole(
             obs = np.append(obs, z1)
             obs = np.append(obs, y)
             obs = np.append(obs, z2)
-            # Add batch dim
-            obs = obs.reshape(1, -1)
-            with th.no_grad():
+            if stochastic is None:
+                # Add batch dim
+                obs = obs.reshape(1, -1)
                 obs = th.from_numpy(obs.astype(np.float32))
-                value = agent.model(obs).squeeze(-1)
+                value = model(obs).squeeze(-1)
+                portrait[definition - (1 + index_y), index_x] = value.item()
 
-            portrait[definition - (1 + index_y), index_x] = value.item()
+            else:
+                obs = th.from_numpy(obs.astype(np.float32))
+                scores = model(obs)
+                probs = th.softmax(scores, dim=-1)
+                if stochastic:
+                    action = th.distributions.Categorical(probs).sample()
+                else:
+                    action = probs.argmax(1)
+
+                portrait[definition - (1 + index_y), index_x] = action.item()
 
     plt.figure(figsize=(10, 10))
     plt.imshow(
@@ -161,8 +160,17 @@ def plot_cartpole(
         extent=[state_min[0], state_max[0], state_min[2], state_max[2]],
         aspect="auto",
     )
-    plt.colorbar(label="critic value")
+
+    if stochastic is None:
+        directory += "/cartpole_critics/"
+        title = "Cartpole Critic"
+        plt.colorbar(label="critic value")
+    else:
+        directory += "/cartpole_policies/"
+        title = "Cartpole Actor"
+        plt.colorbar(label="action")
+
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(save_figure, plot, figname, x_label, y_label, "V Function")
+    final_show(save_figure, plot, figname, x_label, y_label, title, directory)

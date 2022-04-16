@@ -133,6 +133,7 @@ salina/
 
 # outputs
 outputs/
+archives/
 
 # tensorboard
 tmp/
