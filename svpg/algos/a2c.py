@@ -12,6 +12,8 @@ class A2C(Algo):
                  n_particles, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
+                 eval_interval,
+                 clipped,
                  n_steps,
                  logger,
                  env_agent,
@@ -21,10 +23,12 @@ class A2C(Algo):
         super().__init__(n_particles, 
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
+                        eval_interval,
+                        clipped,
                         logger,
                         env_agent,
                         env, 
-                        model, 
+                        model,
                         optimizer)
 
         self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, entropy_coef
@@ -47,7 +51,6 @@ class A2C(Algo):
 
     def compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
-        rewards = np.zeros(self.n_particles)
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
@@ -57,6 +60,7 @@ class A2C(Algo):
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
+            total_critic_loss = total_critic_loss + critic_loss
 
             total_entropy_loss = total_entropy_loss - entropy.mean()
 
@@ -64,18 +68,10 @@ class A2C(Algo):
                 action_logprobs, td
             )
 
-            # Log reward
-            creward = self.workspaces[pid]["env/cumulated_reward"]
-            creward = creward[done]
-
-            rewards[pid] = creward.mean()
-
-            if creward.size()[0] > 0:
-                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
-
         if verbose:
             self.logger.log_losses(
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
-        return total_policy_loss, total_critic_loss, total_entropy_loss, rewards
+        n_steps = np.full(self.n_particles, self.n_steps * self.n_env)
+        return total_policy_loss, total_critic_loss, total_entropy_loss, n_steps

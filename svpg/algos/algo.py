@@ -1,6 +1,4 @@
-from functools import partial
-
-import torch as th
+import torch
 import torch.nn as nn
 
 from salina import get_arguments, get_class, instantiate_class
@@ -12,12 +10,16 @@ from gym.spaces import Discrete
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
 from svpg.agents.env import make_env
 
+import numpy as np
+
 
 class Algo:
     def __init__(self, 
                  n_particles, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
+                 eval_interval,
+                 clipped,
                  logger,
                  env_agent,
                  env, 
@@ -28,12 +30,15 @@ class Algo:
         self.max_epochs = max_epochs
         self.discount_factor = discount_factor
         self.n_env = n_envs
+        self.rewards = np.zeros((int(max_epochs / eval_interval), n_particles))
+        self.clipped = clipped
 
         # --------------- Logger --------------- #
         self.logger = logger
 
         # --------------- Agents --------------- #
-        self.env_agents = [env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
+        self.train_env_agents = [env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
+        self.eval_env_agents = [env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
 
         if isinstance(env.action_space, Discrete):
             input_size, output_size = env.observation_space.shape[0], env.action_space.n
@@ -45,7 +50,8 @@ class Algo:
             self.critic_agents = [CriticAgent(model(input_size, 1, activation=nn.SiLU)) for _ in range(n_particles)]
 
         self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
-        self.acquisition_agents = [TemporalAgent(Agents(env_agent, action_agent)) for env_agent, action_agent in zip(self.env_agents, self.action_agents)]
+        self.train_acquisition_agents = [TemporalAgent(Agents(train_env_agent, action_agent)) for train_env_agent, action_agent in zip(self.train_env_agents, self.action_agents)]
+        self.eval_acquisition_agents = [TemporalAgent(Agents(eval_env_agent, action_agent)) for eval_env_agent, action_agent in zip(self.eval_env_agents, self.action_agents)]
         
         for acquisition_agent in self.acquisition_agents:
             acquisition_agent.seed(env_seed)
@@ -58,9 +64,7 @@ class Algo:
                            for action_agent, critic_agent in zip(self.action_agents, self.critic_agents)]
 
     def execute_acquisition_agent(self, epoch):
-        print("hehe 1")
         if not hasattr(self, "stop_variable"):
-            print("hehe ????")
             for pid in range(self.n_particles):
                 kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
                 if epoch > 0:
@@ -69,20 +73,15 @@ class Algo:
                     kwargs["t"] = 1
                     kwargs["n_steps"] = self.n_steps - 1
 
-                self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
+                self.train_acquisition_agents[pid](self.workspaces[pid], **kwargs)
             return
 
         for pid in range(self.n_particles):
-            print("hehe 2")
             kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
             if epoch > 0:
-                print("hehe 3")
-                self.workspaces[pid].zero_grad()
                 self.workspaces[pid].clear()
 
-            print("hehe 4")
-            self.acquisition_agents[pid](self.workspaces[pid], **kwargs)
-            print("hehe 5")
+            self.train_acquisition_agents[pid](self.workspaces[pid], **kwargs)
 
     def execute_critic_agent(self):
         if not hasattr(self, "stop_variable"):
@@ -110,7 +109,7 @@ class Algo:
                 if w.grad != None:
                     critic_gradnorm += w.grad.detach().data.norm(2) ** 2
 
-        policy_gradnorm, critic_gradnorm = th.sqrt(policy_gradnorm), th.sqrt(critic_gradnorm)
+        policy_gradnorm, critic_gradnorm = torch.sqrt(policy_gradnorm), torch.sqrt(critic_gradnorm)
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
@@ -119,20 +118,19 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def run(self, show_loss=True, show_grad=True):
+    def run(self, max_grad_norm=0.5, show_loss=True, show_grad=True):
+        nb_steps = np.zeros(self.n_particles)
+        n_eval = np.zeros(self.n_particles)
+        tmp_steps = np.zeros(self.n_particles)
         for epoch in range(self.max_epochs):
-            print("bonjour 1")
             # Run all particles
             self.execute_acquisition_agent(epoch)
-            print("bonjour 2")
             self.execute_critic_agent()
-            print("bonjour 3")
 
             # Compute loss
-            policy_loss, critic_loss, entropy_loss, rewards = self.compute_loss(
+            policy_loss, critic_loss, entropy_loss, n_steps = self.compute_loss(
                 epoch, verbose=show_loss
             )
-            print("bonjour 4")
 
             total_loss = (
                 + self.policy_coef * policy_loss
@@ -149,12 +147,28 @@ class Algo:
             if show_grad:
                 self.compute_gradient_norm(epoch)
             
+            if self.clipped:
+                for pid in range(self.n_particles):
+                    torch.nn.utils.clip_grad_norm_(self.action_agents[pid].parameters(), max_grad_norm)
+        
             # Gradient descent
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
 
             # Gradient descent
-            for optimizer in self.optimizers:
-                optimizer.step()
+            for pid in range(self.n_particles):
+                self.optimizers[pid].zero_grad()
 
-        return rewards
+            # Evaluation
+            nb_steps += n_steps
+            for pid in range(self.n_particles):
+                if nb_steps[pid] - tmp_steps[pid] > self.eval_interval:
+                    eval_workspace = Workspace()
+                    self.eval_acquisition_agents[pid](eval_workspace, t=0, stop_variable="env/done", stochastic=False)
+                    crewards = eval_workspace["env/cumulated_reward"][-1]
+                    rewards = crewards.mean()
+                    self.logger.add_log(f"reward_{pid}", rewards, nb_steps[pid])
+                    self.rewards[n_eval[pid], pid] = rewards
+                    n_eval[pid] += 1
+            
+            tmp_steps = nb_steps

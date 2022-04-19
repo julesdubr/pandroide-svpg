@@ -23,13 +23,17 @@ class SVPG():
         policy_loss.backward(retain_graph=True)
 
         # Get all the couples of particules (i,j) st. i /= j
-        for i, j in list(permutations(range(self.algo.n_particles), r=2)):
+        # for i, j in list(permutations(range(self.algo.n_particles), r=2)):
+        for i in range(self.n_particles):
+            for j in range(self.n_particles):
+                if i == j:
+                    continue
 
-            theta_i = self.algo.action_agents[i].parameters()
-            theta_j = self.algo.action_agents[j].parameters()
+                theta_i = self.algo.action_agents[i].parameters()
+                theta_j = self.algo.action_agents[j].parameters()
 
-            for (wi, wj) in zip(theta_i, theta_j):
-                wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
+                for (wi, wj) in zip(theta_i, theta_j):
+                    wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
     def run(self, alpha=10, show_loss=True, show_grad=True):
         for epoch in range(self.algo.max_epochs):
@@ -61,10 +65,5 @@ class SVPG():
             # Log gradient norms
             if show_grad:
                 self.algo.compute_gradient_norm(epoch)
-
-            # Gradient descent
-            for pid in range(self.algo.n_particles):
-                self.algo.optimizers[pid].step()
-                self.algo.optimizers[pid].zero_grad()
-
+                
         return rewards

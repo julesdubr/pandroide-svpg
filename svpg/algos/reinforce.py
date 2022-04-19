@@ -1,6 +1,6 @@
 from svpg.algos.algo import Algo
 
-import torch as th
+import torch
 import numpy as np
 
 
@@ -10,6 +10,8 @@ class REINFORCE(Algo):
                  n_particles, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
+                 eval_interval,
+                 clipped,
                  logger,
                  env_agent,
                  env, 
@@ -18,6 +20,8 @@ class REINFORCE(Algo):
         super().__init__(n_particles, 
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
+                        eval_interval,
+                        clipped,
                         logger,
                         env_agent,
                         env, 
@@ -39,7 +43,7 @@ class REINFORCE(Algo):
         # Create a matrix arange with size (max_trajectories_length, number of env).
         # arange(i, j) = i with 0 < i < max_trajectories_length
         arange = (
-            th.arange(max_trajectories_length, device=done.device)
+            torch.arange(max_trajectories_length, device=done.device)
             .unsqueeze(-1)
             .repeat(1, batch_size)
         )
@@ -55,13 +59,13 @@ class REINFORCE(Algo):
         # Compute discounted cumulated reward
         # cumulated_reward[t] = reward[t] + discount_factor * reward[t+1]
         #   + ... + (discount_factor ^ episode_length) * reward[episode_length]
-        cumulated_reward = [th.zeros_like(reward[-1])]
+        cumulated_reward = [torch.zeros_like(reward[-1])]
         for t in range(max_trajectories_length - 1, 0, -1):
             cumulated_reward.append(
                 self.discount_factor * cumulated_reward[-1] + reward[t]
             )
         cumulated_reward.reverse()
-        cumulated_reward = th.cat([c.unsqueeze(0) for c in cumulated_reward])
+        cumulated_reward = torch.cat([c.unsqueeze(0) for c in cumulated_reward])
 
         # Critic loss
         critic_loss = (
@@ -73,11 +77,11 @@ class REINFORCE(Algo):
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
-        return policy_loss, critic_loss
+        return policy_loss, critic_loss, torch.sum(trajectories_length)
 
     def compute_loss(self, epoch, verbose=True):
-        total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
-        rewards = np.zeros(self.n_particles)
+        total_critic_loss, total_policy_loss = 0, 0
+        n_steps = np.zeros(self.n_particles)
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
@@ -86,26 +90,20 @@ class REINFORCE(Algo):
             ]
             # Compute loss by REINFORCE
             # (using the reward cumulated until the end of episode)
-            policy_loss, critic_loss = self.compute_reinforce_loss(
+            policy_loss, critic_loss, n = self.compute_reinforce_loss(
                 reward, action_logprobs, critic, done
             )
 
             total_critic_loss = total_critic_loss + critic_loss
             total_policy_loss = total_policy_loss - policy_loss
 
-            # Log reward
-            creward = self.workspaces[pid]["env/cumulated_reward"]
-            creward = creward[done]
-
-            rewards[pid] = creward.mean()
-
-            if creward.size()[0] > 0:
-                self.logger.add_log(f"reward_{pid}", rewards[pid], epoch)
+            n_steps[pid] = n
 
         if verbose:
             self.logger.add_log("policy_loss", total_policy_loss, epoch)
             self.logger.add_log("critic_loss", total_critic_loss, epoch)
 
 
-        return total_policy_loss, total_critic_loss, 0, rewards
+
+        return total_policy_loss, total_critic_loss, 0, n_steps
     
