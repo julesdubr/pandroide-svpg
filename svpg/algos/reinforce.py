@@ -6,7 +6,7 @@ import numpy as np
 
 class REINFORCE(Algo):
     def __init__(self,
-                 policy_coef, critic_coef, 
+                 policy_coef, critic_coef,
                  n_particles, 
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
@@ -30,6 +30,7 @@ class REINFORCE(Algo):
 
         self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, 0
         self.stop_variable = "env/done"
+        self.T = max_episode_steps * n_envs * max_epochs
 
     def compute_reinforce_loss(self, reward, action_logprobs, critic, done):
         batch_size = reward.size()[1]  # Number of env

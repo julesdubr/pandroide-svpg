@@ -1,7 +1,8 @@
 from salina import get_arguments, get_class
-from salina.agents.gyma import AutoResetGymAgent, GymAgent
+from salina.agents.gyma import AutoResetGymAgent, NoAutoResetGymAgent
 
 import gym
+import my_gym
 from gym.wrappers import TimeLimit
 
 
@@ -27,7 +28,7 @@ class EnvAgentAutoReset(AutoResetGymAgent):
     
 
 
-class EnvAgent(GymAgent):
+class EnvAgentNoAutoReset(NoAutoResetGymAgent):
     def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
         super().__init__(
             make_env_fn=make_env_fn,

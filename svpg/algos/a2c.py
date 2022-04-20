@@ -34,6 +34,7 @@ class A2C(Algo):
         self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, entropy_coef
         self.gae = gae_coef
         self.n_steps = n_steps
+        self.T = n_steps * n_envs * max_epochs
 
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error

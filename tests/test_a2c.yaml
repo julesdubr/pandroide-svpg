@@ -1,21 +1,23 @@
 env_name: CartPole-v1
 max_episode_steps: 500
-n_envs: 32
+n_envs: 8
 
 algorithm:
   _target_: svpg.algos.a2c.A2C
   policy_coef: 0.1
   critic_coef: 1.0
   entropy_coef: 0.001
-  gae_coef: 0.3
-  n_particles: 4
-  max_epochs: 10000
+  gae_coef: 1
+  n_particles: 16
+  max_epochs: 1000
   discount_factor: 0.95
   env_name: ${env_name}
   max_episode_steps: ${max_episode_steps}
   n_envs: ${n_envs}
   env_seed: 432
-  n_steps: 128
+  n_steps: 64
+  eval_interval: 500
+  clipped: True
 
   logger:
     _target_: svpg.common.logger.Logger
@@ -36,7 +38,9 @@ algorithm:
     # _target_: svpg.agents.model.make_model
     _target_: functools.partial
     _args_: ["${get_method:svpg.agents.model.make_model}"]
-    hidden_size: 32
+    hidden_size0: 100
+    hidden_size1: 50
+    hidden_size2: 25
 
   optimizer:
     _target_: functools.partial
