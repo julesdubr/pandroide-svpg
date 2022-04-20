@@ -6,7 +6,7 @@ algorithm:
   _target_: svpg.algos.reinforce.REINFORCE
   policy_coef: 0.1
   critic_coef: 1.0
-  n_particles: 1
+  n_particles: 16
   max_epochs: 500
   discount_factor: 0.95
   env_name: ${env_name}
