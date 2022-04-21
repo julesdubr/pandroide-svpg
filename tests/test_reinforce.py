@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from omegaconf import OmegaConf
+
 try:
     OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)
 except:
@@ -27,7 +28,6 @@ def main(cfg):
 
     a2c_reward = algo_reinfoce.rewards
 
-
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
     svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
     svpg_normal.run()
@@ -42,9 +42,18 @@ def main(cfg):
 
     eval_interval = algo_reinfoce.eval_interval
 
-    max_a2c_reward = a2c_reward[max(a2c_reward, key=lambda particle: sum(a2c_reward[particle]))]
-    max_svpg_normal_reward = svpg_normal_reward[max(svpg_normal_reward, key=lambda particle: sum(svpg_normal_reward[particle]))]
-    max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[max(svpg_clipped_annealed_reward, key=lambda particle: sum(svpg_clipped_annealed_reward[particle]))]
+    max_a2c_reward = a2c_reward[
+        max(a2c_reward, key=lambda particle: sum(a2c_reward[particle]))
+    ]
+    max_svpg_normal_reward = svpg_normal_reward[
+        max(svpg_normal_reward, key=lambda particle: sum(svpg_normal_reward[particle]))
+    ]
+    max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[
+        max(
+            svpg_clipped_annealed_reward,
+            key=lambda particle: sum(svpg_clipped_annealed_reward[particle]),
+        )
+    ]
 
     a2c_timesteps = np.array([range(len(max_a2c_reward))])
     a2c_timesteps = (a2c_timesteps + 1) * eval_interval
@@ -54,14 +63,22 @@ def main(cfg):
     svpg_normal_timesteps = (svpg_normal_timesteps + 1) * eval_interval
     svpg_normal_timesteps = np.squeeze(svpg_normal_timesteps, 0)
 
-    svpg_clipped_annealed_timesteps = np.array([range(len(max_svpg_clipped_annealed_reward))])
-    svpg_clipped_annealed_timesteps = (svpg_clipped_annealed_timesteps + 1) * eval_interval
+    svpg_clipped_annealed_timesteps = np.array(
+        [range(len(max_svpg_clipped_annealed_reward))]
+    )
+    svpg_clipped_annealed_timesteps = (
+        svpg_clipped_annealed_timesteps + 1
+    ) * eval_interval
     svpg_clipped_annealed_timesteps = np.squeeze(svpg_clipped_annealed_timesteps, 0)
 
     plt.figure()
     plt.plot(a2c_timesteps, max_a2c_reward, label="REINFORCE")
     plt.plot(svpg_normal_timesteps, max_svpg_normal_reward, label="SVPG_REINFORCE")
-    plt.plot(svpg_clipped_annealed_timesteps, max_svpg_clipped_annealed_reward, label="SVPG_REINFORCE_clipped_annealed")
+    plt.plot(
+        svpg_clipped_annealed_timesteps,
+        max_svpg_clipped_annealed_reward,
+        label="SVPG_REINFORCE_clipped_annealed",
+    )
     plt.xlabel("Timesteps")
     plt.ylabel("Reward")
     plt.legend()
