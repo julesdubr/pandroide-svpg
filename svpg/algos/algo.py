@@ -13,6 +13,8 @@ import numpy as np
 
 from copy import deepcopy
 
+from collections import defaultdict
+
 
 class Algo:
     def __init__(
@@ -37,7 +39,7 @@ class Algo:
         self.max_epochs = max_epochs
         self.discount_factor = discount_factor
         self.n_env = n_envs
-        self.rewards = dict.fromkeys(range(n_particles), [])
+        self.rewards = defaultdict(lambda : [])
         self.eval_interval = eval_interval
         self.clipped = clipped
 
