@@ -15,17 +15,23 @@ from copy import deepcopy
 
 
 class Algo:
-    def __init__(self, 
-                 n_particles, 
-                 max_epochs, discount_factor,
-                 env_name, max_episode_steps, n_envs, env_seed,
-                 eval_interval,
-                 clipped,
-                 logger,
-                 env_agent,
-                 env, 
-                 model, 
-                 optimizer):
+    def __init__(
+        self,
+        n_particles,
+        max_epochs,
+        discount_factor,
+        env_name,
+        max_episode_steps,
+        n_envs,
+        env_seed,
+        eval_interval,
+        clipped,
+        logger,
+        env_agent,
+        env,
+        model,
+        optimizer,
+    ):
         # --------------- Hyper parameters --------------- #
         self.n_particles = n_particles
         self.max_epochs = max_epochs
@@ -39,22 +45,52 @@ class Algo:
         self.logger = logger
 
         # --------------- Agents --------------- #
-        self.train_env_agents = [env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
-        self.eval_env_agents = [EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs) for _ in range(n_particles)]
+        self.train_env_agents = [
+            env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)
+        ]
+        self.eval_env_agents = [
+            EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs)
+            for _ in range(n_particles)
+        ]
 
         if isinstance(env.action_space, Discrete):
             input_size, output_size = env.observation_space.shape[0], env.action_space.n
-            self.action_agents = [ActionAgent(model(input_size, output_size)) for _ in range(n_particles)]
-            self.critic_agents = [CriticAgent(model(input_size, 1)) for _ in range(n_particles)]
+            self.action_agents = [
+                ActionAgent(model(input_size, output_size)) for _ in range(n_particles)
+            ]
+            self.critic_agents = [
+                CriticAgent(model(input_size, 1)) for _ in range(n_particles)
+            ]
         else:
-            input_size, output_size = env.observation_space.shape[0], env.action_space.shape[0]
-            self.action_agents = [CActionAgent(output_size, model(input_size, output_size)) for _ in range(n_particles)]
-            self.critic_agents = [CCriticAgent(model(input_size, 1, activation=nn.SiLU)) for _ in range(n_particles)]
+            input_size, output_size = (
+                env.observation_space.shape[0],
+                env.action_space.shape[0],
+            )
+            self.action_agents = [
+                CActionAgent(output_size, model(input_size, output_size))
+                for _ in range(n_particles)
+            ]
+            self.critic_agents = [
+                CCriticAgent(model(input_size, 1, activation=nn.SiLU))
+                for _ in range(n_particles)
+            ]
 
-        self.tcritic_agents = [TemporalAgent(critic_agent) for critic_agent in self.critic_agents]
-        self.train_acquisition_agents = [TemporalAgent(Agents(train_env_agent, action_agent)) for train_env_agent, action_agent in zip(self.train_env_agents, self.action_agents)]
-        self.eval_acquisition_agents = [TemporalAgent(Agents(eval_env_agent, action_agent)) for eval_env_agent, action_agent in zip(self.eval_env_agents, self.action_agents)]
-        
+        self.tcritic_agents = [
+            TemporalAgent(critic_agent) for critic_agent in self.critic_agents
+        ]
+        self.train_acquisition_agents = [
+            TemporalAgent(Agents(train_env_agent, action_agent))
+            for train_env_agent, action_agent in zip(
+                self.train_env_agents, self.action_agents
+            )
+        ]
+        self.eval_acquisition_agents = [
+            TemporalAgent(Agents(eval_env_agent, action_agent))
+            for eval_env_agent, action_agent in zip(
+                self.eval_env_agents, self.action_agents
+            )
+        ]
+
         for train_acquisition_agent in self.train_acquisition_agents:
             train_acquisition_agent.seed(env_seed)
 
@@ -62,8 +98,12 @@ class Algo:
         self.workspaces = [Workspace() for _ in range(n_particles)]
 
         # ---------------- Optimizers ------------ #
-        self.optimizers = [optimizer(nn.Sequential(action_agent, critic_agent).parameters()) 
-                           for action_agent, critic_agent in zip(self.action_agents, self.critic_agents)]
+        self.optimizers = [
+            optimizer(nn.Sequential(action_agent, critic_agent).parameters())
+            for action_agent, critic_agent in zip(
+                self.action_agents, self.critic_agents
+            )
+        ]
 
     def execute_acquisition_agent(self, epoch):
         if not hasattr(self, "stop_variable"):
@@ -111,7 +151,9 @@ class Algo:
                 if w.grad != None:
                     critic_gradnorm += w.grad.detach().data.norm(2).item() ** 2
 
-        policy_gradnorm, critic_gradnorm = np.sqrt(policy_gradnorm), np.sqrt(critic_gradnorm)
+        policy_gradnorm, critic_gradnorm = np.sqrt(policy_gradnorm), np.sqrt(
+            critic_gradnorm
+        )
 
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
@@ -136,20 +178,24 @@ class Algo:
             )
 
             total_loss = (
-                + self.policy_coef * policy_loss / self.n_particles
+                +self.policy_coef * policy_loss / self.n_particles
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
-            
+
             total_loss.backward()
-            
+
             if self.clipped:
                 for pid in range(self.n_particles):
-                    torch.nn.utils.clip_grad_norm_(self.action_agents[pid].parameters(), max_grad_norm)
-                    torch.nn.utils.clip_grad_norm_(self.critic_agents[pid].parameters(), max_grad_norm)
+                    torch.nn.utils.clip_grad_norm_(
+                        self.action_agents[pid].parameters(), max_grad_norm
+                    )
+                    torch.nn.utils.clip_grad_norm_(
+                        self.critic_agents[pid].parameters(), max_grad_norm
+                    )
 
             # Log gradient norms
             if show_grad:
@@ -166,13 +212,20 @@ class Algo:
             # Evaluation
             nb_steps += n_steps
             for pid in range(self.n_particles):
-                if nb_steps[pid] - tmp_steps[pid] > self.eval_interval:
-                    eval_workspace = Workspace()
-                    self.eval_acquisition_agents[pid](eval_workspace, t=0, stop_variable="env/done", stochastic=False)
-                    creward, done = eval_workspace["env/cumulated_reward"], eval_workspace["env/done"]
-                    tl = done.float().argmax(0)
-                    creward = creward[tl, torch.arange(creward.size()[1])]
-                    self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
-                    self.rewards[pid].append(creward.mean())
-                    n_eval[pid] += 1
-                    tmp_steps[pid] = nb_steps[pid]
+                if nb_steps[pid] - tmp_steps[pid] <= self.eval_interval:
+                    continue
+
+                eval_workspace = Workspace()
+                self.eval_acquisition_agents[pid](
+                    eval_workspace, t=0, stop_variable="env/done", stochastic=False
+                )
+                creward, done = (
+                    eval_workspace["env/cumulated_reward"],
+                    eval_workspace["env/done"],
+                )
+                tl = done.float().argmax(0)
+                creward = creward[tl, torch.arange(creward.size()[1])]
+                self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
+                self.rewards[pid].append(creward.mean())
+                n_eval[pid] += 1
+                tmp_steps[pid] = nb_steps[pid]

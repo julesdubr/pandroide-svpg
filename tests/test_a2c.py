@@ -41,8 +41,6 @@ def main(cfg):
     a2c_reward = algo_a2c.rewards
     a2c_best_rewards = [max(r) for r in a2c_reward.values()]
 
-    print(a2c_best_rewards)
-
     # plot_algo_policies(algo_a2c, env, directory + "/A2C_INDEPENDANT/")
 
     # ----------- SVPG NORMAL ----------- #
