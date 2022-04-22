@@ -10,7 +10,10 @@ class ActionAgent(TAgent):
         self.model = model
 
     def forward(self, t, stochastic, **kwargs):
-        observation = self.get(("env/env_obs", t))
+        if "observation" in kwargs:
+            observation = kwargs["observation"]
+        else:
+            observation = self.get(("env/env_obs", t))
         scores = self.model(observation)
         probs = th.softmax(scores, dim=-1)
 
@@ -18,6 +21,9 @@ class ActionAgent(TAgent):
             action = th.distributions.Categorical(probs).sample()
         else:
             action = probs.argmax(1)
+
+        if t == -1:
+            return action
 
         entropy = th.distributions.Categorical(probs).entropy()
         logprobs = probs[th.arange(probs.size()[0]), action].log()

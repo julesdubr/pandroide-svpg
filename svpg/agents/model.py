@@ -3,7 +3,6 @@ import torch.nn as nn
 
 def make_model(input_size, output_size, activation=nn.ReLU, **kwargs):
     hidden_size = list(kwargs.values())
-    print(hidden_size)
 
     if len(hidden_size) > 1:
         hidden_layers = [

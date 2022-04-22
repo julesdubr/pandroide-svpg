@@ -8,17 +8,15 @@ import torch as th
 from pathlib import Path
 
 
-def plot_algo_policies(algo, env, directory):
+def plot_algo_policies(algo, env, directory, plot=False):
     for pid in range(algo.n_particles):
-        action_model = algo.action_agents[pid].model
         figname = f"policy_{pid}.png"
         plot_cartpole(
-            action_model, env, figname, directory, plot=False, stochastic=True
+            algo.action_agents[pid], env, figname, directory, plot, stochastic=True
         )
 
-        critic_model = algo.critic_agents[pid].model
         figname = f"critic_{pid}.png"
-        plot_cartpole(critic_model, env, figname, directory, plot=False)
+        plot_cartpole(algo.critic_agents[pid], env, figname, directory, plot)
 
 
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
@@ -50,21 +48,20 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
 
 
 def plot_histograms(
-    rewards_list, labels, colors, title, directory, plot=True, save=True
+    rewards_list, labels, colors, title, directory, plot=True, save_figure=True
 ):
     n_bars = len(rewards_list)
     x = np.arange(len(rewards_list[0]))
     width = 0.5 / n_bars
 
     for i, rewards in enumerate(rewards_list):
-        print(rewards)
         plt.bar(x + width * i, np.sort(rewards)[::-1], width=width, color=colors[i])
 
     plt.legend(labels=labels)
     plt.xticks([], [])
 
     figname = f"{title}-indep_vs_svpg.png"
-    final_show(save, plot, figname, "", "rewards", title, directory)
+    final_show(save_figure, plot, figname, "", "rewards", title, directory)
 
 
 def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
@@ -117,7 +114,7 @@ def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
 
 
 def plot_cartpole(
-    model, env, figname, directory, plot=True, save_figure=True, stochastic=None
+    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
 ):
     """
     Visualization of the critic in a N-dimensional state space
@@ -156,17 +153,12 @@ def plot_cartpole(
                 # Add batch dim
                 obs = obs.reshape(1, -1)
                 obs = th.from_numpy(obs.astype(np.float32))
-                value = model(obs).squeeze(-1)
+                value = agent.model(obs).squeeze(-1)
                 portrait[definition - (1 + index_y), index_x] = value.item()
 
             else:
                 obs = th.from_numpy(obs.astype(np.float32))
-                scores = model(obs)
-                probs = th.softmax(scores, dim=-1)
-                if stochastic:
-                    action = th.distributions.Categorical(probs).sample()
-                else:
-                    action = probs.argmax(1)
+                action = agent.forward(-1, stochastic, observation=obs)
 
                 portrait[definition - (1 + index_y), index_x] = action.item()
 

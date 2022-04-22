@@ -8,7 +8,7 @@ from svpg.common.kernel import RBF
 import numpy as np
 
 
-class SVPG():
+class SVPG:
     def __init__(self, algo, is_annealed=True, slope=5, p=10, C=4, mode=1):
         self.algo = algo
         self.kernel = RBF
@@ -48,7 +48,15 @@ class SVPG():
             mod = t % (self.algo.T / self.C)
             return (mod / (self.algo.T / self.C)) ** self.p
 
-    def run(self, gamma=1, p=5, slope=1.7, max_grad_norm=0.5, show_loss=True, show_grad=True):
+    def run(
+        self,
+        gamma=1,
+        p=5,
+        slope=1.7,
+        max_grad_norm=0.5,
+        show_loss=False,
+        show_grad=False,
+    ):
         nb_steps = np.zeros(self.algo.n_particles)
         n_eval = np.zeros(self.algo.n_particles)
         tmp_steps = np.zeros(self.algo.n_particles)
@@ -59,7 +67,9 @@ class SVPG():
             self.algo.execute_critic_agent()
 
             # Compute loss
-            policy_loss, critic_loss, entropy_loss, n_steps = self.algo.compute_loss(epoch, show_loss)
+            policy_loss, critic_loss, entropy_loss, n_steps = self.algo.compute_loss(
+                epoch, show_loss
+            )
 
             if self.is_annealed:
                 t = np.max(nb_steps)
@@ -71,21 +81,27 @@ class SVPG():
             # Compute gradients
             params = self.get_policy_parameters()
             kernel = self.kernel()(params, params.detach())
-            self.add_gradients(policy_loss * gamma * (1 / self.algo.n_particles), kernel)
+            self.add_gradients(
+                policy_loss * gamma * (1 / self.algo.n_particles), kernel
+            )
 
             loss = (
-                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
                 + self.algo.critic_coef * critic_loss / self.algo.n_particles
                 + kernel.sum() / self.algo.n_particles
             )
 
             loss.backward()
-            
+
             if self.algo.clipped:
                 for pid in range(self.algo.n_particles):
-                    torch.nn.utils.clip_grad_norm_(self.algo.action_agents[pid].parameters(), max_grad_norm)
-                    torch.nn.utils.clip_grad_norm_(self.algo.critic_agents[pid].parameters(), max_grad_norm)
-            
+                    torch.nn.utils.clip_grad_norm_(
+                        self.algo.action_agents[pid].parameters(), max_grad_norm
+                    )
+                    torch.nn.utils.clip_grad_norm_(
+                        self.algo.critic_agents[pid].parameters(), max_grad_norm
+                    )
+
             # Log gradient norms
             if show_grad:
                 self.algo.compute_gradient_norm(epoch)
@@ -102,11 +118,18 @@ class SVPG():
             for pid in range(self.algo.n_particles):
                 if nb_steps[pid] - tmp_steps[pid] > self.algo.eval_interval:
                     eval_workspace = Workspace()
-                    self.algo.eval_acquisition_agents[pid](eval_workspace, t=0, stop_variable="env/done", stochastic=False)
-                    creward, done = eval_workspace["env/cumulated_reward"], eval_workspace["env/done"]
+                    self.algo.eval_acquisition_agents[pid](
+                        eval_workspace, t=0, stop_variable="env/done", stochastic=False
+                    )
+                    creward, done = (
+                        eval_workspace["env/cumulated_reward"],
+                        eval_workspace["env/done"],
+                    )
                     tl = done.float().argmax(0)
                     creward = creward[tl, torch.arange(creward.size()[1])]
-                    self.algo.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
+                    self.algo.logger.add_log(
+                        f"reward_{pid}", creward.mean(), nb_steps[pid]
+                    )
                     self.algo.rewards[pid].append(creward.mean())
                     n_eval[pid] += 1
                     tmp_steps[pid] = nb_steps[pid]

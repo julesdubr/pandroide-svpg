@@ -11,8 +11,6 @@ from svpg.agents.env import EnvAgentNoAutoReset
 
 import numpy as np
 
-from copy import deepcopy
-
 from collections import defaultdict
 
 
@@ -39,7 +37,7 @@ class Algo:
         self.max_epochs = max_epochs
         self.discount_factor = discount_factor
         self.n_env = n_envs
-        self.rewards = defaultdict(lambda : [])
+        self.rewards = defaultdict(lambda: [])
         self.eval_interval = eval_interval
         self.clipped = clipped
 
@@ -164,7 +162,7 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def run(self, max_grad_norm=0.5, show_loss=True, show_grad=True):
+    def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
         nb_steps = np.zeros(self.n_particles)
         n_eval = np.zeros(self.n_particles)
         tmp_steps = np.zeros(self.n_particles)

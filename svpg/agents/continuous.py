@@ -16,19 +16,26 @@ class CActionAgent(TAgent):
         self.soft_plus = nn.Softplus()
 
     def forward(self, t, stochastic, **kwargs):
-        observation = self.get(("env/env_obs", t))
+        if "observation" in kwargs:
+            observation = kwargs["observation"]
+        else:
+            observation = self.get(("env/env_obs", t))
         mean = self.model(observation)
         dist = Normal(mean, self.soft_plus(self.std_param))
-        self.set(("entropy", t), dist.entropy().squeeze(-1))
+        entropy = dist.entropy().squeeze(-1)
 
         if stochastic:
             action = th.tanh(dist.sample())
         else:
             action = th.tanh(mean)
 
+        if t == -1:
+            return action
+
         action_logprobs = dist.log_prob(action).sum(axis=-1)
         self.set(("action", t), action)
         self.set(("action_logprobs", t), action_logprobs)
+        self.set(("entropy", t), entropy)
 
 
 class CCriticAgent(TAgent):

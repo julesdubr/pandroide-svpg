@@ -41,7 +41,7 @@ def main(cfg):
     a2c_reward = algo_a2c.rewards
     a2c_best_rewards = [max(r) for r in a2c_reward.values()]
 
-    # plot_algo_policies(algo_a2c, env, directory + "/A2C_INDEPENDANT/")
+    plot_algo_policies(algo_a2c, env, directory + "/A2C_INDEPENDANT/")
 
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
@@ -50,7 +50,7 @@ def main(cfg):
 
     svpg_normal_reward = svpg_normal.algo.rewards
 
-    # plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_NORMAL/")
+    plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_NORMAL/")
 
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
@@ -59,7 +59,7 @@ def main(cfg):
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
 
-    # plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_CLIPPED_ANNEALED/")
+    plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_CLIPPED_ANNEALED/")
 
     # ------------ HISTOGRAM ------------ #
 
@@ -117,7 +117,7 @@ def main(cfg):
     plt.ylabel("Reward")
     plt.legend()
     plt.title(cfg.algorithm.env_name)
-    plt.savefig(directory + "SVPG_A2C.png")
+    plt.savefig(directory + "A2C_SVPG_loss.png")
     plt.show()
 
 
