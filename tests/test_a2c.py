@@ -33,6 +33,7 @@ def main(cfg):
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
     env = instantiate(cfg.algorithm.env)
+    env_name = cfg.env_name
 
     # --------- A2C INDEPENDENT --------- #
     algo_a2c = instantiate(cfg.algorithm)
@@ -41,7 +42,7 @@ def main(cfg):
     a2c_reward = algo_a2c.rewards
     a2c_best_rewards = [max(r) for r in a2c_reward.values()]
 
-    plot_algo_policies(algo_a2c, env, directory + "/A2C_INDEPENDANT/")
+    plot_algo_policies(algo_a2c, env, env_name, directory + "/A2C_INDEPENDANT/")
 
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
@@ -50,7 +51,7 @@ def main(cfg):
 
     svpg_normal_reward = svpg_normal.algo.rewards
 
-    plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_NORMAL/")
+    plot_algo_policies(svpg_normal.algo, env, env_name, directory + "/SVPG_NORMAL/")
 
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
@@ -59,7 +60,9 @@ def main(cfg):
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
 
-    plot_algo_policies(svpg_normal.algo, env, directory + "/SVPG_CLIPPED_ANNEALED/")
+    plot_algo_policies(
+        svpg_normal.algo, env, env_name, directory + "/SVPG_CLIPPED_ANNEALED/"
+    )
 
     # ------------ HISTOGRAM ------------ #
 
@@ -122,6 +125,4 @@ def main(cfg):
 
 
 if __name__ == "__main__":
-    # with autograd.detect_anomaly():
-    #     main()
     main()

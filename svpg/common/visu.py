@@ -8,15 +8,23 @@ import torch as th
 from pathlib import Path
 
 
-def plot_algo_policies(algo, env, directory, plot=False):
+def plot_algo_policies(algo, env, env_name, directory, plot=False):
+    if "cartpole" in env_name.lower():
+        plot_env = plot_cartpole
+    elif "pendulum" in env_name.lower():
+        plot_env = plot_pendulum
+    else:
+        print("Environment not supported for plot. Please use CartPole or Pendulum")
+        return
+
     for pid in range(algo.n_particles):
         figname = f"policy_{pid}.png"
-        plot_cartpole(
+        plot_env(
             algo.action_agents[pid], env, figname, directory, plot, stochastic=True
         )
 
         figname = f"critic_{pid}.png"
-        plot_cartpole(algo.critic_agents[pid], env, figname, directory, plot)
+        plot_env(algo.critic_agents[pid], env, figname, directory, plot)
 
 
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
@@ -64,7 +72,9 @@ def plot_histograms(
     final_show(save_figure, plot, figname, "", "rewards", title, directory)
 
 
-def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
+def plot_pendulum(
+    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
+):
     """
     Plot a critic for the Pendulum environment
     :param agent: the policy / critic agent specifying the action to be plotted
@@ -88,7 +98,12 @@ def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
         ):
             obs = np.array([[np.cos(t), np.sin(t), td]])
             obs = th.from_numpy(obs.astype(np.float32))
-            value = model(obs).squeeze(-1)
+
+            if stochastic is None:
+                value = agent.model(obs).squeeze(-1)
+            else:
+                value = agent.forward(-1, stochastic, observation=obs)
+
             portrait[definition - (1 + index_td), index_t] = value.item()
 
     plt.figure(figsize=(10, 10))
@@ -154,13 +169,12 @@ def plot_cartpole(
                 obs = obs.reshape(1, -1)
                 obs = th.from_numpy(obs.astype(np.float32))
                 value = agent.model(obs).squeeze(-1)
-                portrait[definition - (1 + index_y), index_x] = value.item()
 
             else:
                 obs = th.from_numpy(obs.astype(np.float32))
-                action = agent.forward(-1, stochastic, observation=obs)
+                value = agent.forward(-1, stochastic, observation=obs)
 
-                portrait[definition - (1 + index_y), index_x] = action.item()
+            portrait[definition - (1 + index_y), index_x] = value.item()
 
     plt.figure(figsize=(10, 10))
     plt.imshow(
