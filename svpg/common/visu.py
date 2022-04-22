@@ -113,19 +113,20 @@ def plot_pendulum(
         extent=[-180, 180, state_min[2], state_max[2]],
         aspect="auto",
     )
-    plt.colorbar(label="action")
+
+    if stochastic is None:
+        directory += "/pendulum_critics/"
+        title = "Pendulum Critic"
+        plt.colorbar(label="critic value")
+    else:
+        directory += "/pendulum_policies/"
+        title = "Pendulum Actor"
+        plt.colorbar(label="action")
+
     # Add a point at the center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
-    final_show(
-        save_figure,
-        plot,
-        figname,
-        x_label,
-        y_label,
-        "V Function",
-        directory + "/pendulum_critics/",
-    )
+    final_show(save_figure, plot, figname, x_label, y_label, title, directory)
 
 
 def plot_cartpole(

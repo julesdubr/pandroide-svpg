@@ -130,6 +130,7 @@ dmypy.json
 
 # SaLiNa
 salina/
+my_gym/
 
 # outputs
 outputs/

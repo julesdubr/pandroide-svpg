@@ -9,7 +9,7 @@ algorithm:
   entropy_coef: 0.001
   gae_coef: 1
   n_particles: 16
-  max_epochs: 5
+  max_epochs: 1000
   discount_factor: 0.95
   env_name: ${env_name}
   max_episode_steps: ${max_episode_steps}
