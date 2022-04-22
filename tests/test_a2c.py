@@ -50,6 +50,7 @@ def main(cfg):
     svpg_normal.run()
 
     svpg_normal_reward = svpg_normal.algo.rewards
+    svpg_normal_best_rewards = [max(r) for r in svpg_normal_reward.values()]
 
     plot_algo_policies(svpg_normal.algo, env, env_name, directory + "/SVPG_NORMAL/")
 
@@ -59,15 +60,13 @@ def main(cfg):
     svpg_clipped_annealed.run()
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
+    svpg_annealed_best_rewards = [max(r) for r in svpg_clipped_annealed_reward.values()]
 
     plot_algo_policies(
         svpg_normal.algo, env, env_name, directory + "/SVPG_CLIPPED_ANNEALED/"
     )
 
     # ------------ HISTOGRAM ------------ #
-
-    svpg_normal_best_rewards = [r[-1] for r in svpg_normal_reward.values()]
-    svpg_annealed_best_rewards = [r[-1] for r in svpg_clipped_annealed_reward.values()]
 
     plot_histograms(
         [a2c_best_rewards, svpg_normal_best_rewards, svpg_annealed_best_rewards],
