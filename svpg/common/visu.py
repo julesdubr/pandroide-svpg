@@ -8,6 +8,19 @@ import torch as th
 from pathlib import Path
 
 
+def plot_algo_policies(algo, env, directory):
+    for pid in range(algo.n_particles):
+        action_model = algo.action_agents[pid].model
+        figname = f"policy_{pid}.png"
+        plot_cartpole(
+            action_model, env, figname, directory, plot=False, stochastic=True
+        )
+
+        critic_model = algo.critic_agents[pid].model
+        figname = f"critic_{pid}.png"
+        plot_cartpole(critic_model, env, figname, directory, plot=False)
+
+
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
     """
     Finalize all plots, adding labels and putting the corresponding file in the
@@ -37,17 +50,21 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
 
 
 def plot_histograms(
-    indep_rewards, svpg_rewards, title, directory, plot=True, save_figure=True
+    rewards_list, labels, colors, title, directory, plot=True, save=True
 ):
-    x = np.arange(len(svpg_rewards))
+    n_bars = len(rewards_list)
+    x = np.arange(len(rewards_list[0]))
+    width = 0.5 / n_bars
 
-    plt.bar(x - 0.1, np.sort(indep_rewards)[::-1], width=0.2, color="red")
-    plt.bar(x + 0.1, np.sort(svpg_rewards)[::-1], width=0.2, color="blue")
-    plt.legend(labels=[f"{title}-independent", f"{title}-SVPG"])
+    for i, rewards in enumerate(rewards_list):
+        print(rewards)
+        plt.bar(x + width * i, np.sort(rewards)[::-1], width=width, color=colors[i])
+
+    plt.legend(labels=labels)
     plt.xticks([], [])
 
     figname = f"{title}-indep_vs_svpg.png"
-    final_show(save_figure, plot, figname, "", "rewards", title, directory)
+    final_show(save, plot, figname, "", "rewards", title, directory)
 
 
 def plot_pendulum(model, env, figname, directory, plot=True, save_figure=True):
