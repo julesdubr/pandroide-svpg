@@ -8,5 +8,5 @@ joblib==0.10.3
 mako
 Box2D
 theano
-git+https://github.com/facebookresearch/salina.git@main
-git+https://github.com/rll/rllab.git@master
+salina @ git+https://github.com/facebookresearch/salina.git@main
+rllab @ git+https://github.com/rll/rllab.git@master
