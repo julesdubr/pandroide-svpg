@@ -139,6 +139,7 @@ class Algo:
 
     def to_gpu(self):
         if torch.cuda.is_available():
+            print("Found gpu")
             device = torch.device("cuda:0")
             for pid in range(self.n_particles):
                 self.tcritic_agents[pid].to(device)
