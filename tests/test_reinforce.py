@@ -40,36 +40,27 @@ def main(cfg):
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
 
-    eval_interval = algo_reinfoce.eval_interval
+    max_a2c_reward_index = max(a2c_reward, 
+                               key=lambda particle: sum(a2c_reward[particle]))
 
-    max_a2c_reward = a2c_reward[
-        max(a2c_reward, key=lambda particle: sum(a2c_reward[particle]))
-    ]
-    max_svpg_normal_reward = svpg_normal_reward[
-        max(svpg_normal_reward, key=lambda particle: sum(svpg_normal_reward[particle]))
-    ]
-    max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[
-        max(
-            svpg_clipped_annealed_reward,
-            key=lambda particle: sum(svpg_clipped_annealed_reward[particle]),
-        )
-    ]
+    max_a2c_reward = a2c_reward[max_a2c_reward]
 
-    a2c_timesteps = np.array([range(len(max_a2c_reward))])
-    a2c_timesteps = (a2c_timesteps + 1) * eval_interval
-    a2c_timesteps = np.squeeze(a2c_timesteps, 0)
+    max_svpg_normal_reward_index = max(svpg_normal_reward, 
+                                       key=lambda particle: sum(svpg_normal_reward[particle]))
 
-    svpg_normal_timesteps = np.array([range(len(max_svpg_normal_reward))])
-    svpg_normal_timesteps = (svpg_normal_timesteps + 1) * eval_interval
-    svpg_normal_timesteps = np.squeeze(svpg_normal_timesteps, 0)
+    max_svpg_normal_reward = svpg_normal_reward[max_svpg_normal_reward_index]
 
-    svpg_clipped_annealed_timesteps = np.array(
-        [range(len(max_svpg_clipped_annealed_reward))]
-    )
-    svpg_clipped_annealed_timesteps = (
-        svpg_clipped_annealed_timesteps + 1
-    ) * eval_interval
-    svpg_clipped_annealed_timesteps = np.squeeze(svpg_clipped_annealed_timesteps, 0)
+    max_svpg_clipped_annealed_reward_index = max(svpg_clipped_annealed_reward,
+                                           key=lambda particle: sum(svpg_clipped_annealed_reward[particle]),
+                                          )
+    
+    max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[max_svpg_clipped_annealed_reward_index]
+
+    a2c_timesteps = algo_reinfoce.eval_time_steps[max_a2c_reward_index]
+
+    svpg_normal_timesteps = svpg_normal.algo.eval_time_steps[max_svpg_normal_reward_index]
+
+    svpg_clipped_annealed_timesteps = svpg_clipped_annealed.algo.eval_time_steps[max_svpg_clipped_annealed_reward_index]
 
     plt.figure()
     plt.plot(a2c_timesteps, max_a2c_reward, label="REINFORCE")

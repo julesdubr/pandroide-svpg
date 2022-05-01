@@ -38,6 +38,7 @@ class Algo:
         self.discount_factor = discount_factor
         self.n_env = n_envs
         self.rewards = defaultdict(lambda: [])
+        self.eval_time_steps = defaultdict(lambda: [])
         self.eval_interval = eval_interval
         self.clipped = clipped
 
@@ -164,8 +165,7 @@ class Algo:
 
     def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
         nb_steps = np.zeros(self.n_particles)
-        n_eval = np.zeros(self.n_particles)
-        tmp_steps = np.zeros(self.n_particles)
+        last_epoch = 0
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
@@ -178,7 +178,7 @@ class Algo:
             )
 
             total_loss = (
-                +self.policy_coef * policy_loss / self.n_particles
+                + self.policy_coef * policy_loss / self.n_particles
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
@@ -211,21 +211,20 @@ class Algo:
 
             # Evaluation
             nb_steps += n_steps
-            for pid in range(self.n_particles):
-                if nb_steps[pid] - tmp_steps[pid] <= self.eval_interval:
-                    continue
+            if epoch - last_epoch == self.eval_interval - 1:
+                for pid in range(self.n_particles):
+                    eval_workspace = Workspace()
+                    self.eval_acquisition_agents[pid](
+                        eval_workspace, t=0, stop_variable="env/done", stochastic=False
+                    )
+                    creward, done = (
+                        eval_workspace["env/cumulated_reward"],
+                        eval_workspace["env/done"],
+                    )
+                    tl = done.float().argmax(0)
+                    creward = creward[tl, torch.arange(creward.size()[1])]
+                    self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
+                    self.rewards[pid].append(creward.mean())
+                    self.eval_time_steps[pid].append(nb_steps[pid])
 
-                eval_workspace = Workspace()
-                self.eval_acquisition_agents[pid](
-                    eval_workspace, t=0, stop_variable="env/done", stochastic=False
-                )
-                creward, done = (
-                    eval_workspace["env/cumulated_reward"],
-                    eval_workspace["env/done"],
-                )
-                tl = done.float().argmax(0)
-                creward = creward[tl, torch.arange(creward.size()[1])]
-                self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
-                self.rewards[pid].append(creward.mean())
-                n_eval[pid] += 1
-                tmp_steps[pid] = nb_steps[pid]
+                last_epoch = epoch

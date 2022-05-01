@@ -1,4 +1,4 @@
-env_name: MyCartPole-v0
+env_name: MyPendulum-v0
 max_episode_steps: 500
 n_envs: 8
 
