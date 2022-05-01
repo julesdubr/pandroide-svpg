@@ -21,6 +21,8 @@ hash = (
     .strip()
 )
 
+with open("requirements.txt") as f:
+    reqs = [line.strip() for line in f]
 
 setup(
     name="svpg",
@@ -30,6 +32,7 @@ setup(
     python_requires=">=3.7",
     packages=find_packages(),
     version=f"{__version__}.dev0+{hash}",
-    include_package_data=True
+    include_package_data=True,
+    install_requires=reqs
     # long_description=read("README.md"),
 )

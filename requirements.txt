@@ -1,0 +1,12 @@
+gym==0.21.0
+matplotlib
+pygame
+scipy
+path.py
+python-dateutil
+joblib==0.10.3
+mako
+pybox2d
+theano
+git+https://github.com/facebookresearch/salina.git@main
+git+https://github.com/rll/rllab.git@main

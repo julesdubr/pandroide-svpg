@@ -43,6 +43,7 @@ def main(cfg):
     a2c_best_rewards = [max(r) for r in a2c_reward.values()]
 
     plot_algo_policies(algo_a2c, env, env_name, directory + "/A2C_INDEPENDANT/")
+    #------------------------------------ #
 
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
@@ -53,6 +54,7 @@ def main(cfg):
     svpg_normal_best_rewards = [max(r) for r in svpg_normal_reward.values()]
 
     plot_algo_policies(svpg_normal.algo, env, env_name, directory + "/SVPG_NORMAL/")
+    #------------------------------------ #
 
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
@@ -65,9 +67,9 @@ def main(cfg):
     plot_algo_policies(
         svpg_normal.algo, env, env_name, directory + "/SVPG_CLIPPED_ANNEALED/"
     )
+    #------------------------------------ #
 
     # ------------ HISTOGRAM ------------ #
-
     plot_histograms(
         [a2c_best_rewards, svpg_normal_best_rewards, svpg_annealed_best_rewards],
         [f"A2C-independent", f"A2C-SVPG", f"A2C-SVPG (clipped + annealed)"],
@@ -75,11 +77,14 @@ def main(cfg):
         "A2C",
         directory,
     )
+    #------------------------------------ #
 
+
+    # ------------ Compare best agents ------------ #
     max_a2c_reward_index = max(a2c_reward, 
                                key=lambda particle: sum(a2c_reward[particle]))
 
-    max_a2c_reward = a2c_reward[max_a2c_reward]
+    max_a2c_reward = a2c_reward[max_a2c_reward_index]
 
     max_svpg_normal_reward_index = max(svpg_normal_reward, 
                                        key=lambda particle: sum(svpg_normal_reward[particle]))
@@ -112,6 +117,7 @@ def main(cfg):
     plt.title(cfg.algorithm.env_name)
     plt.savefig(directory + "A2C_SVPG_loss.png")
     plt.show()
+    #------------------------------------ #
 
 
 if __name__ == "__main__":

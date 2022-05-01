@@ -16,7 +16,7 @@ algorithm:
   n_envs: ${n_envs}
   env_seed: 432
   n_steps: 256
-  eval_interval: 2
+  eval_interval: 3
   clipped: True
 
   logger:
