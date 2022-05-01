@@ -6,7 +6,7 @@ import gym
 
 import numpy as np
 
-from rllab_env_wrapper.envs.get_model_path import model_path
+from svpg.rllab_env_wrapper.envs.get_model_path import model_path
 
 class MyPendulum(rllab_pendulum.DoublePendulumEnv, gym.Env):
     def __init__(self, *args, **kwargs):
