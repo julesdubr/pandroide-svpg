@@ -137,6 +137,14 @@ class Algo:
                 self.workspaces[pid], stop_variable=self.stop_variable
             )
 
+    def to_gpu(self):
+        if torch.cuda.is_available():
+            device = torch.device("cuda:0")
+            for pid in range(self.n_particles):
+                self.tcritic_agents[pid].to(device)
+                self.train_acquisition_agents[pid].to(device)
+                self.eval_acquisition_agents[pid].to(device)
+
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
 
