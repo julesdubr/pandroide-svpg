@@ -58,8 +58,7 @@ class SVPG:
         show_grad=False,
     ):
         nb_steps = np.zeros(self.algo.n_particles)
-        n_eval = np.zeros(self.algo.n_particles)
-        tmp_steps = np.zeros(self.algo.n_particles)
+        last_epoch = 0
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
@@ -115,8 +114,8 @@ class SVPG:
 
             # Evaluation
             nb_steps += n_steps
-            for pid in range(self.algo.n_particles):
-                if nb_steps[pid] - tmp_steps[pid] > self.algo.eval_interval:
+            if epoch - last_epoch == self.algo.eval_interval - 1:
+                for pid in range(self.algo.n_particles):
                     eval_workspace = Workspace()
                     self.algo.eval_acquisition_agents[pid](
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
@@ -131,5 +130,6 @@ class SVPG:
                         f"reward_{pid}", creward.mean(), nb_steps[pid]
                     )
                     self.algo.rewards[pid].append(creward.mean())
-                    n_eval[pid] += 1
-                    tmp_steps[pid] = nb_steps[pid]
+                    self.algo.eval_time_steps[pid].append(nb_steps[pid])
+
+                last_epoch = epoch
