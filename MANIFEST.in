@@ -1,1 +1,1 @@
-include models/*
+include svpg/rllab_env_wrapper/models/*
