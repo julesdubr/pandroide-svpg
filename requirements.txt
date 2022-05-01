@@ -6,7 +6,7 @@ path.py
 python-dateutil
 joblib==0.10.3
 mako
-pybox2d
+Box2D
 theano
 git+https://github.com/facebookresearch/salina.git@main
-git+https://github.com/rll/rllab.git@main
+git+https://github.com/rll/rllab.git@master
