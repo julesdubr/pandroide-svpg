@@ -39,14 +39,17 @@ class A2C(Algo):
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error
         td = RLF.gae(critic, reward, done, self.discount_factor, self.gae)
+        print(f"td in gpu: {td.is_cuda}")
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()
+        print(f"critic in gpu: {critic.is_cuda}")
 
         return critic_loss, td
 
     def compute_policy_loss(self, action_logprobs, td):
         policy_loss = action_logprobs[:-1] * td.detach()
+        print(f"policy_loss in gpu: {policy_loss.is_cuda}")
 
         return policy_loss.mean()
 
@@ -58,6 +61,13 @@ class A2C(Algo):
             critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
                 "critic", "env/done", "action_logprobs", "env/reward", "entropy"
             ]
+
+            # Move to gpu
+            critic = critic.to(self.device)
+            done = done.to(self.device)
+            action_logprobs = action_logprobs.to(self.device)
+            reward = reward.to(self.device)
+            entropy = entropy.to(self.device)
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, done, critic)
@@ -73,6 +83,8 @@ class A2C(Algo):
             self.logger.log_losses(
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
+
+        print(f"total loss in gpu: {total_critic_loss.is_cuda}, {total_entropy_loss.is_cuda}, {total_policy_loss.is_cuda}")
 
         n_steps = np.full(self.n_particles, self.n_steps * self.n_env)
         return total_policy_loss, total_critic_loss, total_entropy_loss, n_steps

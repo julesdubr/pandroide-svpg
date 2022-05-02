@@ -41,6 +41,8 @@ class Algo:
         self.eval_time_steps = defaultdict(lambda: [])
         self.eval_interval = eval_interval
         self.clipped = clipped
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        print(f"Device: {self.device}")
 
         # --------------- Logger --------------- #
         self.logger = logger
@@ -138,13 +140,10 @@ class Algo:
             )
 
     def to_gpu(self):
-        if torch.cuda.is_available():
-            print("Found gpu")
-            device = torch.device("cuda:0")
-            for pid in range(self.n_particles):
-                self.tcritic_agents[pid].to(device)
-                self.train_acquisition_agents[pid].to(device)
-                self.eval_acquisition_agents[pid].to(device)
+        for pid in range(self.n_particles):
+            self.tcritic_agents[pid].to(self.device)
+            self.train_acquisition_agents[pid].to(self.device)
+            self.eval_acquisition_agents[pid].to(self.device)
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
@@ -191,6 +190,8 @@ class Algo:
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
+
+            print(f"total loss in gpu: {total_loss.is_cuda}")
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
