@@ -70,22 +70,28 @@ class SVPG:
                 epoch, show_loss
             )
 
+            print(f"policy_loss svpg in gpu: {policy_loss.is_cuda}")
+            print(f"critic_loss svpg in gpu: {critic_loss.is_cuda}")
+            print(f"entropy_loss svpg in gpu: {entropy_loss.is_cuda}")
+
             if self.is_annealed:
                 t = np.max(nb_steps)
                 gamma = self.annealed(t)
-            # print(t)
-            # print(self.algo.T)
-            # print(gamma)
 
             # Compute gradients
             params = self.get_policy_parameters()
+            params = params.to(self.algo.device)
+            print(f"params in gpu: {params.is_cuda}")
+
             kernel = self.kernel()(params, params.detach())
+            print(f"kernel sum in gpu: {kernel.sum().is_cuda}")
+
             self.add_gradients(
                 policy_loss * gamma * (1 / self.algo.n_particles), kernel
             )
 
             loss = (
-                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
                 + self.algo.critic_coef * critic_loss / self.algo.n_particles
                 + kernel.sum() / self.algo.n_particles
             )
@@ -124,6 +130,7 @@ class SVPG:
                         eval_workspace["env/cumulated_reward"],
                         eval_workspace["env/done"],
                     )
+                    creward, done = creward.to(self.algo.device), done.to(self.algo.device)
                     tl = done.float().argmax(0)
                     creward = creward[tl, torch.arange(creward.size()[1])]
                     self.algo.logger.add_log(

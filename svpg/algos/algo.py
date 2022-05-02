@@ -231,6 +231,7 @@ class Algo:
                         eval_workspace["env/cumulated_reward"],
                         eval_workspace["env/done"],
                     )
+                    creward, done = creward.to(self.device), done.to(self.device)
                     tl = done.float().argmax(0)
                     creward = creward[tl, torch.arange(creward.size()[1])]
                     self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])

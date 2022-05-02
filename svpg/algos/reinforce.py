@@ -78,6 +78,9 @@ class REINFORCE(Algo):
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
+        print(f"policy_loss in gpu: {policy_loss.is_cuda}")
+        print(f"critic_loss in gpu: {critic_loss.is_cuda}")
+
         return policy_loss, critic_loss, torch.sum(trajectories_length)
 
     def compute_loss(self, epoch, verbose=True):
@@ -89,6 +92,13 @@ class REINFORCE(Algo):
             critic, done, action_logprobs, reward = self.workspaces[pid][
                 "critic", "env/done", "action_logprobs", "env/reward"
             ]
+
+            # Move workspace tensor to gpu
+            critic = critic.to(self.device)
+            done = done.to(self.device)
+            action_logprobs = action_logprobs.to(self.device)
+            reward = reward.to(self.device)
+
             # Compute loss by REINFORCE
             # (using the reward cumulated until the end of episode)
             policy_loss, critic_loss, n = self.compute_reinforce_loss(
@@ -104,7 +114,7 @@ class REINFORCE(Algo):
             self.logger.add_log("policy_loss", total_policy_loss, epoch)
             self.logger.add_log("critic_loss", total_critic_loss, epoch)
 
-
+        print(f"total loss in gpu: {total_policy_loss.is_cuda}, {total_critic_loss.is_cuda}")
 
         return total_policy_loss, total_critic_loss, 0, n_steps
     
