@@ -9,5 +9,6 @@ joblib==0.10.3
 mako
 Box2D
 theano
+cached-property
 salina @ git+https://github.com/facebookresearch/salina.git@main
 rllab @ git+https://github.com/rll/rllab.git@master
