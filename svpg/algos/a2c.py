@@ -39,7 +39,6 @@ class A2C(Algo):
     def compute_critic_loss(self, reward, done, critic):
         # Compute TD error
         td = RLF.gae(critic, reward, done, self.discount_factor, self.gae)
-        print(f"td in gpu: {td.is_cuda}")
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()

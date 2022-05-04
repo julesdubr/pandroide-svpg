@@ -177,7 +177,7 @@ class Algo:
 
     def save_best_agents(self, pid, directory):
         file_path = directory + "agents/best_agent.agt"
-        self.eval_acquisition_agents[pid].agent.agents[1].save_model(file_path)
+        self.eval_acquisition_agents[pid].agent.agents[1].save(file_path)
 
     def save_all_agents(self, directory):
         print("here")
@@ -192,10 +192,11 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            self.critic_agents[pid].save_model(critic_path + f"/critic_agent_{pid}.agt")
-            self.eval_acquisition_agents[pid].agent.agents[1].save_model(action_path + f"/action_agent_{pid}.agt")
+            self.critic_agents[pid].save(critic_path + f"/critic_agent_{pid}.agt")
+            self.eval_acquisition_agents[pid].agent.agents[1].save(action_path + f"/action_agent_{pid}.agt")
 
     def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
+        print("here")
         self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
@@ -268,6 +269,7 @@ class Algo:
         directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
         if not os.path.exists(directory):
+            print("here")
             os.makedirs(directory)
 
         print("saving...")
