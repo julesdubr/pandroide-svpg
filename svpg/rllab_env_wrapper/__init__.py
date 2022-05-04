@@ -4,7 +4,6 @@ def register(id, entry_point, max_episode_steps=500):
     env_specs = gym.envs.registry.env_specs
 
     if id in env_specs.keys():
-        print("In")
         del env_specs[id]
     
     gym.register(

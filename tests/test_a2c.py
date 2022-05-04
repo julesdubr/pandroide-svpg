@@ -32,10 +32,9 @@ def main(cfg):
     d = datetime.datetime.today()
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
+
     if not os.path.exists(directory):
         os.makedirs(directory)
-    else:
-        print("directory existed")
 
     env = instantiate(cfg.algorithm.env)
     env_name = cfg.env_name

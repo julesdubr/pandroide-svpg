@@ -9,12 +9,15 @@ n_envs = 32
 eval_interval = 3
 
 test: $(VENV)/bin/activate
-	$(PYTHON) tests/test.py
+	$(PIP) install git+https://github.com/Anidwyd/pandroide-svpg.git@main
+	$(PYTHON) tests/test.py env_name=$(env_name) n_envs=$(n_envs) max_epochs=$(max_epochs) n_steps=$(n_steps) eval_interval=$(eval_interval)
 
 run-a2c: $(VENV)/bin/activate
+	$(PIP) install git+https://github.com/Anidwyd/pandroide-svpg.git@main
 	$(PYTHON) tests/test_a2c.py env_name=$(env_name) n_envs=$(n_envs) max_epochs=$(max_epochs) n_steps=$(n_steps) eval_interval=$(eval_interval)
 
 run-reinforce: $(VENV)/bin/activate
+	$(PIP) install git+https://github.com/Anidwyd/pandroide-svpg.git@main
 	$(PYTHON) tests/test_reinforce.py env_name=$(env_name) n_envs=$(n_envs) max_epochs=$(max_epochs) eval_interval=$(eval_interval)
 
 $(VENV)/bin/activate:

@@ -46,7 +46,6 @@ class Algo:
         self.eval_interval = eval_interval
         self.clipped = clipped
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        print(f"Device: {self.device}")
 
         # --------------- Logger --------------- #
         self.logger = logger
@@ -180,18 +179,13 @@ class Algo:
         torch.save(self.eval_acquisition_agents[pid].agent.agents.state_dict(), file_path)
 
     def save_all_agents(self, directory):
-        print("here")
         critic_path = directory + "agents/all_critic_agent"
         action_path = directory + "agents/all_action_agent"
 
-        print(critic_path)
-        print(action_path)
 
         if not os.path.exists(critic_path):
-            print("hi")
             os.makedirs(critic_path)
         if not os.path.exists(action_path):
-            print("hi")
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
@@ -199,7 +193,6 @@ class Algo:
             torch.save(self.eval_acquisition_agents[pid].agent.agents[1].state_dict(), action_path + f"/action_agent_{pid}")
 
     def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
-        print("here")
         self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
@@ -272,9 +265,7 @@ class Algo:
         directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
         if not os.path.exists(directory):
-            print("here")
             os.makedirs(directory)
 
-        print("saving...")
         self.save_all_agents(directory)
             
