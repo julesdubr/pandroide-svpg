@@ -1,4 +1,4 @@
-from salina.agents.gyma import AutoResetGymAgent, NoAutoResetGymAgent
+from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 
 import gym
 from gym.wrappers import TimeLimit
