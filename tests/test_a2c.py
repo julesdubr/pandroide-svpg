@@ -33,8 +33,6 @@ def main(cfg):
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
     if not os.path.exists(directory):
-        print("creating directory")
-        print(directory)
         os.makedirs(directory)
     else:
         print("directory existed")

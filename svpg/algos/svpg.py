@@ -62,6 +62,7 @@ class SVPG:
         show_loss=False,
         show_grad=False,
     ):
+        self.algo.to_gpu()
         nb_steps = np.zeros(self.algo.n_particles)
         last_epoch = 0
 

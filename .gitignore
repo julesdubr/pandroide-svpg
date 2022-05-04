@@ -133,6 +133,7 @@ salina/
 my_gym/
 
 # outputs
-tests/outputs
+.hydra
+*.log
 # tensorboard
 tmp/

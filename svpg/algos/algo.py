@@ -172,6 +172,7 @@ class Algo:
         raise NotImplementedError
 
     def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
+        self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
         for epoch in range(self.max_epochs):
@@ -238,3 +239,15 @@ class Algo:
                     self.eval_time_steps[pid].append(nb_steps[pid])
 
                 last_epoch = epoch
+
+    def save_best_agents(self, pid, directory):
+        file_path = directory + "agents/best_agent.agt"
+        self.eval_acquisition_agents[pid].agent.agents[1].save_model(file_path)
+
+    def save_all_agents(self, directory):
+        critic_path = directory + "agents/all_critic_agent"
+        action_path = directory + "agents/all_action_agent"
+        for pid in range(self.n_particles):
+            self.critic_agents[pid].save_model(critic_path + f"/critic_agent_{pid}.agt")
+            self.eval_acquisition_agents[pid].agent.agents[1].save_model(action_path + f"/action_agent_{pid}.agt")
+            
