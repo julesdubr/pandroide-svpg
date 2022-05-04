@@ -133,8 +133,6 @@ salina/
 my_gym/
 
 # outputs
-outputs/
-archives/
-
+tests/outputs
 # tensorboard
 tmp/

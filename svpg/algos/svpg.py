@@ -43,7 +43,7 @@ class SVPG:
                         print(wi.grad.is_cuda, wj.grad.is_cuda, kernel[j, i].detach().is_cuda)
                     except:
                         pass
-                    
+
                     wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
     def annealed(self, t):
@@ -75,10 +75,6 @@ class SVPG:
                 epoch, show_loss
             )
 
-            print(f"policy_loss svpg in gpu: {policy_loss.is_cuda}")
-            print(f"critic_loss svpg in gpu: {critic_loss.is_cuda}")
-            print(f"entropy_loss svpg in gpu: {entropy_loss.is_cuda}")
-
             if self.is_annealed:
                 t = np.max(nb_steps)
                 gamma = self.annealed(t)
@@ -86,10 +82,8 @@ class SVPG:
             # Compute gradients
             params = self.get_policy_parameters()
             params = params.to(self.algo.device)
-            print(f"params in gpu: {params.is_cuda}")
 
             kernel = self.kernel()(params, params.detach())
-            print(f"kernel sum in gpu: {kernel.sum().is_cuda}")
 
             self.add_gradients(
                 policy_loss * gamma * (1 / self.algo.n_particles), kernel

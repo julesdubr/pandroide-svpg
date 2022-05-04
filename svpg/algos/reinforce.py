@@ -78,9 +78,6 @@ class REINFORCE(Algo):
         policy_loss = policy_loss * mask
         policy_loss = policy_loss.mean()
 
-        print(f"policy_loss in gpu: {policy_loss.is_cuda}")
-        print(f"critic_loss in gpu: {critic_loss.is_cuda}")
-
         return policy_loss, critic_loss, torch.sum(trajectories_length)
 
     def compute_loss(self, epoch, verbose=True):
@@ -113,8 +110,6 @@ class REINFORCE(Algo):
         if verbose:
             self.logger.add_log("policy_loss", total_policy_loss, epoch)
             self.logger.add_log("critic_loss", total_critic_loss, epoch)
-
-        print(f"total loss in gpu: {total_policy_loss.is_cuda}, {total_critic_loss.is_cuda}")
 
         return total_policy_loss, total_critic_loss, 0, n_steps
     

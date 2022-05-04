@@ -43,13 +43,11 @@ class A2C(Algo):
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()
-        print(f"critic in gpu: {critic.is_cuda}")
 
         return critic_loss, td
 
     def compute_policy_loss(self, action_logprobs, td):
         policy_loss = action_logprobs[:-1] * td.detach()
-        print(f"policy_loss in gpu: {policy_loss.is_cuda}")
 
         return policy_loss.mean()
 
@@ -84,7 +82,6 @@ class A2C(Algo):
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
 
-        print(f"total loss in gpu: {total_critic_loss.is_cuda}, {total_entropy_loss.is_cuda}, {total_policy_loss.is_cuda}")
 
         n_steps = np.full(self.n_particles, self.n_steps * self.n_env)
         return total_policy_loss, total_critic_loss, total_entropy_loss, n_steps

@@ -191,7 +191,6 @@ class Algo:
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
 
-            print(f"total loss in gpu: {total_loss.is_cuda}")
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
