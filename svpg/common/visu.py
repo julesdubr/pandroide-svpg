@@ -3,12 +3,14 @@ import random
 
 import matplotlib.pyplot as plt
 import numpy as np
-import torch as th
+import torch
 
 from pathlib import Path
 
+from svpg.agents.continuous import CActionAgent, CCriticAgent
 
-def plot_algo_policies(algo, env, env_name, directory, plot=False):
+
+def plot_algo_policies(load_dir, env, env_name, directory, n_particles=16, plot=False):
     if "cartpole" in env_name.lower():
         plot_env = plot_cartpole
     elif "pendulum" in env_name.lower():
@@ -17,14 +19,16 @@ def plot_algo_policies(algo, env, env_name, directory, plot=False):
         print("Environment not supported for plot. Please use CartPole or Pendulum")
         return
 
-    for pid in range(algo.n_particles):
+    for pid in range(n_particles):
+        critic_agent = torch.load(f"{load_dir}/agents/all_critic_agent/critic_agent_{pid}")
+        action_agent = torch.load(f"{load_dir}/agents/all_action_agent/action_agent_{pid}")
         figname = f"policy_{pid}.png"
         plot_env(
-            algo.action_agents[pid].cpu(), env, figname, directory, plot, stochastic=True
+            action_agent.cpu(), env, figname, directory, plot, stochastic=True
         )
 
         figname = f"critic_{pid}.png"
-        plot_env(algo.critic_agents[pid].cpu(), env, figname, directory, plot)
+        plot_env(critic_agent.cpu(), env, figname, directory, plot)
 
 
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
@@ -97,7 +101,7 @@ def plot_pendulum(
             np.linspace(state_min[2], state_max[2], num=definition)
         ):
             obs = np.array([[np.cos(t), np.sin(t), td]])
-            obs = th.from_numpy(obs.astype(np.float32))
+            obs = torch.from_numpy(obs.astype(np.float32))
 
             if stochastic is None:
                 value = agent.model(obs).squeeze(-1)
@@ -123,7 +127,7 @@ def plot_pendulum(
         title = "Pendulum Actor"
         plt.colorbar(label="action")
 
-    # Add a point at the center
+    # Add a point at torche center
     plt.scatter([0], [0])
     x_label, y_label = getattr(env.observation_space, "names", ["x", "y"])
     final_show(save_figure, plot, figname, x_label, y_label, title, directory)
@@ -168,11 +172,11 @@ def plot_cartpole(
             if stochastic is None:
                 # Add batch dim
                 obs = obs.reshape(1, -1)
-                obs = th.from_numpy(obs.astype(np.float32))
+                obs = torch.from_numpy(obs.astype(np.float32))
                 value = agent.model(obs).squeeze(-1)
 
             else:
-                obs = th.from_numpy(obs.astype(np.float32))
+                obs = torch.from_numpy(obs.astype(np.float32))
                 value = agent.forward(-1, stochastic, observation=obs)
 
             portrait[definition - (1 + index_y), index_x] = value.item()

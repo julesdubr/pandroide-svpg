@@ -175,12 +175,12 @@ class Algo:
         raise NotImplementedError
 
     def save_best_agents(self, pid, directory):
-        file_path = directory + "agents/best_agent"
-        torch.save(self.eval_acquisition_agents[pid].agent.agents.state_dict(), file_path)
+        file_path = directory + "/agents/best_agent"
+        torch.save(self.eval_acquisition_agents[pid].agent.agents[1], file_path)
 
     def save_all_agents(self, directory):
-        critic_path = directory + "agents/all_critic_agent"
-        action_path = directory + "agents/all_action_agent"
+        critic_path = directory + "/agents/all_critic_agent"
+        action_path = directory + "/agents/all_action_agent"
 
 
         if not os.path.exists(critic_path):
@@ -189,8 +189,8 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid].state_dict(), critic_path + f"/critic_agent_{pid}")
-            torch.save(self.eval_acquisition_agents[pid].agent.agents[1].state_dict(), action_path + f"/action_agent_{pid}")
+            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}")
+            torch.save(self.eval_acquisition_agents[pid].agent.agents[1], action_path + f"/action_agent_{pid}")
 
     def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
         self.to_gpu()
@@ -261,12 +261,15 @@ class Algo:
 
                 last_epoch = epoch
 
+        save_dir = save_dir + "/algo_base"
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         self.save_all_agents(save_dir)
 
-        reward_path = save_dir + "/reward.npy"
+        reward_path = save_dir + "/reward_algo_base.npy"
+        rewards_np = np.array([[r for r in agent_reward] for agent_reward in self.rewards.values()])
         with open(reward_path, "wb") as f:
-            np.save(f, self.rewards)
+            np.save(f, rewards_np)
             

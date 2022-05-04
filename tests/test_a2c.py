@@ -41,51 +41,26 @@ def main(cfg):
 
     # --------- A2C INDEPENDENT --------- #
     algo_a2c = instantiate(cfg.algorithm)
-    algo_a2c.to_gpu()
-    algo_a2c.run()
+    algo_a2c.run(directory)
 
     a2c_reward = algo_a2c.rewards
-    a2c_best_rewards = [max(r) for r in a2c_reward.values()]
-
-    plot_algo_policies(algo_a2c, env, env_name, directory + "/A2C_INDEPENDANT/")
     #------------------------------------ #
 
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
     svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
-    svpg_normal.algo.to_gpu()
-    svpg_normal.run()
+    svpg_normal.run(directory)
 
     svpg_normal_reward = svpg_normal.algo.rewards
-    svpg_normal_best_rewards = [max(r) for r in svpg_normal_reward.values()]
-
-    plot_algo_policies(svpg_normal.algo, env, env_name, directory + "/SVPG_NORMAL/")
     #------------------------------------ #
 
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
     svpg_clipped_annealed = SVPG(algo_svpg_clipped_annealed)
-    svpg_clipped_annealed.algo.to_gpu()
-    svpg_clipped_annealed.run()
+    svpg_clipped_annealed.run(directory)
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
-    svpg_annealed_best_rewards = [max(r) for r in svpg_clipped_annealed_reward.values()]
-
-    plot_algo_policies(
-        svpg_normal.algo, env, env_name, directory + "/SVPG_CLIPPED_ANNEALED/"
-    )
     #------------------------------------ #
-
-    # ------------ HISTOGRAM ------------ #
-    plot_histograms(
-        [a2c_best_rewards, svpg_normal_best_rewards, svpg_annealed_best_rewards],
-        [f"A2C-independent", f"A2C-SVPG", f"A2C-SVPG (clipped + annealed)"],
-        ["red", "blue", "green"],
-        "A2C",
-        directory
-    )
-    #------------------------------------ #
-
 
     # ------------ Compare best agents ------------ #
     max_a2c_reward_index = max(a2c_reward, 

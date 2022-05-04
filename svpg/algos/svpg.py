@@ -140,11 +140,14 @@ class SVPG:
 
                 last_epoch = epoch
 
+        save_dir = save_dir + "/svpg_annealed" if self.is_annealed else save_dir + "/svpg_normal"
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         self.algo.save_all_agents(save_dir)
         
-        reward_path = save_dir + "/reward.npy"
+        reward_path = save_dir + "/reward_svpg_annealed.npy" if self.is_annealed else save_dir + "reward_svpg.npy"
+        rewards_np = np.array([[r for r in agent_reward] for agent_reward in self.algo.rewards.values()])
         with open(reward_path, "wb") as f:
-            np.save(f, self.algo.reward)
+            np.save(f, rewards_np)
