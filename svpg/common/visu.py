@@ -49,8 +49,8 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
         directory = Path(directory + figure_name)
         plt.savefig(directory)
 
-    if plot:
-        plt.show()
+    # if plot:
+    #     plt.show()
 
     plt.close()
 

@@ -39,6 +39,11 @@ class SVPG:
                 theta_j = self.algo.action_agents[j].parameters()
 
                 for (wi, wj) in zip(theta_i, theta_j):
+                    try:
+                        print(wi.grad.is_cuda, wj.grad.is_cuda, kernel[j, i].detach().is_cuda)
+                    except:
+                        pass
+                    
                     wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
     def annealed(self, t):

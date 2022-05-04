@@ -3,10 +3,11 @@ from hydra.utils import instantiate
 
 from svpg.algos.svpg import SVPG
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 from omegaconf import OmegaConf
 
-import matplotlib.pyplot as plt
-import numpy as np
 import datetime
 from pathlib import Path
 
@@ -17,10 +18,8 @@ try:
 except:
     print("Already register")
 
-import os
 
-
-@hydra.main(config_path=".", config_name="test_a2c.yaml")
+@hydra.main(config_path=".", config_name="test_reinforce.yaml")
 def main(cfg):
     import torch.multiprocessing as mp
 
@@ -32,24 +31,17 @@ def main(cfg):
     d = datetime.datetime.today()
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
-    if not os.path.exists(directory):
-        print("creating directory")
-        print(directory)
-        os.makedirs(directory)
-    else:
-        print("directory existed")
-
     env = instantiate(cfg.algorithm.env)
     env_name = cfg.env_name
 
-    # --------- A2C INDEPENDENT --------- #
-    algo_a2c = instantiate(cfg.algorithm)
-    algo_a2c.run()
+    # --------- REINFORCE INDEPENDENT --------- #
+    algo_reinfoce = instantiate(cfg.algorithm)
+    algo_reinfoce.run()
 
-    a2c_reward = algo_a2c.rewards
-    a2c_best_rewards = [max(r) for r in a2c_reward.values()]
+    reinforce_reward = algo_reinfoce.rewards
+    reinforce_best_rewards = [max(r) for r in reinforce_reward.values()]
 
-    plot_algo_policies(algo_a2c, env, env_name, directory + "/A2C_INDEPENDANT/")
+    plot_algo_policies(algo_reinfoce, env, env_name, directory + "/REINFORCE_INDEPENDANT/")
     #------------------------------------ #
 
     # ----------- SVPG NORMAL ----------- #
@@ -77,21 +69,21 @@ def main(cfg):
     #------------------------------------ #
 
     # ------------ HISTOGRAM ------------ #
+
     plot_histograms(
-        [a2c_best_rewards, svpg_normal_best_rewards, svpg_annealed_best_rewards],
+        [reinforce_best_rewards, svpg_normal_best_rewards, svpg_annealed_best_rewards],
         [f"A2C-independent", f"A2C-SVPG", f"A2C-SVPG (clipped + annealed)"],
         ["red", "blue", "green"],
         "A2C",
-        directory
+        directory,
     )
     #------------------------------------ #
 
-
     # ------------ Compare best agents ------------ #
-    max_a2c_reward_index = max(a2c_reward, 
-                               key=lambda particle: sum(a2c_reward[particle]))
+    max_reinforce_reward_index = max(reinforce_reward, 
+                               key=lambda particle: sum(reinforce_reward[particle]))
 
-    max_a2c_reward = a2c_reward[max_a2c_reward_index]
+    max_reinforce_reward = reinforce_reward[max_reinforce_reward_index]
 
     max_svpg_normal_reward_index = max(svpg_normal_reward, 
                                        key=lambda particle: sum(svpg_normal_reward[particle]))
@@ -104,26 +96,25 @@ def main(cfg):
     
     max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[max_svpg_clipped_annealed_reward_index]
 
-    a2c_timesteps = algo_a2c.eval_time_steps[max_a2c_reward_index]
+    a2c_timesteps = algo_reinfoce.eval_time_steps[max_reinforce_reward_index]
 
     svpg_normal_timesteps = svpg_normal.algo.eval_time_steps[max_svpg_normal_reward_index]
 
     svpg_clipped_annealed_timesteps = svpg_clipped_annealed.algo.eval_time_steps[max_svpg_clipped_annealed_reward_index]
 
     plt.figure()
-    plt.plot(a2c_timesteps, max_a2c_reward, label="A2C")
-    plt.plot(svpg_normal_timesteps, max_svpg_normal_reward, label="SVPG_A2C")
+    plt.plot(a2c_timesteps, max_reinforce_reward, label="REINFORCE")
+    plt.plot(svpg_normal_timesteps, max_svpg_normal_reward, label="SVPG_REINFORCE")
     plt.plot(
         svpg_clipped_annealed_timesteps,
         max_svpg_clipped_annealed_reward,
-        label="SVPG_A2C_clipped_annealed",
+        label="SVPG_REINFORCE_clipped_annealed",
     )
     plt.xlabel("Timesteps")
     plt.ylabel("Reward")
     plt.legend()
     plt.title(cfg.algorithm.env_name)
-    plt.savefig(directory + "A2C_SVPG_loss.png")
-    # plt.show()
+    plt.show()
     #------------------------------------ #
 
 
