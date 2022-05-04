@@ -192,7 +192,7 @@ class Algo:
             torch.save(self.critic_agents[pid].state_dict(), critic_path + f"/critic_agent_{pid}")
             torch.save(self.eval_acquisition_agents[pid].agent.agents[1].state_dict(), action_path + f"/action_agent_{pid}")
 
-    def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
+    def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
         self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
@@ -261,11 +261,12 @@ class Algo:
 
                 last_epoch = epoch
 
-        d = datetime.datetime.today()
-        directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
 
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        self.save_all_agents(save_dir)
 
-        self.save_all_agents(directory)
+        reward_path = save_dir + "/reward.npy"
+        with open(reward_path, "wb") as f:
+            np.save(f, self.rewards)
             

@@ -6,6 +6,9 @@ from salina import Workspace
 from svpg.common.kernel import RBF
 
 import numpy as np
+import datetime
+import os
+from pathlib import Path
 
 
 class SVPG:
@@ -50,12 +53,13 @@ class SVPG:
 
     def run(
         self,
+        save_dir,
         gamma=1,
         p=5,
         slope=1.7,
         max_grad_norm=0.5,
         show_loss=False,
-        show_grad=False,
+        show_grad=False
     ):
         self.algo.to_gpu()
         nb_steps = np.zeros(self.algo.n_particles)
@@ -135,3 +139,12 @@ class SVPG:
                     self.algo.eval_time_steps[pid].append(nb_steps[pid])
 
                 last_epoch = epoch
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+
+        self.algo.save_all_agents(save_dir)
+        
+        reward_path = save_dir + "/reward.npy"
+        with open(reward_path, "wb") as f:
+            np.save(f, self.algo.reward)
