@@ -13,6 +13,10 @@ import numpy as np
 
 from collections import defaultdict
 
+import datetime
+from pathlib import Path
+import os
+
 
 class Algo:
     def __init__(
@@ -171,6 +175,26 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
+    def save_best_agents(self, pid, directory):
+        file_path = directory + "agents/best_agent.agt"
+        self.eval_acquisition_agents[pid].agent.agents[1].save_model(file_path)
+
+    def save_all_agents(self, directory):
+        print("here")
+        critic_path = directory + "agents/all_critic_agent"
+        action_path = directory + "agents/all_action_agent"
+
+        if not os.path.exists(critic_path):
+            print("hi")
+            os.makedirs(critic_path)
+        if not os.path.exists(action_path):
+            print("hi")
+            os.makedirs(action_path)
+
+        for pid in range(self.n_particles):
+            self.critic_agents[pid].save_model(critic_path + f"/critic_agent_{pid}.agt")
+            self.eval_acquisition_agents[pid].agent.agents[1].save_model(action_path + f"/action_agent_{pid}.agt")
+
     def run(self, max_grad_norm=0.5, show_loss=False, show_grad=False):
         self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
@@ -240,14 +264,12 @@ class Algo:
 
                 last_epoch = epoch
 
-    def save_best_agents(self, pid, directory):
-        file_path = directory + "agents/best_agent.agt"
-        self.eval_acquisition_agents[pid].agent.agents[1].save_model(file_path)
+        d = datetime.datetime.today()
+        directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
 
-    def save_all_agents(self, directory):
-        critic_path = directory + "agents/all_critic_agent"
-        action_path = directory + "agents/all_action_agent"
-        for pid in range(self.n_particles):
-            self.critic_agents[pid].save_model(critic_path + f"/critic_agent_{pid}.agt")
-            self.eval_acquisition_agents[pid].agent.agents[1].save_model(action_path + f"/action_agent_{pid}.agt")
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+        print("saving...")
+        self.save_all_agents(directory)
             

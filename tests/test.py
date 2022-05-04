@@ -44,7 +44,5 @@ def main(cfg):
     algo_a2c = instantiate(cfg.algorithm)
     algo_a2c.run()
 
-    algo_a2c.save_all_agents(directory)
-
 if __name__ == "__main__":
     main()
