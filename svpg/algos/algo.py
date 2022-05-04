@@ -184,6 +184,9 @@ class Algo:
         critic_path = directory + "agents/all_critic_agent"
         action_path = directory + "agents/all_action_agent"
 
+        print(critic_path)
+        print(action_path)
+
         if not os.path.exists(critic_path):
             print("hi")
             os.makedirs(critic_path)
@@ -192,8 +195,6 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            # self.critic_agents[pid].save(critic_path + f"/critic_agent_{pid}.agt")
-            # self.eval_acquisition_agents[pid].agent.agents[1].save(action_path + f"/action_agent_{pid}.agt")
             torch.save(self.critic_agents[pid].state_dict(), critic_path + f"/critic_agent_{pid}")
             torch.save(self.eval_acquisition_agents[pid].agent.agents[1].state_dict(), action_path + f"/action_agent_{pid}")
 
