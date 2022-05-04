@@ -10,5 +10,5 @@ mako
 Box2D
 theano
 cached-property
-salina @ git+https://github.com/osigaud/salina.git
+salina @ git+https://github.com/osigaud/salina.git@main
 rllab @ git+https://github.com/rll/rllab.git@master

@@ -1,6 +1,6 @@
 import torch as th
 
-from salina import Agent
+from salina.agent import Agent
 
 
 class ActionAgent(Agent):

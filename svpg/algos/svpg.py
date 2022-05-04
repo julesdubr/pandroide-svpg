@@ -1,7 +1,7 @@
 import torch
 from torch.nn.utils import parameters_to_vector
 
-from salina import Workspace
+from salina.workspace import Workspace
 
 from svpg.common.kernel import RBF
 

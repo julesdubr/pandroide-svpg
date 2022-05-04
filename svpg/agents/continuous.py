@@ -2,7 +2,7 @@ import torch as th
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
-from salina import Agent
+from salina.agent import Agent
 
 
 class CActionAgent(Agent):
