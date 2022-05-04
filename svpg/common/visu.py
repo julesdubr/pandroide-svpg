@@ -56,7 +56,7 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
 
 
 def plot_histograms(
-    rewards_list, labels, colors, title, directory, plot=True, save_figure=True
+    rewards_list, labels, colors, title, directory, plot=False, save_figure=True
 ):
     n_bars = len(rewards_list)
     x = np.arange(len(rewards_list[0]))
@@ -73,7 +73,7 @@ def plot_histograms(
 
 
 def plot_pendulum(
-    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
+    agent, env, figname, directory, plot=False, save_figure=True, stochastic=None
 ):
     """
     Plot a critic for the Pendulum environment
@@ -130,7 +130,7 @@ def plot_pendulum(
 
 
 def plot_cartpole(
-    agent, env, figname, directory, plot=True, save_figure=True, stochastic=None
+    agent, env, figname, directory, plot=False, save_figure=True, stochastic=None
 ):
     """
     Visualization of the critic in a N-dimensional state space

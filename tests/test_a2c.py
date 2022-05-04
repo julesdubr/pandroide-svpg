@@ -17,7 +17,7 @@ try:
 except:
     print("Already register")
 
-import pickle
+import os
 
 
 @hydra.main(config_path=".", config_name="test_a2c.yaml")
@@ -31,6 +31,13 @@ def main(cfg):
 
     d = datetime.datetime.today()
     directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
+
+    if not os.path.exists(directory):
+        print("creating directory")
+        print(directory)
+        os.makedirs(directory)
+    else:
+        print("directory existed")
 
     env = instantiate(cfg.algorithm.env)
     env_name = cfg.env_name
@@ -116,7 +123,7 @@ def main(cfg):
     plt.legend()
     plt.title(cfg.algorithm.env_name)
     plt.savefig(directory + "A2C_SVPG_loss.png")
-    plt.show()
+    # plt.show()
     #------------------------------------ #
 
 
