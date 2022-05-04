@@ -25,7 +25,7 @@ algorithm:
       log_dir: ./tmp
       every_n_seconds: 10000
       modulo: 1
-      verbose: True
+      verbose: False
 
   env_agent: "${get_method: svpg.agents.env.EnvAgentNoAutoReset}"
 
