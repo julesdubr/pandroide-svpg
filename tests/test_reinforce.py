@@ -36,6 +36,7 @@ def main(cfg):
 
     # --------- REINFORCE INDEPENDENT --------- #
     algo_reinfoce = instantiate(cfg.algorithm)
+    algo_reinfoce.to_gpu()
     algo_reinfoce.run()
 
     reinforce_reward = algo_reinfoce.rewards
@@ -47,6 +48,7 @@ def main(cfg):
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
     svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
+    svpg_normal.algo.to_gpu()
     svpg_normal.run()
 
     svpg_normal_reward = svpg_normal.algo.rewards
@@ -58,6 +60,7 @@ def main(cfg):
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
     svpg_clipped_annealed = SVPG(algo_svpg_clipped_annealed)
+    svpg_clipped_annealed.algo.to_gpu()
     svpg_clipped_annealed.run()
 
     svpg_clipped_annealed_reward = svpg_clipped_annealed.algo.rewards
