@@ -20,11 +20,11 @@ def plot_algo_policies(algo, env, env_name, directory, plot=False):
     for pid in range(algo.n_particles):
         figname = f"policy_{pid}.png"
         plot_env(
-            algo.action_agents[pid], env, figname, directory, plot, stochastic=True
+            algo.action_agents[pid].cpu(), env, figname, directory, plot, stochastic=True
         )
 
         figname = f"critic_{pid}.png"
-        plot_env(algo.critic_agents[pid], env, figname, directory, plot)
+        plot_env(algo.critic_agents[pid].cpu(), env, figname, directory, plot)
 
 
 def final_show(save_figure, plot, figure_name, x_label, y_label, title, directory):
