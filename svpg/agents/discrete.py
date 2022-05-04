@@ -1,9 +1,9 @@
 import torch as th
 
-from salina import TAgent
+from salina import Agent
 
 
-class ActionAgent(TAgent):
+class ActionAgent(Agent):
     def __init__(self, model):
         super().__init__()
         # Model
@@ -33,7 +33,7 @@ class ActionAgent(TAgent):
         self.set(("entropy", t), entropy)
 
 
-class CriticAgent(TAgent):
+class CriticAgent(Agent):
     """
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose

@@ -2,10 +2,10 @@ import torch as th
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
-from salina import TAgent
+from salina import Agent
 
 
-class CActionAgent(TAgent):
+class CActionAgent(Agent):
     def __init__(self, output_size, model):
         super().__init__()
         # Model input and output size
@@ -38,7 +38,7 @@ class CActionAgent(TAgent):
         self.set(("entropy", t), entropy)
 
 
-class CCriticAgent(TAgent):
+class CCriticAgent(Agent):
     """
     CriticAgent:
     - A one hidden layer neural network which takes an observation as input and whose
