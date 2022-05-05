@@ -33,7 +33,7 @@ class Algo:
         env_agent,
         env,
         model,
-        optimizer
+        optimizer,
     ):
         # --------------- Hyper parameters --------------- #
         self.n_particles = n_particles
@@ -263,22 +263,15 @@ class Algo:
 
                 last_epoch = epoch
 
-        save_dir = Path(save_dir + "/algo_base")
+        save_dir = Path(str(save_dir) + "/algo_base")
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
-        self.save_all_agents(save_dir)
+        self.save_all_agents(str(save_dir))
 
-        reward_path = Path(save_dir + "/reward_algo_base.npy")
+        reward_path = Path(str(save_dir) + "/reward_algo_base.npy")
         rewards_np = np.array(
             [[r for r in agent_reward] for agent_reward in self.rewards.values()]
         )
         with open(reward_path, "wb") as f:
             np.save(f, rewards_np)
-            
-
-                
-
-
-
-            
