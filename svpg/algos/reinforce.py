@@ -1,13 +1,14 @@
 from svpg.algos.algo import Algo
+from svpg.algos.algo_multi import Algo_Multi
 
 import torch
 import numpy as np
 
 
-class REINFORCE(Algo):
+class REINFORCE(Algo, Algo_Multi):
     def __init__(self,
                  policy_coef, critic_coef,
-                 n_particles, 
+                 n_particles, num_processes,
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
                  eval_interval,
@@ -17,7 +18,7 @@ class REINFORCE(Algo):
                  env, 
                  model, 
                  optimizer):
-        super().__init__(n_particles, 
+        super().__init__(n_particles, num_processes,
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         eval_interval,

@@ -5,11 +5,11 @@ from salina.agent import Agent
 
 class ActionAgent(Agent):
     def __init__(self, model):
-        super().__init__()
+        super().__init__(name="action_agent")
         # Model
         self.model = model
 
-    def forward(self, t, stochastic, **kwargs):
+    def forward(self, t, stochastic, replay=False, **kwargs):
         if "observation" in kwargs:
             observation = kwargs["observation"]
         else:
@@ -28,7 +28,8 @@ class ActionAgent(Agent):
         entropy = th.distributions.Categorical(probs).entropy()
         logprobs = probs[th.arange(probs.size()[0]), action].log()
 
-        self.set(("action", t), action)
+        if not replay:
+            self.set(("action", t), action)
         self.set(("action_logprobs", t), logprobs)
         self.set(("entropy", t), entropy)
 
