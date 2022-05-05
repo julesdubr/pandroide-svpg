@@ -6,7 +6,6 @@ from salina.workspace import Workspace
 from svpg.common.kernel import RBF
 
 import numpy as np
-import datetime
 import os
 from pathlib import Path
 
@@ -59,7 +58,7 @@ class SVPG:
         slope=1.7,
         max_grad_norm=0.5,
         show_loss=False,
-        show_grad=False
+        show_grad=False,
     ):
         self.algo.to_gpu()
         nb_steps = np.zeros(self.algo.n_particles)
@@ -90,7 +89,7 @@ class SVPG:
             )
 
             loss = (
-                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
                 + self.algo.critic_coef * critic_loss / self.algo.n_particles
                 + kernel.sum() / self.algo.n_particles
             )
@@ -129,7 +128,9 @@ class SVPG:
                         eval_workspace["env/cumulated_reward"],
                         eval_workspace["env/done"],
                     )
-                    creward, done = creward.to(self.algo.device), done.to(self.algo.device)
+                    creward, done = creward.to(self.algo.device), done.to(
+                        self.algo.device
+                    )
                     tl = done.float().argmax(0)
                     creward = creward[tl, torch.arange(creward.size()[1])]
                     self.algo.logger.add_log(
@@ -140,14 +141,23 @@ class SVPG:
 
                 last_epoch = epoch
 
-        save_dir = save_dir + "/svpg_annealed" if self.is_annealed else save_dir + "/svpg_normal"
-
+        save_dir = (
+            Path(save_dir + "/svpg_annealed")
+            if self.is_annealed
+            else Path(save_dir + "/svpg_normal")
+        )
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         self.algo.save_all_agents(save_dir)
-        
-        reward_path = save_dir + "/reward_svpg_annealed.npy" if self.is_annealed else save_dir + "/reward_svpg.npy"
-        rewards_np = np.array([[r for r in agent_reward] for agent_reward in self.algo.rewards.values()])
+
+        reward_path = (
+            Path(save_dir + "/reward_svpg_annealed.npy")
+            if self.is_annealed
+            else Path(save_dir + "/reward_svpg.npy")
+        )
+        rewards_np = np.array(
+            [[r for r in agent_reward] for agent_reward in self.algo.rewards.values()]
+        )
         with open(reward_path, "wb") as f:
             np.save(f, rewards_np)

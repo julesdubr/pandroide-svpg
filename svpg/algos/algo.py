@@ -1,4 +1,4 @@
-from venv import create
+from pathlib import Path
 import torch
 import torch.nn as nn
 
@@ -13,9 +13,6 @@ from svpg.agents.env import EnvAgentNoAutoReset
 import numpy as np
 
 from collections import defaultdict
-
-import datetime
-from pathlib import Path
 import os
 from copy import deepcopy
 
@@ -182,9 +179,8 @@ class Algo:
         torch.save(self.eval_acquisition_agents[pid].agent.agents[1], file_path)
 
     def save_all_agents(self, directory):
-        critic_path = directory + "/agents/all_critic_agent"
-        action_path = directory + "/agents/all_action_agent"
-
+        critic_path = Path(directory + "/agents/all_critic_agent")
+        action_path = Path(directory + "/agents/all_action_agent")
 
         if not os.path.exists(critic_path):
             os.makedirs(critic_path)
@@ -192,8 +188,11 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}")
-            torch.save(self.eval_acquisition_agents[pid].agent.agents[1], action_path + f"/action_agent_{pid}")
+            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}.pt")
+            torch.save(
+                self.eval_acquisition_agents[pid].agent.agents[1],
+                action_path + f"/action_agent_{pid}.pt",
+            )
 
     def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
         self.to_gpu()
@@ -211,11 +210,10 @@ class Algo:
             )
 
             total_loss = (
-                + self.policy_coef * policy_loss / self.n_particles
+                +self.policy_coef * policy_loss / self.n_particles
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
-
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
@@ -264,15 +262,16 @@ class Algo:
 
                 last_epoch = epoch
 
-        save_dir = save_dir + "/algo_base"
-
+        save_dir = Path(save_dir + "/algo_base")
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         self.save_all_agents(save_dir)
 
-        reward_path = save_dir + "/reward_algo_base.npy"
-        rewards_np = np.array([[r for r in agent_reward] for agent_reward in self.rewards.values()])
+        reward_path = Path(save_dir + "/reward_algo_base.npy")
+        rewards_np = np.array(
+            [[r for r in agent_reward] for agent_reward in self.rewards.values()]
+        )
         with open(reward_path, "wb") as f:
             np.save(f, rewards_np)
             

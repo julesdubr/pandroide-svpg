@@ -135,5 +135,7 @@ my_gym/
 # outputs
 .hydra
 *.log
+plot_archives/
+
 # tensorboard
 tmp/
