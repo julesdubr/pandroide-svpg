@@ -95,7 +95,7 @@ def main(cfg):
     plt.ylabel("Reward")
     plt.legend()
     plt.title(cfg.algorithm.env_name)
-    plt.show()
+    plt.savefig(directory + "REINFORCE_SVPG_loss.png")
     #------------------------------------ #
 
 
