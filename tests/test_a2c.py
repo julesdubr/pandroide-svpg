@@ -29,8 +29,7 @@ def main(cfg):
     except:
         pass
 
-    d = datetime.datetime.today()
-    directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%y-%m-%d_%H-%M/")
+    directory = str(Path(__file__).parents[1])
 
     if not os.path.exists(directory):
         os.makedirs(directory)
