@@ -28,8 +28,7 @@ def main(cfg):
     except:
         pass
 
-    d = datetime.datetime.today()
-    directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
+    directory = str(Path(__file__).parents[1])
 
     env = instantiate(cfg.algorithm.env)
     env_name = cfg.env_name
@@ -77,14 +76,14 @@ def main(cfg):
     
     max_svpg_clipped_annealed_reward = svpg_clipped_annealed_reward[max_svpg_clipped_annealed_reward_index]
 
-    a2c_timesteps = algo_reinfoce.eval_time_steps[max_reinforce_reward_index]
+    reinforce_timesteps = algo_reinfoce.eval_epoch[max_reinforce_reward_index]
 
-    svpg_normal_timesteps = svpg_normal.algo.eval_time_steps[max_svpg_normal_reward_index]
+    svpg_normal_timesteps = svpg_normal.algo.eval_epoch[max_svpg_normal_reward_index]
 
-    svpg_clipped_annealed_timesteps = svpg_clipped_annealed.algo.eval_time_steps[max_svpg_clipped_annealed_reward_index]
+    svpg_clipped_annealed_timesteps = svpg_clipped_annealed.algo.eval_epoch[max_svpg_clipped_annealed_reward_index]
 
     plt.figure()
-    plt.plot(a2c_timesteps, max_reinforce_reward, label="REINFORCE")
+    plt.plot(reinforce_timesteps, max_reinforce_reward, label="REINFORCE")
     plt.plot(svpg_normal_timesteps, max_svpg_normal_reward, label="SVPG_REINFORCE")
     plt.plot(
         svpg_clipped_annealed_timesteps,

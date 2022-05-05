@@ -43,6 +43,7 @@ class Algo:
         self.env_seed = env_seed
         self.rewards = defaultdict(lambda: [])
         self.eval_time_steps = defaultdict(lambda: [])
+        self.eval_epoch = defaultdict(lambda: [])
         self.eval_interval = eval_interval
         self.clipped = clipped
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -189,7 +190,9 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt")
+            torch.save(
+                self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt"
+            )
             torch.save(
                 self.eval_acquisition_agents[pid].agent.agents[1],
                 str(action_path) + f"/action_agent_{pid}.pt",
@@ -260,6 +263,7 @@ class Algo:
                     self.logger.add_log(f"reward_{pid}", creward.mean(), nb_steps[pid])
                     self.rewards[pid].append(creward.mean())
                     self.eval_time_steps[pid].append(nb_steps[pid])
+                    self.eval_epoch[pid].append(epoch)
 
                 last_epoch = epoch
 
