@@ -3,6 +3,8 @@ from salina.agents.gyma import AutoResetGymAgent, NoAutoResetGymAgent
 import gym
 from gym.wrappers import TimeLimit
 
+from svpg import rllab_env_wrapper
+
 
 def make_env(env_name, max_episode_steps):
     """
