@@ -22,7 +22,7 @@ class A2C(Algo):
                  model, 
                  optimizer):
 
-        Algo.__init__(self, n_particles,
+        super().__init__(self, n_particles,
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         eval_interval,

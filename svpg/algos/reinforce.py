@@ -5,10 +5,10 @@ import torch
 import numpy as np
 
 
-class REINFORCE(Algo, Algo_Multi):
+class REINFORCE(Algo):
     def __init__(self,
                  policy_coef, critic_coef,
-                 n_particles, num_processes,
+                 n_particles,
                  max_epochs, discount_factor,
                  env_name, max_episode_steps, n_envs, env_seed,
                  eval_interval,
@@ -18,7 +18,7 @@ class REINFORCE(Algo, Algo_Multi):
                  env, 
                  model, 
                  optimizer):
-        super().__init__(n_particles, num_processes,
+        super().__init__(n_particles,
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         eval_interval,
