@@ -1,4 +1,4 @@
-from pathlib import Path
+from venv import create
 import torch
 import torch.nn as nn
 
@@ -13,14 +13,16 @@ from svpg.agents.env import EnvAgentNoAutoReset
 import numpy as np
 
 from collections import defaultdict
+
 import os
 from copy import deepcopy
 
 
-class Algo:
+class Algo_Multi:
     def __init__(
         self,
         n_particles,
+        num_processes,
         max_epochs,
         discount_factor,
         env_name,
@@ -37,6 +39,7 @@ class Algo:
     ):
         # --------------- Hyper parameters --------------- #
         self.n_particles = n_particles
+        self.num_processes = num_processes
         self.max_epochs = max_epochs
         self.discount_factor = discount_factor
         self.n_env = n_envs
@@ -52,10 +55,10 @@ class Algo:
 
         # --------------- Agents --------------- #
         self.train_env_agents = [
-            env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)
+            env_agent(env_name, max_episode_steps, n_envs / self.num_processes) for _ in range(n_particles)
         ]
         self.eval_env_agents = [
-            EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs)
+            EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs / self.num_processes)
             for _ in range(n_particles)
         ]
 
@@ -84,14 +87,19 @@ class Algo:
         self.tcritic_agents = [
             TemporalAgent(critic_agent) for critic_agent in self.critic_agents
         ]
+
+        self.taction_agents = [
+            TemporalAgent(action_agent) for action_agent in self.action_agents
+        ]
+
         self.train_acquisition_agents = [
-            TemporalAgent(Agents(train_env_agent, action_agent))
+            TemporalAgent(Agents(train_env_agent, deepcopy(action_agent)))
             for train_env_agent, action_agent in zip(
                 self.train_env_agents, self.action_agents
             )
         ]
         self.eval_acquisition_agents = [
-            TemporalAgent(Agents(eval_env_agent, action_agent))
+            TemporalAgent(Agents(eval_env_agent, deepcopy(action_agent)))
             for eval_env_agent, action_agent in zip(
                 self.eval_env_agents, self.action_agents
             )
@@ -100,9 +108,6 @@ class Algo:
         for train_acquisition_agent in self.train_acquisition_agents:
             train_acquisition_agent.seed(env_seed)
 
-        # ---------------- Workspaces ------------ #
-        self.workspaces = [Workspace() for _ in range(n_particles)]
-
         # ---------------- Optimizers ------------ #
         self.optimizers = [
             optimizer(nn.Sequential(action_agent, critic_agent).parameters())
@@ -110,44 +115,6 @@ class Algo:
                 self.action_agents, self.critic_agents
             )
         ]
-
-    def execute_acquisition_agent(self, epoch):
-        if not hasattr(self, "stop_variable"):
-            for pid in range(self.n_particles):
-                kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
-                if epoch > 0:
-                    self.workspaces[pid].zero_grad()
-                    self.workspaces[pid].copy_n_last_steps(1)
-                    kwargs["t"] = 1
-                    kwargs["n_steps"] = self.n_steps - 1
-
-                self.train_acquisition_agents[pid](self.workspaces[pid], **kwargs)
-            return
-
-        for pid in range(self.n_particles):
-            kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
-            if epoch > 0:
-                self.workspaces[pid].clear()
-
-            self.train_acquisition_agents[pid](self.workspaces[pid], **kwargs)
-
-    def execute_critic_agent(self):
-        if not hasattr(self, "stop_variable"):
-            for pid in range(self.n_particles):
-                self.tcritic_agents[pid](self.workspaces[pid], n_steps=self.n_steps)
-            return
-
-        for pid in range(self.n_particles):
-            self.tcritic_agents[pid](
-                self.workspaces[pid], stop_variable=self.stop_variable
-            )
-
-    def to_gpu(self):
-        for pid in range(self.n_particles):
-            self.tcritic_agents[pid].to(self.device)
-            self.train_acquisition_agents[pid].to(self.device)
-            self.eval_acquisition_agents[pid].to(self.device)
-            self.workspaces[pid].to(self.device)
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
@@ -180,8 +147,9 @@ class Algo:
         torch.save(self.eval_acquisition_agents[pid].agent.agents[1], file_path)
 
     def save_all_agents(self, directory):
-        critic_path = Path(directory + "/agents/all_critic_agent")
-        action_path = Path(directory + "/agents/all_action_agent")
+        critic_path = directory + "/agents/all_critic_agent"
+        action_path = directory + "/agents/all_action_agent"
+
 
         if not os.path.exists(critic_path):
             os.makedirs(critic_path)
@@ -189,21 +157,63 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}.pt")
-            torch.save(
-                self.eval_acquisition_agents[pid].agent.agents[1],
-                action_path + f"/action_agent_{pid}.pt",
-            )
+            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}")
+            torch.save(self.eval_acquisition_agents[pid].agent.agents[1], action_path + f"/action_agent_{pid}")
 
-    def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
-        self.to_gpu()
+    def run_multi(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
+
         for epoch in range(self.max_epochs):
-            # Run all particles
-            self.execute_acquisition_agent(epoch)
-            if self.critic_coef != 0:
-                self.execute_critic_agent()
+            self.workspaces = []
+            for pid in range(self.n_particles):
+                if not hasattr(self, "stop_variable"):
+                    remote_acq_agent, remote_acq_workspace = NRemoteAgent.create(
+                        self.train_acquisition_agents[pid],
+                        num_processes=self.num_processes,
+                        t=0,
+                        n_steps=self.n_steps,
+                        stochastic=True
+                    )
+                else:
+                    remote_acq_agent, remote_acq_workspace = NRemoteAgent.create(
+                        self.train_acquisition_agents[pid],
+                        num_processes=self.num_processes,
+                        t=0,
+                        stop_variable=self.stop_variable,
+                        stochastic=True
+                    )
+
+                remote_acq_agent.seed(self.env_seed)
+
+                a_agent = remote_acq_agent.get_by_name("action_agent")
+                for a in a_agent:
+                    a.load_state_dict(self.action_agents[pid].state_dict())
+                
+                if not hasattr(self, "stop_variable"):
+                    kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
+                    if epoch > 0:
+                        remote_acq_workspace.copy_n_last_steps(1)
+                        kwargs["t"] = 1
+                        kwargs["n_steps"] = self.n_steps - 1
+
+                    remote_acq_agent(remote_acq_workspace, **kwargs)
+
+                else:
+                    kwargs = {"t": 0, "stochastic": True, "stop_variable": self.stop_variable}
+                    if epoch > 0:
+                        remote_acq_workspace.clear()
+
+                    remote_acq_agent(remote_acq_workspace, **kwargs)
+
+                self.workspaces.append(Workspace(remote_acq_workspace))
+                if not hasattr(self, "stop_variable"):
+                    self.taction_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps, stochastic=True, replay=True)
+                    self.tcritic_agents[pid](self.workspaces[pid], t=0, n_steps=self.n_steps)
+                else:
+                    self.taction_agents[pid](self.workspaces[pid], t=0, stochastic=True, replay=True, stop_variable=self.stop_variable)
+                    self.tcritic_agents[pid](self.workspaces[pid], t=0, stop_variable=self.stop_variable)
+
 
             # Compute loss
             policy_loss, critic_loss, entropy_loss, n_steps = self.compute_loss(
@@ -211,10 +221,11 @@ class Algo:
             )
 
             total_loss = (
-                +self.policy_coef * policy_loss / self.n_particles
+                + self.policy_coef * policy_loss / self.n_particles
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
+
 
             for pid in range(self.n_particles):
                 self.optimizers[pid].zero_grad()
@@ -246,8 +257,20 @@ class Algo:
             nb_steps += n_steps
             if epoch - last_epoch == self.eval_interval - 1:
                 for pid in range(self.n_particles):
-                    eval_workspace = Workspace()
-                    self.eval_acquisition_agents[pid](
+                    eval_remote_agent, eval_workspace = NRemoteAgent.create(
+                        self.eval_acquisition_agents[pid],
+                        num_processes=self.num_processes,
+                        t=0,
+                        stop_variable="env/done",
+                        stochastic=False
+                    )
+
+                    eval_remote_agent.seed(self.env_seed)
+                    
+                    for a in eval_remote_agent.get_by_name("action_agent"):
+                        a.load_state_dict(self.action_agents[pid].state_dict())
+
+                    eval_remote_agent(
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
                     )
                     creward, done = (
@@ -263,18 +286,13 @@ class Algo:
 
                 last_epoch = epoch
 
-        save_dir = Path(save_dir + "/algo_base")
+        save_dir = save_dir + "/algo_base"
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         self.save_all_agents(save_dir)
 
-        reward_path = Path(save_dir + "/reward_algo_base.npy")
-        rewards_np = np.array(
-            [[r for r in agent_reward] for agent_reward in self.rewards.values()]
-        )
-        with open(reward_path, "wb") as f:
-            np.save(f, rewards_np)
             
 
                 

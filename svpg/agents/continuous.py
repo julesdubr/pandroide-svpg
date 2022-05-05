@@ -7,7 +7,7 @@ from salina.agent import Agent
 
 class CActionAgent(Agent):
     def __init__(self, output_size, model):
-        super().__init__()
+        super().__init__(name="action_agent")
         # Model input and output size
         # Model for estimating the mean
         self.model = model
@@ -15,7 +15,7 @@ class CActionAgent(Agent):
         self.std_param = nn.parameter.Parameter(th.randn(output_size, 1))
         self.soft_plus = nn.Softplus()
 
-    def forward(self, t, stochastic, **kwargs):
+    def forward(self, t, stochastic, replay=False, **kwargs):
         if "observation" in kwargs:
             observation = kwargs["observation"]
         else:
@@ -33,7 +33,10 @@ class CActionAgent(Agent):
             return action
 
         action_logprobs = dist.log_prob(action).sum(axis=-1)
-        self.set(("action", t), action)
+        
+        if not replay:
+            self.set(("action", t), action)
+
         self.set(("action_logprobs", t), action_logprobs)
         self.set(("entropy", t), entropy)
 

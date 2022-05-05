@@ -4,6 +4,7 @@ import torch
 import salina.rl.functional as RLF
 
 from svpg.algos.algo import Algo
+from svpg.algos.algo_multi import Algo_Multi
 
 
 class A2C(Algo):
@@ -20,7 +21,8 @@ class A2C(Algo):
                  env, 
                  model, 
                  optimizer):
-        super().__init__(n_particles, 
+
+        super().__init__(self, n_particles,
                         max_epochs, discount_factor,
                         env_name, max_episode_steps, n_envs, env_seed,
                         eval_interval,
