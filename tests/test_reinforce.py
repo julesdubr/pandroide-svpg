@@ -90,7 +90,7 @@ def main(cfg):
         max_svpg_clipped_annealed_reward,
         label="SVPG_REINFORCE_clipped_annealed",
     )
-    plt.xlabel("Timesteps")
+    plt.xlabel("Epoch")
     plt.ylabel("Reward")
     plt.legend()
     plt.title(cfg.algorithm.env_name)
