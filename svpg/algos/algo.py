@@ -176,12 +176,12 @@ class Algo:
         raise NotImplementedError
 
     def save_best_agents(self, pid, directory):
-        file_path = directory + "/agents/best_agent"
+        file_path = Path(str(directory) + "/agents/best_agent")
         torch.save(self.eval_acquisition_agents[pid].agent.agents[1], file_path)
 
     def save_all_agents(self, directory):
-        critic_path = Path(directory + "/agents/all_critic_agent")
-        action_path = Path(directory + "/agents/all_action_agent")
+        critic_path = Path(str(directory) + "/agents/all_critic_agent")
+        action_path = Path(str(directory) + "/agents/all_action_agent")
 
         if not os.path.exists(critic_path):
             os.makedirs(critic_path)
