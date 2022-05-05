@@ -177,7 +177,7 @@ class Algo:
 
     def save_best_agents(self, pid, directory):
         file_path = Path(str(directory) + "/agents/best_agent")
-        torch.save(self.eval_acquisition_agents[pid].agent.agents[1], file_path)
+        torch.save(self.eval_acquisition_agents[pid].agent.agents[1], str(file_path))
 
     def save_all_agents(self, directory):
         critic_path = Path(str(directory) + "/agents/all_critic_agent")
@@ -189,10 +189,10 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid], critic_path + f"/critic_agent_{pid}.pt")
+            torch.save(self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt")
             torch.save(
                 self.eval_acquisition_agents[pid].agent.agents[1],
-                action_path + f"/action_agent_{pid}.pt",
+                str(action_path) + f"/action_agent_{pid}.pt",
             )
 
     def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
