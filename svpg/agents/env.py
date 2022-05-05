@@ -3,8 +3,6 @@ from salina.agents.gyma import AutoResetGymAgent, NoAutoResetGymAgent
 import gym
 from gym.wrappers import TimeLimit
 
-import svpg.rllab_env_wrapper
-
 
 def make_env(env_name, max_episode_steps):
     """
@@ -12,6 +10,7 @@ def make_env(env_name, max_episode_steps):
     - Using hydra to take arguments from a configuration file
     """
     return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
+
 
 class EnvAgentAutoReset(AutoResetGymAgent):
     """
@@ -22,16 +21,21 @@ class EnvAgentAutoReset(AutoResetGymAgent):
     def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
         super().__init__(
             make_env_fn=make_env_fn,
-            make_env_args={"env_name": env_name, "max_episode_steps": max_episode_steps},
-            n_envs=n_envs
+            make_env_args={
+                "env_name": env_name,
+                "max_episode_steps": max_episode_steps,
+            },
+            n_envs=n_envs,
         )
-    
 
 
 class EnvAgentNoAutoReset(NoAutoResetGymAgent):
     def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
         super().__init__(
             make_env_fn=make_env_fn,
-            make_env_args={"env_name": env_name, "max_episode_steps": max_episode_steps},
-            n_envs=n_envs
+            make_env_args={
+                "env_name": env_name,
+                "max_episode_steps": max_episode_steps,
+            },
+            n_envs=n_envs,
         )
