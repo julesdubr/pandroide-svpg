@@ -35,9 +35,6 @@ def main(cfg):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    env = instantiate(cfg.algorithm.env)
-    env_name = cfg.env_name
-
     # --------- A2C INDEPENDENT --------- #
     algo_a2c = instantiate(cfg.algorithm)
     algo_a2c.run(directory)
