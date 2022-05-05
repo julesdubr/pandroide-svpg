@@ -138,6 +138,7 @@ class SVPG:
                     )
                     self.algo.rewards[pid].append(creward.mean())
                     self.algo.eval_time_steps[pid].append(nb_steps[pid])
+                    self.algo.eval_epoch[pid].append(epoch)
 
                 last_epoch = epoch
 
