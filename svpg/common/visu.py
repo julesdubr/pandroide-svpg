@@ -7,8 +7,6 @@ import torch
 
 from pathlib import Path
 
-from svpg.agents.continuous import CActionAgent, CCriticAgent
-
 
 def plot_algo_policies(load_dir, env, env_name, directory, n_particles=16, plot=False):
     if "cartpole" in env_name.lower():
@@ -20,12 +18,14 @@ def plot_algo_policies(load_dir, env, env_name, directory, n_particles=16, plot=
         return
 
     for pid in range(n_particles):
-        critic_agent = torch.load(f"{load_dir}/agents/all_critic_agent/critic_agent_{pid}")
-        action_agent = torch.load(f"{load_dir}/agents/all_action_agent/action_agent_{pid}")
-        figname = f"policy_{pid}.png"
-        plot_env(
-            action_agent.cpu(), env, figname, directory, plot, stochastic=True
+        critic_agent = torch.load(
+            f"{load_dir}/agents/all_critic_agent/critic_agent_{pid}"
         )
+        action_agent = torch.load(
+            f"{load_dir}/agents/all_action_agent/action_agent_{pid}"
+        )
+        figname = f"policy_{pid}.png"
+        plot_env(action_agent.cpu(), env, figname, directory, plot, stochastic=True)
 
         figname = f"critic_{pid}.png"
         plot_env(critic_agent.cpu(), env, figname, directory, plot)
@@ -53,8 +53,8 @@ def final_show(save_figure, plot, figure_name, x_label, y_label, title, director
         directory = Path(directory + figure_name)
         plt.savefig(directory)
 
-    # if plot:
-    #     plt.show()
+    if plot:
+        plt.show()
 
     plt.close()
 
