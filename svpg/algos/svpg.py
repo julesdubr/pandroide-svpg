@@ -151,13 +151,12 @@ class SVPG:
 
         self.algo.save_all_agents(str(save_dir))
 
-        reward_path = (
-            Path(str(save_dir) + "/reward_svpg_annealed.npy")
-            if self.is_annealed
-            else Path(str(save_dir) + "/reward_svpg.npy")
-        )
+        reward_path = Path(str(save_dir) + "/rewards.npy")
         rewards_np = np.array(
-            [[r for r in agent_reward] for agent_reward in self.algo.rewards.values()]
+            [
+                [r.cpu() for r in agent_reward]
+                for agent_reward in self.algo.rewards.values()
+            ]
         )
         with open(reward_path, "wb") as f:
             np.save(f, rewards_np)

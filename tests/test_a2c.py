@@ -6,6 +6,8 @@ from svpg.algos.svpg import SVPG
 from omegaconf import OmegaConf
 
 import matplotlib.pyplot as plt
+
+import datetime
 from pathlib import Path
 
 try:
@@ -25,7 +27,10 @@ def main(cfg):
     except:
         pass
 
-    directory = str(Path(__file__).parents[1])
+    d = datetime.datetime.today()
+    directory = d.strftime(
+        str(Path(__file__).parents[1]) + "/archives/%y-%m-%d/%H-%M-%S/"
+    )
 
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -98,7 +103,7 @@ def main(cfg):
     plt.legend()
     plt.title(cfg.algorithm.env_name)
     plt.savefig(directory + "A2C_SVPG_loss.png")
-    # plt.show()
+    plt.show()
     # ------------------------------------ #
 
 
