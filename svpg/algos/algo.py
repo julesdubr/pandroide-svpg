@@ -190,7 +190,9 @@ class Algo:
             os.makedirs(action_path)
 
         for pid in range(self.n_particles):
-            torch.save(self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt")
+            torch.save(
+                self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt"
+            )
             torch.save(
                 self.eval_acquisition_agents[pid].agent.agents[1],
                 str(action_path) + f"/action_agent_{pid}.pt",

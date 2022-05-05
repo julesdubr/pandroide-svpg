@@ -8,32 +8,51 @@ from svpg.algos.algo_multi import Algo_Multi
 
 
 class A2C(Algo):
-    def __init__(self,
-                 policy_coef, critic_coef, entropy_coef, gae_coef, 
-                 n_particles, 
-                 max_epochs, discount_factor,
-                 env_name, max_episode_steps, n_envs, env_seed,
-                 eval_interval,
-                 clipped,
-                 n_steps,
-                 logger,
-                 env_agent,
-                 env, 
-                 model, 
-                 optimizer):
+    def __init__(
+        self,
+        policy_coef,
+        critic_coef,
+        entropy_coef,
+        gae_coef,
+        n_particles,
+        max_epochs,
+        discount_factor,
+        env_name,
+        max_episode_steps,
+        n_envs,
+        env_seed,
+        eval_interval,
+        clipped,
+        n_steps,
+        logger,
+        env_agent,
+        env,
+        model,
+        optimizer,
+    ):
 
-        super().__init__(n_particles,
-                        max_epochs, discount_factor,
-                        env_name, max_episode_steps, n_envs, env_seed,
-                        eval_interval,
-                        clipped,
-                        logger,
-                        env_agent,
-                        env, 
-                        model,
-                        optimizer)
+        super().__init__(
+            n_particles,
+            max_epochs,
+            discount_factor,
+            env_name,
+            max_episode_steps,
+            n_envs,
+            env_seed,
+            eval_interval,
+            clipped,
+            logger,
+            env_agent,
+            env,
+            model,
+            optimizer,
+        )
 
-        self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, entropy_coef
+        self.policy_coef, self.critic_coef, self.entropy_coef = (
+            policy_coef,
+            critic_coef,
+            entropy_coef,
+        )
         self.gae = gae_coef
         self.n_steps = n_steps
         self.T = n_steps * n_envs * max_epochs
@@ -82,7 +101,6 @@ class A2C(Algo):
             self.logger.log_losses(
                 epoch, total_critic_loss, total_entropy_loss, total_policy_loss
             )
-
 
         n_steps = np.full(self.n_particles, self.n_steps * self.n_env)
         return total_policy_loss, total_critic_loss, total_entropy_loss, n_steps
