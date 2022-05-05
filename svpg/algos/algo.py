@@ -147,6 +147,7 @@ class Algo:
             self.tcritic_agents[pid].to(self.device)
             self.train_acquisition_agents[pid].to(self.device)
             self.eval_acquisition_agents[pid].to(self.device)
+            self.workspaces[pid].to(self.device)
 
     def compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
