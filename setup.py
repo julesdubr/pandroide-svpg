@@ -33,6 +33,6 @@ setup(
     packages=find_packages(),
     version=f"{__version__}.dev0+{hash}",
     include_package_data=True,
-    install_requires=reqs
+    # install_requires=reqs
     # long_description=read("README.md"),
 )

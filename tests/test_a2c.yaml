@@ -1,12 +1,17 @@
 env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 1
+
 max_epochs: 100000
 n_steps: 8
 eval_interval: 20
 
 algorithm:
   _target_: svpg.algos.a2c.A2C
+  policy_coef: 0.1
+  critic_coef: 1.0
+  entropy_coef: 0.001
+  gae_coef: 1
   n_particles: 16
   max_epochs: ${max_epochs}
   discount_factor: 0.95
@@ -14,16 +19,12 @@ algorithm:
   max_episode_steps: ${max_episode_steps}
   n_envs: ${n_envs}
   env_seed: 432
+  n_steps: ${n_steps}
   eval_interval: ${eval_interval}
   clipped: True
-  policy_coef: 0.1
-  critic_coef: 1.0
-  entropy_coef: 0.001
-  gae_coef: 1
-  n_steps: ${n_steps}
 
   logger:
-    _target_: svpg.common.logger.Logger
+    _target_: svpg.logger.Logger
     salina_logger:
       _target_: salina.logger.TFLogger
       log_dir: ./tmp

@@ -1,4 +1,4 @@
-from pathlib import Path
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -10,11 +10,11 @@ from gym.spaces import Discrete
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
 from svpg.agents.env import EnvAgentNoAutoReset
 
-import numpy as np
 
 from collections import defaultdict
-import os
 from copy import deepcopy
+from pathlib import Path
+import os
 
 
 class Algo:
@@ -273,9 +273,9 @@ class Algo:
 
         self.save_all_agents(str(save_dir))
 
-        reward_path = Path(str(save_dir) + "/reward_algo_base.npy")
+        reward_path = Path(str(save_dir) + "/rewards.npy")
         rewards_np = np.array(
-            [[r for r in agent_reward] for agent_reward in self.rewards.values()]
+            [[r.cpu() for r in agent_reward] for agent_reward in self.rewards.values()]
         )
         with open(reward_path, "wb") as f:
             np.save(f, rewards_np)
