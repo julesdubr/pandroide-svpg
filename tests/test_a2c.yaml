@@ -32,7 +32,7 @@ algorithm:
       modulo: 1
       verbose: False
 
-  env_agent: "${get_method: svpg.agents.env.EnvAgentAutoReset}"
+  env_agent: "${get_method: svpg.agents.env.AutoResetEnvAgent}"
 
   env:
     _target_: svpg.agents.env.make_env
