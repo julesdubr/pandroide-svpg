@@ -1,5 +1,4 @@
 from svpg.algos.algo import Algo
-from svpg.algos.algo_multi import Algo_Multi
 
 import torch
 import numpy as np

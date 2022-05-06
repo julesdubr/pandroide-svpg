@@ -4,7 +4,6 @@ import torch as th
 import salina.rl.functional as RLF
 
 from svpg.algos.algo import Algo
-from svpg.algos.algo_multi import Algo_Multi
 
 
 class A2C(Algo):
