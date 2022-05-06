@@ -38,19 +38,16 @@ def main(cfg):
     # --------- A2C INDEPENDENT --------- #
     algo_a2c = instantiate(cfg.algorithm)
     algo_a2c.run(directory)
-    # ------------------------------------ #
 
     # ----------- SVPG NORMAL ----------- #
     algo_svpg_normal = instantiate(cfg.algorithm, clipped="False")
     svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
     svpg_normal.run(directory)
-    # ------------------------------------ #
 
     # ------ SVPG CLIPPED ANNEALED ------ #
     algo_svpg_clipped_annealed = instantiate(cfg.algorithm)
     svpg_clipped_annealed = SVPG(algo_svpg_clipped_annealed)
     svpg_clipped_annealed.run(directory)
-    # ------------------------------------ #
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
+import numpy as np
+
 import torch
 import torch.nn as nn
 from torch.nn.utils import parameters_to_vector
 
 from salina.workspace import Workspace
 
-import numpy as np
-import os
-from pathlib import Path
+from svpg.utils.utils import save_algo_data
 
 
 class RBF(nn.Module):
@@ -167,22 +167,31 @@ class SVPG:
 
                 last_epoch = epoch
 
-        save_dir = (
-            Path(str(save_dir) + "/svpg_annealed")
-            if self.is_annealed
-            else Path(str(save_dir) + "/svpg_normal")
-        )
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
+        save_dir += "/svpg_annealed" if self.is_annealed else "/svpg_normal"
 
-        self.algo.save_all_agents(str(save_dir))
-
-        reward_path = Path(str(save_dir) + "/rewards.npy")
-        rewards_np = np.array(
-            [
-                [r.cpu() for r in agent_reward]
-                for agent_reward in self.algo.rewards.values()
-            ]
+        save_algo_data(
+            self.algo.action_agents,
+            self.algo.critic_agents,
+            self.algo.rewards,
+            save_dir,
         )
-        with open(reward_path, "wb") as f:
-            np.save(f, rewards_np)
+
+        # save_dir = (
+        #     Path(str(save_dir) + "/svpg_annealed")
+        #     if self.is_annealed
+        #     else Path(str(save_dir) + "/svpg_normal")
+        # )
+        # if not os.path.exists(save_dir):
+        #     os.makedirs(save_dir)
+
+        # self.algo.save_all_agents(str(save_dir))
+
+        # reward_path = Path(str(save_dir) + "/rewards.npy")
+        # rewards_np = np.array(
+        #     [
+        #         [r.cpu() for r in agent_reward]
+        #         for agent_reward in self.algo.rewards.values()
+        #     ]
+        # )
+        # with open(reward_path, "wb") as f:
+        #     np.save(f, rewards_np)

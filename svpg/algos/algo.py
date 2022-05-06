@@ -8,11 +8,11 @@ from salina.workspace import Workspace
 from gym.spaces import Discrete
 
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
-from svpg.agents.env import EnvAgentNoAutoReset
+from svpg.agents.env import NoAutoResetEnvAgent
 
+from svpg.utils.utils import save_algo_data
 
 from collections import defaultdict
-from copy import deepcopy
 from pathlib import Path
 import os
 
@@ -56,7 +56,7 @@ class Algo:
             env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)
         ]
         self.eval_env_agents = [
-            EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs)
+            NoAutoResetEnvAgent(env_name, max_episode_steps, n_envs)
             for _ in range(n_particles)
         ]
 
@@ -143,7 +143,7 @@ class Algo:
                 self.workspaces[pid], stop_variable=self.stop_variable
             )
 
-    def to_gpu(self):
+    def to_device(self):
         for pid in range(self.n_particles):
             self.tcritic_agents[pid].to(self.device)
             self.train_acquisition_agents[pid].to(self.device)
@@ -176,30 +176,8 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def save_best_agents(self, pid, directory):
-        file_path = Path(str(directory) + "/agents/best_agent")
-        torch.save(self.eval_acquisition_agents[pid].agent.agents[1], str(file_path))
-
-    def save_all_agents(self, directory):
-        critic_path = Path(str(directory) + "/agents/all_critic_agent")
-        action_path = Path(str(directory) + "/agents/all_action_agent")
-
-        if not os.path.exists(critic_path):
-            os.makedirs(critic_path)
-        if not os.path.exists(action_path):
-            os.makedirs(action_path)
-
-        for pid in range(self.n_particles):
-            torch.save(
-                self.critic_agents[pid], str(critic_path) + f"/critic_agent_{pid}.pt"
-            )
-            torch.save(
-                self.eval_acquisition_agents[pid].agent.agents[1],
-                str(action_path) + f"/action_agent_{pid}.pt",
-            )
-
     def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
-        self.to_gpu()
+        self.to_device()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
         for epoch in range(self.max_epochs):
@@ -267,15 +245,5 @@ class Algo:
 
                 last_epoch = epoch
 
-        save_dir = Path(str(save_dir) + "/algo_base")
-        if not os.path.exists(save_dir):
-            os.makedirs(save_dir)
-
-        self.save_all_agents(str(save_dir))
-
-        reward_path = Path(str(save_dir) + "/rewards.npy")
-        rewards_np = np.array(
-            [[r.cpu() for r in agent_reward] for agent_reward in self.rewards.values()]
-        )
-        with open(reward_path, "wb") as f:
-            np.save(f, rewards_np)
+        save_dir += self.__class__.__name__
+        save_algo_data(self.action_agents, self.critic_agents, self.rewards, save_dir)
