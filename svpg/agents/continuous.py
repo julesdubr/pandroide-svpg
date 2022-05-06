@@ -1,4 +1,4 @@
-import torch as th
+import torch
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
@@ -9,25 +9,23 @@ class CActionAgent(Agent):
     def __init__(self, output_size, model):
         super().__init__(name="action_agent")
         # Model input and output size
-        # Model for estimating the mean
+        # Model for estimating torche mean
         self.model = model
         # The deviation is estimated by a vector
-        self.std_param = nn.parameter.Parameter(th.randn(output_size, 1))
+        init_variance = torch.randn(output_size, 1)
+        self.std_param = nn.parameter.Parameter(init_variance)
         self.soft_plus = nn.Softplus()
 
     def forward(self, t, stochastic, replay=False, **kwargs):
-        if "observation" in kwargs:
-            observation = kwargs["observation"]
-        else:
-            observation = self.get(("env/env_obs", t))
+        observation = self.get(("env/env_obs", t))
         mean = self.model(observation)
         dist = Normal(mean, self.soft_plus(self.std_param))
         entropy = dist.entropy().squeeze(-1)
 
         if stochastic:
-            action = th.tanh(dist.sample())
+            action = dist.sample()
         else:
-            action = th.tanh(mean)
+            action = mean
 
         if t == -1:
             return action

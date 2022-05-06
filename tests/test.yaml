@@ -1,9 +1,9 @@
-env_name: CartPole-v0
-max_episode_steps: 100
-n_envs: 32
-max_epochs: 100
-n_steps: 256
-eval_interval: 3
+env_name: CartPoleContinuous-v1
+max_episode_steps: 500
+n_envs: 1
+max_epochs: 100000
+n_steps: 8
+eval_interval: 20
 
 algorithm:
   _target_: svpg.algos.a2c.A2C
@@ -11,8 +11,7 @@ algorithm:
   critic_coef: 1.0
   entropy_coef: 0.001
   gae_coef: 1
-  n_particles: 16
-  num_processes: 4
+  n_particles: 1
   max_epochs: ${max_epochs}
   discount_factor: 0.95
   env_name: ${env_name}
@@ -30,7 +29,7 @@ algorithm:
       log_dir: ./tmp
       every_n_seconds: 10000
       modulo: 1
-      verbose: False
+      verbose: True
 
   env_agent: "${get_method: svpg.agents.env.EnvAgentAutoReset}"
 

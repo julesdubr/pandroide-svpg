@@ -1,12 +1,15 @@
 import rllab.envs.box2d.cartpole_env as rllab_cartpole
+from rllab.envs.box2d.box2d_env import Box2DEnv
 from rllab.envs.box2d.parser import find_body
 from rllab.core.serializable import Serializable
+from rllab.misc import autoargs
 
 import gym
 
 from svpg.rllab_env_wrapper.envs.get_model_path import model_path
 
 class MyCartPole(rllab_cartpole.CartpoleEnv, gym.Env):
+    @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         self.max_pole_angle = .2
         self.max_cart_pos = 2.4

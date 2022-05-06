@@ -89,7 +89,7 @@ class SVPG:
             )
 
             loss = (
-                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
                 + self.algo.critic_coef * critic_loss / self.algo.n_particles
                 + kernel.sum() / self.algo.n_particles
             )
