@@ -6,30 +6,47 @@ import numpy as np
 
 
 class REINFORCE(Algo):
-    def __init__(self,
-                 policy_coef, critic_coef,
-                 n_particles,
-                 max_epochs, discount_factor,
-                 env_name, max_episode_steps, n_envs, env_seed,
-                 eval_interval,
-                 clipped,
-                 logger,
-                 env_agent,
-                 env, 
-                 model, 
-                 optimizer):
-        super().__init__(n_particles,
-                        max_epochs, discount_factor,
-                        env_name, max_episode_steps, n_envs, env_seed,
-                        eval_interval,
-                        clipped,
-                        logger,
-                        env_agent,
-                        env, 
-                        model, 
-                        optimizer)
+    def __init__(
+        self,
+        policy_coef,
+        critic_coef,
+        n_particles,
+        max_epochs,
+        discount_factor,
+        env_name,
+        max_episode_steps,
+        n_envs,
+        env_seed,
+        eval_interval,
+        clipped,
+        logger,
+        env_agent,
+        env,
+        model,
+        optimizer,
+    ):
+        super().__init__(
+            n_particles,
+            max_epochs,
+            discount_factor,
+            env_name,
+            max_episode_steps,
+            n_envs,
+            env_seed,
+            eval_interval,
+            clipped,
+            logger,
+            env_agent,
+            env,
+            model,
+            optimizer,
+        )
 
-        self.policy_coef, self.critic_coef, self.entropy_coef = policy_coef, critic_coef, 0
+        self.policy_coef, self.critic_coef, self.entropy_coef = (
+            policy_coef,
+            critic_coef,
+            0,
+        )
         self.stop_variable = "env/done"
         self.T = max_episode_steps * n_envs * max_epochs
 
@@ -113,4 +130,3 @@ class REINFORCE(Algo):
             self.logger.add_log("critic_loss", total_critic_loss, epoch)
 
         return total_policy_loss, total_critic_loss, 0, n_steps
-    
