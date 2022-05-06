@@ -1,6 +1,8 @@
 import rllab.envs.box2d.double_pendulum_env as rllab_pendulum
+from rllab.envs.box2d.box2d_env import Box2DEnv
 from rllab.envs.box2d.parser import find_body
 from rllab.core.serializable import Serializable
+from rllab.misc import autoargs
 
 import gym
 
@@ -9,6 +11,7 @@ import numpy as np
 from svpg.rllab_env_wrapper.envs.get_model_path import model_path
 
 class MyPendulum(rllab_pendulum.DoublePendulumEnv, gym.Env):
+    @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         kwargs["frame_skip"] = kwargs.get("frame_skip", 2)
         if kwargs.get("template_args", {}).get("noise", False):

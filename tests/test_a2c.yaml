@@ -1,9 +1,10 @@
 env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 1
-max_epochs: 40000
+
+max_epochs: 100000
 n_steps: 8
-eval_interval: 200
+eval_interval: 20
 
 algorithm:
   _target_: svpg.algos.a2c.A2C

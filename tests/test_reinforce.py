@@ -28,8 +28,7 @@ def main(cfg):
     except:
         pass
 
-    d = datetime.datetime.today()
-    directory = d.strftime(str(Path(__file__).parents[1]) + "/archives/%m-%d_%H-%M/")
+    directory = str(Path(__file__).parents[1])
 
     env = instantiate(cfg.algorithm.env)
     env_name = cfg.env_name
@@ -91,7 +90,7 @@ def main(cfg):
         max_svpg_clipped_annealed_reward,
         label="SVPG_REINFORCE_clipped_annealed",
     )
-    plt.xlabel("Timesteps")
+    plt.xlabel("Epoch")
     plt.ylabel("Reward")
     plt.legend()
     plt.title(cfg.algorithm.env_name)

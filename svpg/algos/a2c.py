@@ -55,9 +55,9 @@ class A2C(Algo):
         self.n_steps = n_steps
         self.T = n_steps * n_envs * max_epochs
 
-    def compute_critic_loss(self, reward, done, critic):
+    def compute_critic_loss(self, reward, must_bootstrap, critic):
         # Compute TD error
-        td = RLF.gae(critic, reward, done, self.discount_factor, self.gae)
+        td = RLF.gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()
@@ -74,8 +74,9 @@ class A2C(Algo):
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
-            critic, done, action_logprobs, reward, entropy = self.workspaces[pid][
-                "critic", "env/done", "action_logprobs", "env/reward", "entropy"
+            transition_workspace = self.workspaces[pid].get_transitions()
+            critic, done, action_logprobs, reward, entropy, truncated = transition_workspace[
+                "critic", "env/done", "action_logprobs", "env/reward", "entropy", "env/truncated"
             ]
 
             # Move to gpu
@@ -84,9 +85,12 @@ class A2C(Algo):
             action_logprobs = action_logprobs.to(self.device)
             reward = reward.to(self.device)
             entropy = entropy.to(self.device)
+            truncated = truncated.to(self.device)
+
+            must_bootstrap = torch.logical_or(~done[1], truncated[1])
 
             # Compute loss
-            critic_loss, td = self.compute_critic_loss(reward, done, critic)
+            critic_loss, td = self.compute_critic_loss(reward, must_bootstrap, critic)
             total_critic_loss = total_critic_loss + critic_loss
 
             total_entropy_loss = total_entropy_loss - entropy.mean()

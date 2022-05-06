@@ -10,5 +10,6 @@ mako
 Box2D
 theano
 cached-property
-salina @ git+https://github.com/facebookresearch/salina.git
+salina @ git+https://github.com/khiem2105/salina.git
 rllab @ git+https://github.com/rll/rllab.git@master
+my_gym @ git+https://github.com/osigaud/my_gym.git 

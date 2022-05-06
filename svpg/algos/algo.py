@@ -249,7 +249,7 @@ class Algo:
             nb_steps += n_steps
             if epoch - last_epoch == self.eval_interval - 1:
                 for pid in range(self.n_particles):
-                    eval_workspace = Workspace()
+                    eval_workspace = Workspace().to(self.device)
                     self.eval_acquisition_agents[pid](
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
                     )

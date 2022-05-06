@@ -1,6 +1,7 @@
-from salina.agents.gyma import AutoResetGymAgent, NoAutoResetGymAgent
+from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 
 import gym
+import my_gym
 from gym.wrappers import TimeLimit
 
 from svpg import rllab_env_wrapper
