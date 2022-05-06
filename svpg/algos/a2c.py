@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 import salina.rl.functional as RLF
 
@@ -30,7 +29,6 @@ class A2C(Algo):
         model,
         optimizer,
     ):
-
         super().__init__(
             n_particles,
             max_epochs,

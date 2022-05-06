@@ -129,8 +129,7 @@ dmypy.json
 .pyre/
 
 # SaLiNa
-salina/
-rllab/
+libs/
 my_gym/
 
 # outputs

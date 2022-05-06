@@ -14,7 +14,7 @@ def make_env(env_name, max_episode_steps):
     return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
 
 
-class EnvAgentAutoReset(AutoResetGymAgent):
+class AutoResetEnvAgent(AutoResetGymAgent):
     """
     Create the environment agent.
     This agent implements N gym environments with auto-reset.
@@ -31,7 +31,7 @@ class EnvAgentAutoReset(AutoResetGymAgent):
         )
 
 
-class EnvAgentNoAutoReset(NoAutoResetGymAgent):
+class NoAutoResetEnvAgent(NoAutoResetGymAgent):
     def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
         super().__init__(
             make_env_fn=make_env_fn,

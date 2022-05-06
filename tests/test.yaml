@@ -24,7 +24,7 @@ algorithm:
   clipped: True
 
   logger:
-    _target_: svpg.common.logger.Logger
+    _target_: svpg.logger.Logger
     salina_logger:
       _target_: salina.logger.TFLogger
       log_dir: ./tmp

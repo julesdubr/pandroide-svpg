@@ -1,4 +1,4 @@
-from pathlib import Path
+import numpy as np
 import torch
 import torch.nn as nn
 
@@ -10,11 +10,11 @@ from gym.spaces import Discrete
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
 from svpg.agents.env import EnvAgentNoAutoReset
 
-import numpy as np
 
 from collections import defaultdict
-import os
 from copy import deepcopy
+from pathlib import Path
+import os
 
 
 class Algo:
