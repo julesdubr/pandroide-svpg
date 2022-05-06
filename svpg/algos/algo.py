@@ -13,8 +13,6 @@ from svpg.agents.env import NoAutoResetEnvAgent
 from svpg.utils.utils import save_algo_data
 
 from collections import defaultdict
-from pathlib import Path
-import os
 
 
 class Algo:
