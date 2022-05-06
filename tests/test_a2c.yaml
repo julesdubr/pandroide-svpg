@@ -1,8 +1,8 @@
 env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 32
-max_epochs: 10
-n_steps: 16
+max_epochs: 100
+n_steps: 256
 eval_interval: 3
 
 algorithm:
