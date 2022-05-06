@@ -1,4 +1,5 @@
 import numpy as np
+import torch as th
 
 import salina.rl.functional as RLF
 
@@ -75,8 +76,20 @@ class A2C(Algo):
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
             transition_workspace = self.workspaces[pid].get_transitions()
-            critic, done, action_logprobs, reward, entropy, truncated = transition_workspace[
-                "critic", "env/done", "action_logprobs", "env/reward", "entropy", "env/truncated"
+            (
+                critic,
+                done,
+                action_logprobs,
+                reward,
+                entropy,
+                truncated,
+            ) = transition_workspace[
+                "critic",
+                "env/done",
+                "action_logprobs",
+                "env/reward",
+                "entropy",
+                "env/truncated",
             ]
 
             # Move to gpu
@@ -87,7 +100,7 @@ class A2C(Algo):
             entropy = entropy.to(self.device)
             truncated = truncated.to(self.device)
 
-            must_bootstrap = torch.logical_or(~done[1], truncated[1])
+            must_bootstrap = th.logical_or(~done[1], truncated[1])
 
             # Compute loss
             critic_loss, td = self.compute_critic_loss(reward, must_bootstrap, critic)

@@ -4,8 +4,6 @@ from torch.nn.utils import parameters_to_vector
 
 from salina.workspace import Workspace
 
-from svpg.kernel import RBF
-
 import numpy as np
 import os
 from pathlib import Path
@@ -116,7 +114,7 @@ class SVPG:
             )
 
             loss = (
-                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
                 + self.algo.critic_coef * critic_loss / self.algo.n_particles
                 + kernel.sum() / self.algo.n_particles
             )

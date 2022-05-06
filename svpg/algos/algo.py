@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from salina.agents import TemporalAgent, Agents, NRemoteAgent
+from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
 from gym.spaces import Discrete

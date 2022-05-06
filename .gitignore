@@ -133,6 +133,7 @@ libs/
 my_gym/
 
 # outputs
+outputs/
 .hydra
 *.log
 
