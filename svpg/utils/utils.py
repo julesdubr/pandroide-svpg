@@ -16,9 +16,10 @@ def save_algo_data(algo, directory, algo_version="independant"):
         [[r.cpu() for r in agent_reward] for agent_reward in algo.rewards.values()]
     )
 
-    rewards_path = Path(directory + "/rewards.npy")
-    with open(rewards_path, "wb") as f:
+    with open(directory + "/rewards.npy", "wb") as f:
         np.save(f, rewards)
+    with open(directory + "/eval_timesteps.npy", "wb") as f:
+        np.save(f, algo.eval_timesteps)
 
     action_path = Path(directory + "/action_agents")
     critic_path = Path(directory + "/critic_agents")
@@ -38,6 +39,8 @@ def load_algo_data(directory, device="cpu"):
 
     with open(directory + "/rewards.npy", "rb") as f:
         rewards = np.load(f, allow_pickle=True)
+    with open(directory + "/eval_timesteps.npy", "wb") as f:
+        eval_timesteps = np.load(f, allow_pickle=True)
 
     action_agents, action_path = [], directory + "/action_agents"
     critic_agents, critic_path = [], directory + "/critic_agents"
@@ -48,4 +51,4 @@ def load_algo_data(directory, device="cpu"):
         critic_agent = th.load(critic_path + f"/critic_agent{i}.pt").to(device)
         critic_agents.append(critic_agent)
 
-    return action_agents, critic_agents, rewards
+    return action_agents, critic_agents, rewards, eval_timesteps

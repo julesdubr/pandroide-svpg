@@ -13,8 +13,6 @@ from svpg.agents.env import AutoResetEnvAgent, NoAutoResetEnvAgent, get_env_info
 from svpg.utils.utils import save_algo_data
 from svpg.logger import Logger
 
-from rllab.spaces import Box
-
 from collections import defaultdict
 
 
@@ -35,6 +33,8 @@ class Algo:
         self.critic_coef = cfg.algorithm.critic_coef
 
         self.rewards = defaultdict(lambda: [])
+        self.eval_timesteps = []
+
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         self.logger = Logger(cfg)
@@ -183,6 +183,7 @@ class Algo:
             # Evaluation
             if nb_steps - tmp_steps > self.eval_interval:
                 tmp_steps = nb_steps
+                self.eval_timesteps.append(nb_steps)
 
                 for pid in range(self.n_particles):
                     eval_workspace = Workspace().to(self.device)

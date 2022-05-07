@@ -1,20 +1,28 @@
 import torch as th
 
-from salina.rl.functional import gae
-
 from svpg.algos.algo import Algo
+
+# from salina.rl.functional import gae
 
 
 class A2C(Algo):
     def __init__(self, cfg):
         super().__init__(cfg)
-        self.gae = cfg.algorithm.gae
+        # self.gae = cfg.algorithm.gae
         self.discount_factor = cfg.algorithm.discount_factor
         self.T = self.n_steps * self.n_envs * cfg.algorithm.max_epochs
 
     def compute_critic_loss(self, reward, must_bootstrap, critic):
-        # Compute TD error
-        td = gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
+        # Compute temporal difference
+        target = reward[:-1] + self.discount_factor * critic[1:].detach() * (
+            must_bootstrap.float()
+        )
+        td = target - critic
+        assert (
+            target.shape[1] == critic.shape[1]
+        ), f"Missing one element in the critic list: {target.shape} vs {critic.shape}"
+        # td = gae(critic, reward, must_bootstrap, cfg.algorithm.discount_factor, cfg.algorithm.gae)
+
         # Compute critic loss
         td_error = td**2
         critic_loss = td_error.mean()
