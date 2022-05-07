@@ -1,4 +1,4 @@
-env_name: CartPoleContinuous-v1
+env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 1
 max_epochs: 100000
@@ -31,7 +31,7 @@ algorithm:
       modulo: 1
       verbose: True
 
-  env_agent: "${get_method: svpg.agents.env.EnvAgentAutoReset}"
+  env_agent: "${get_method: svpg.agents.env.AutoResetEnvAgent}"
 
   env:
     _target_: svpg.agents.env.make_env

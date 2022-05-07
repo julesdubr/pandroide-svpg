@@ -4,8 +4,6 @@ from torch.nn.utils import parameters_to_vector
 
 from salina.workspace import Workspace
 
-from svpg.kernel import RBF
-
 import numpy as np
 import os
 from pathlib import Path

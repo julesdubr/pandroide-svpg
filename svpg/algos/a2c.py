@@ -3,7 +3,8 @@ import numpy as np
 import salina.rl.functional as RLF
 
 from svpg.algos.algo import Algo
-from svpg.algos.algo_multi import Algo_Multi
+
+import torch
 
 
 class A2C(Algo):
@@ -57,7 +58,9 @@ class A2C(Algo):
 
     def compute_critic_loss(self, reward, must_bootstrap, critic):
         # Compute TD error
-        td = RLF.gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
+        # td = RLF.gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
+        target = reward[:-1] + self.discount_factor * critic[1:].detach() * (must_bootstrap.float())
+        td = target - critic
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()

@@ -2,17 +2,16 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from salina.agents import TemporalAgent, Agents, NRemoteAgent
+from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
-from gym.spaces import Discrete
+from gym.spaces import Discrete, Box
 
 from svpg.agents import ActionAgent, CriticAgent, CActionAgent, CCriticAgent
-from svpg.agents.env import EnvAgentNoAutoReset
+from svpg.agents.env import NoAutoResetEnvAgent
 
 
 from collections import defaultdict
-from copy import deepcopy
 from pathlib import Path
 import os
 
@@ -56,7 +55,7 @@ class Algo:
             env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)
         ]
         self.eval_env_agents = [
-            EnvAgentNoAutoReset(env_name, max_episode_steps, n_envs)
+            NoAutoResetEnvAgent(env_name, max_episode_steps, n_envs)
             for _ in range(n_particles)
         ]
 
@@ -78,7 +77,7 @@ class Algo:
                 for _ in range(n_particles)
             ]
             self.critic_agents = [
-                CCriticAgent(model(input_size, 1, activation=nn.SiLU))
+                CCriticAgent(model(input_size, 1))
                 for _ in range(n_particles)
             ]
 

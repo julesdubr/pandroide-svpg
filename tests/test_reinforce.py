@@ -11,7 +11,6 @@ from omegaconf import OmegaConf
 import datetime
 from pathlib import Path
 
-from svpg.common.visu import plot_algo_policies, plot_histograms
 
 try:
     OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)

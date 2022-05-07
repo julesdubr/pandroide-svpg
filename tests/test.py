@@ -10,8 +10,6 @@ import numpy as np
 import datetime
 from pathlib import Path
 
-from svpg.common.visu import plot_algo_policies, plot_histograms
-
 try:
     OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)
 except:
@@ -36,9 +34,9 @@ def main(cfg):
 
     
     algo = instantiate(cfg.algorithm)
-    svpg = SVPG(algo)
-    svpg.run(directory)
-    # algo.run(directory)
+    # svpg = SVPG(algo)
+    # svpg.run(directory)
+    algo.run(directory)
 
 if __name__ == "__main__":
     main()
