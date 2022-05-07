@@ -81,7 +81,7 @@ class SVPG:
         self.algo.to_device()
 
         nb_steps = 0
-        tmp_steps = 0
+        tmp_epoch = 0
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
@@ -132,8 +132,8 @@ class SVPG:
                 optimizer.zero_grad()
 
             # Evaluation
-            if nb_steps - tmp_steps > self.algo.eval_interval:
-                tmp_steps = nb_steps
+            if epoch - tmp_epoch == self.eval_interval - 1:
+                tmp_epoch = epoch
 
                 for pid in range(self.algo.n_particles):
                     eval_workspace = Workspace().to(self.algo.device)
