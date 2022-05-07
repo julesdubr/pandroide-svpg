@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 from salina.workspace import Workspace
 from salina.agents import Agents, TemporalAgent
-from salina.visu.common import final_show
 
 from svpg.agents.env import NoAutoResetEnvAgent
 
