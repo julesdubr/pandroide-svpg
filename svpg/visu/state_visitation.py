@@ -16,7 +16,8 @@ def plot_state_visitation(
     agents,
     rewards,
     algo_name,
-    directory="",
+    device="cpu",
+    directory="./figures/",
     nb_best=4,
     cmap="Reds",
     bw_adjust=0.75,
@@ -33,14 +34,14 @@ def plot_state_visitation(
     axes = fig.subplots(nrows=1, ncols=nb_best, sharey=True)
 
     for i, (pid, ax) in enumerate(zip(bests_indices, axes)):
-        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals)
+        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals).to(device)
 
         eval_agent = TemporalAgent(Agents(env_agent, agents[pid]))
 
-        eval_workspace = Workspace()
+        eval_workspace = Workspace().to(device)
         eval_agent(eval_workspace, t=0, stop_variable="env/done", stochastic=False)
 
-        obs = eval_workspace["env/env_obs"]
+        obs = eval_workspace["env/env_obs"].cpu()
         obs = obs.reshape(-1, obs.shape[2])
 
         Y = tsne.fit_transform(obs)

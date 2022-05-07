@@ -13,7 +13,7 @@ def save_algo_data(algo, directory, algo_version="independant"):
         os.makedirs(directory)
 
     rewards = np.array(
-        [[r.cpu() for r in agent_reward] for agent_reward in algo.rewards.values()]
+        [[r for r in agent_reward] for agent_reward in algo.rewards.values()]
     )
 
     rewards_path = Path(directory + "/rewards.npy")
@@ -33,7 +33,7 @@ def save_algo_data(algo, directory, algo_version="independant"):
         th.save(c_agent, str(critic_path) + f"/critic_agent{i}.pt")
 
 
-def load_algo_data(directory):
+def load_algo_data(directory, device="cpu"):
     directory = str(directory)
 
     with open(directory + "/rewards.npy", "rb") as f:
@@ -43,8 +43,9 @@ def load_algo_data(directory):
     critic_agents, critic_path = [], directory + "/critic_agents"
 
     for i in range(16):
-        action_agent = th.load(action_path + f"/action_agent{i}.pt").cpu()
+        action_agent = th.load(action_path + f"/action_agent{i}.pt").to(device)
         action_agents.append(action_agent)
-        critic_agents.append(th.load(critic_path + f"/critic_agent{i}.pt").cpu())
+        critic_agent = th.load(critic_path + f"/critic_agent{i}.pt").to(device)
+        critic_agents.append(critic_agent)
 
     return action_agents, critic_agents, rewards
