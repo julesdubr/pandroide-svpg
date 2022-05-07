@@ -1,6 +1,8 @@
 import numpy as np
+
 import torch
 import torch.nn as nn
+from torch.nn.utils import clip_grad_norm_
 
 from salina import get_arguments, get_class
 from salina.agents import TemporalAgent, Agents
@@ -23,6 +25,8 @@ class Algo:
         self.n_steps = cfg.algorithm.n_steps
         self.n_evals = cfg.algorithm.n_evals
         self.n_envs = cfg.algorithm.n_envs
+        self.max_epochs = cfg.algorithm.max_epochs
+        self.eval_interval = cfg.algorithm.eval_interval
 
         self.policy_coef = cfg.algorithm.policy_coef
         self.entropy_coef = cfg.algorithm.entropy_coef
@@ -94,6 +98,9 @@ class Algo:
             self.train_agents[pid](self.train_workspaces[pid], **kwargs)
 
     def execute_tcritic_agents(self):
+        if self.critic_coef == 0:
+            return
+
         for pid in range(self.n_particles):
             self.tcritic_agents[pid](self.train_workspaces[pid], n_steps=self.n_steps)
 
@@ -136,12 +143,10 @@ class Algo:
         nb_steps = 0
         tmp_steps = 0
 
-        for epoch in range(self.cfg.algorithm.max_epochs):
+        for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_train_agents(epoch)
-
-            if self.critic_coef != 0:
-                self.execute_tcritic_agents()
+            self.execute_tcritic_agents()
 
             nb_steps += self.n_steps * self.n_envs
 
@@ -150,34 +155,30 @@ class Algo:
                 epoch, verbose=show_loss
             )
 
-            total_loss = (
+            loss = (
                 +self.policy_coef * policy_loss / self.n_particles
                 + self.critic_coef * critic_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
 
-            for pid in range(self.n_particles):
-                self.optimizers[pid].zero_grad()
-
             if self.clipped:
                 for pid in range(self.n_particles):
-                    torch.nn.utils.clip_grad_norm_(
-                        self.action_agents[pid].parameters(), max_grad_norm
-                    )
-                    torch.nn.utils.clip_grad_norm_(
-                        self.critic_agents[pid].parameters(), max_grad_norm
-                    )
+                    clip_grad_norm_(self.action_agents[pid].parameters(), max_grad_norm)
+                    clip_grad_norm_(self.critic_agents[pid].parameters(), max_grad_norm)
 
             # Log gradient norms
             if show_grad:
                 self.compute_gradient_norm(epoch)
 
-            total_loss.backward()
+            # Gradient descent
+            for pid in range(self.n_particles):
+                self.optimizers[pid].zero_grad()
+            loss.backward()
             for pid in range(self.n_particles):
                 self.optimizers[pid].step()
 
             # Evaluation
-            if nb_steps - tmp_steps > self.cfg.algorithm.eval_interval:
+            if nb_steps - tmp_steps > self.eval_interval:
                 tmp_steps = nb_steps
 
                 for pid in range(self.n_particles):

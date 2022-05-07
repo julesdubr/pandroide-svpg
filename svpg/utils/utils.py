@@ -6,8 +6,8 @@ import os
 from pathlib import Path
 
 
-def save_algo_data(algo, directory):
-    directory = str(directory) + algo.__class__.__name__
+def save_algo_data(algo, directory, algo_version="independant"):
+    directory = str(directory) + f"{algo.__class__.__name__}-{algo_version}"
 
     if not os.path.exists(directory):
         os.makedirs(directory)

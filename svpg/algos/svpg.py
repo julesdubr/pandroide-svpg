@@ -2,7 +2,7 @@ import numpy as np
 
 import torch
 import torch.nn as nn
-from torch.nn.utils import parameters_to_vector
+from torch.nn.utils import parameters_to_vector, clip_grad_norm_
 
 from salina.workspace import Workspace
 
@@ -29,7 +29,7 @@ class RBF(nn.Module):
         else:
             sigma = self.sigma
 
-        gamma = 1.0 / (1e-8 + 2 * sigma ** 2)
+        gamma = 1.0 / (1e-8 + 2 * sigma**2)
         K_XY = (-gamma * dnorm2).exp()
 
         return K_XY
@@ -38,12 +38,11 @@ class RBF(nn.Module):
 class SVPG:
     def __init__(self, algo, is_annealed=True, slope=5, p=10, C=4, mode=1):
         self.algo = algo
-        self.kernel = RBF
         self.is_annealed = is_annealed
+        self.mode = mode
         self.slope = slope
         self.p = p
         self.C = C
-        self.mode = mode
 
     def get_policy_parameters(self):
         policy_params = [
@@ -71,31 +70,28 @@ class SVPG:
     def annealed(self, t):
         if self.mode == 1:
             return np.tanh((self.slope * t / self.algo.T) ** self.p)
+
         elif self.mode == 2:
             mod = t % (self.algo.T / self.C)
             return (mod / (self.algo.T / self.C)) ** self.p
 
     def run(
-        self,
-        save_dir,
-        gamma=1,
-        p=5,
-        slope=1.7,
-        max_grad_norm=0.5,
-        show_loss=False,
-        show_grad=False,
+        self, save_dir, gamma=1, max_grad_norm=0.5, show_loss=False, show_grad=False
     ):
-        self.algo.to_gpu()
-        nb_steps = np.zeros(self.algo.n_particles)
-        last_epoch = 0
+        self.algo.to_device()
+
+        nb_steps = 0
+        tmp_steps = 0
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
-            self.algo.execute_acquisition_agent(epoch)
-            self.algo.execute_critic_agent()
+            self.algo.execute_train_agents(epoch)
+            self.algo.execute_tcritic_agents()
+
+            nb_steps += self.algo.n_steps * self.algo.n_envs
 
             # Compute loss
-            policy_loss, critic_loss, entropy_loss, n_steps = self.algo.compute_loss(
+            policy_loss, critic_loss, entropy_loss = self.algo.compute_loss(
                 epoch, show_loss
             )
 
@@ -106,12 +102,9 @@ class SVPG:
             # Compute gradients
             params = self.get_policy_parameters()
             params = params.to(self.algo.device)
+            kernel = RBF()(params, params.detach())
 
-            kernel = self.kernel()(params, params.detach())
-
-            self.add_gradients(
-                policy_loss * gamma * (1 / self.algo.n_particles), kernel
-            )
+            self.add_gradients(policy_loss * gamma / self.algo.n_particles, kernel)
 
             loss = (
                 +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
@@ -119,14 +112,12 @@ class SVPG:
                 + kernel.sum() / self.algo.n_particles
             )
 
-            loss.backward()
-
             if self.algo.clipped:
                 for pid in range(self.algo.n_particles):
-                    torch.nn.utils.clip_grad_norm_(
+                    clip_grad_norm_(
                         self.algo.action_agents[pid].parameters(), max_grad_norm
                     )
-                    torch.nn.utils.clip_grad_norm_(
+                    clip_grad_norm_(
                         self.algo.critic_agents[pid].parameters(), max_grad_norm
                     )
 
@@ -134,64 +125,26 @@ class SVPG:
             if show_grad:
                 self.algo.compute_gradient_norm(epoch)
 
-            for optimizer in self.algo.optimizers:
-                optimizer.step()
-
             # Gradient descent
             for optimizer in self.algo.optimizers:
                 optimizer.zero_grad()
+            loss.backward()
+            for optimizer in self.algo.optimizers:
+                optimizer.step()
 
             # Evaluation
-            nb_steps += n_steps
-            if epoch - last_epoch == self.algo.eval_interval - 1:
+            if nb_steps - tmp_steps > self.algo.eval_interval:
+                tmp_steps = nb_steps
+
                 for pid in range(self.algo.n_particles):
-                    eval_workspace = Workspace()
-                    self.algo.eval_acquisition_agents[pid](
+                    eval_workspace = Workspace().to(self.algo.device)
+                    self.algo.eval_agents[pid](
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
                     )
-                    creward, done = (
-                        eval_workspace["env/cumulated_reward"],
-                        eval_workspace["env/done"],
-                    )
-                    creward, done = creward.to(self.algo.device), done.to(
-                        self.algo.device
-                    )
-                    tl = done.float().argmax(0)
-                    creward = creward[tl, torch.arange(creward.size()[1])]
-                    self.algo.logger.add_log(
-                        f"reward_{pid}", creward.mean(), nb_steps[pid]
-                    )
-                    self.algo.rewards[pid].append(creward.mean())
-                    self.algo.eval_time_steps[pid].append(nb_steps[pid])
-                    self.algo.eval_epoch[pid].append(epoch)
+                    rewards = eval_workspace["env/cumulated_reward"][-1]
+                    mean = rewards.mean()
+                    self.algo.logger.add_log(f"reward_{pid}", mean, nb_steps)
+                    self.algo.rewards[pid].append(mean)
 
-                last_epoch = epoch
-
-        save_dir += "/svpg_annealed" if self.is_annealed else "/svpg_normal"
-
-        save_algo_data(
-            self.algo.action_agents,
-            self.algo.critic_agents,
-            self.algo.rewards,
-            save_dir,
-        )
-
-        # save_dir = (
-        #     Path(str(save_dir) + "/svpg_annealed")
-        #     if self.is_annealed
-        #     else Path(str(save_dir) + "/svpg_normal")
-        # )
-        # if not os.path.exists(save_dir):
-        #     os.makedirs(save_dir)
-
-        # self.algo.save_all_agents(str(save_dir))
-
-        # reward_path = Path(str(save_dir) + "/rewards.npy")
-        # rewards_np = np.array(
-        #     [
-        #         [r.cpu() for r in agent_reward]
-        #         for agent_reward in self.algo.rewards.values()
-        #     ]
-        # )
-        # with open(reward_path, "wb") as f:
-        #     np.save(f, rewards_np)
+        ver = "SVPG_annealed" if self.is_annealed else "SVPG"
+        save_algo_data(self.algo, save_dir, algo_version=ver)

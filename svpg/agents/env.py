@@ -5,7 +5,7 @@ import gym
 import my_gym
 from gym.wrappers import TimeLimit
 
-from svpg import rllab_env_wrapper
+from svpg.utils import rllab_env_wrapper
 
 
 def make_gym_env(max_episode_steps, env_name):
