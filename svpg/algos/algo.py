@@ -13,6 +13,8 @@ from svpg.agents.env import AutoResetEnvAgent, NoAutoResetEnvAgent
 from svpg.utils.utils import save_algo_data
 from svpg.logger import Logger
 
+from rllab.spaces import Discrete, Box
+
 from collections import defaultdict
 
 
@@ -54,7 +56,9 @@ class Algo:
 
             observation_size, n_actions = train_env_agent.get_obs_and_actions_sizes()
 
-            if train_env_agent.is_continuous_action():
+            if train_env_agent.is_continuous_action() or isinstance(
+                train_env_agent.action_space, Box
+            ):
                 action_agent = ContinuousActionAgent(
                     observation_size, cfg.algorithm.architecture.hidden_size, n_actions
                 )
@@ -62,6 +66,7 @@ class Algo:
                 action_agent = ActionAgent(
                     observation_size, cfg.algorithm.architecture.hidden_size, n_actions
                 )
+
             self.action_agents.append(action_agent)
 
             critic_agent = CriticAgent(
