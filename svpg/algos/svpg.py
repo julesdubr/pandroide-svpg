@@ -29,7 +29,7 @@ class RBF(nn.Module):
         else:
             sigma = self.sigma
 
-        gamma = 1.0 / (1e-8 + 2 * sigma**2)
+        gamma = 1.0 / (1e-8 + 2 * sigma ** 2)
         K_XY = (-gamma * dnorm2).exp()
 
         return K_XY
@@ -80,15 +80,15 @@ class SVPG:
     ):
         self.algo.to_device()
 
-        nb_steps = 0
-        tmp_epoch = 0
+        steps = 0
+        tmp_steps = 0
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
             self.algo.execute_train_agents(epoch)
             self.algo.execute_tcritic_agents()
 
-            nb_steps += self.algo.n_steps * self.algo.n_envs
+            steps += self.algo.n_steps * self.algo.n_envs
 
             # Compute loss
             policy_loss, critic_loss, entropy_loss = self.algo.compute_loss(
@@ -96,7 +96,7 @@ class SVPG:
             )
 
             if self.is_annealed:
-                t = np.max(nb_steps)
+                t = np.max(steps)
                 gamma = self.annealed(t)
 
             # Compute gradients
@@ -132,8 +132,9 @@ class SVPG:
                 optimizer.zero_grad()
 
             # Evaluation
-            if epoch - tmp_epoch == self.algo.eval_interval - 1:
-                tmp_epoch = epoch
+            if steps - tmp_steps > self.algo.eval_interval:
+                tmp_steps = steps
+                self.algo.eval_timesteps.append(steps)
 
                 for pid in range(self.algo.n_particles):
                     eval_workspace = Workspace().to(self.algo.device)
@@ -142,7 +143,7 @@ class SVPG:
                     )
                     rewards = eval_workspace["env/cumulated_reward"][-1]
                     mean = rewards.mean()
-                    self.algo.logger.add_log(f"reward_{pid}", mean, nb_steps)
+                    self.algo.logger.add_log(f"reward_{pid}", mean, steps)
                     self.algo.rewards[pid].append(mean)
 
         ver = "SVPG_annealed" if self.is_annealed else "SVPG"

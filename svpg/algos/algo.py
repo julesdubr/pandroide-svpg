@@ -143,15 +143,15 @@ class Algo:
     def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
         self.to_device()
 
-        nb_steps = 0
-        tmp_epoch = 0
+        steps = 0
+        tmp_steps = 0
 
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_train_agents(epoch)
             self.execute_tcritic_agents()
 
-            nb_steps += self.n_steps * self.n_envs
+            steps += self.n_steps * self.n_envs
 
             # Compute loss
             policy_loss, critic_loss, entropy_loss = self.compute_loss(
@@ -181,9 +181,9 @@ class Algo:
                 self.optimizers[pid].step()
 
             # Evaluation
-            if epoch - tmp_epoch == self.eval_interval - 1:
-                tmp_epoch = epoch
-                self.eval_timesteps.append(nb_steps)
+            if steps - tmp_steps > self.eval_interval:
+                tmp_steps = steps
+                self.eval_timesteps.append(steps)
 
                 for pid in range(self.n_particles):
                     eval_workspace = Workspace().to(self.device)
@@ -192,7 +192,7 @@ class Algo:
                     )
                     rewards = eval_workspace["env/cumulated_reward"][-1]
                     mean = rewards.mean()
-                    self.logger.add_log(f"reward_{pid}", mean, nb_steps)
+                    self.logger.add_log(f"reward_{pid}", mean, steps)
                     self.rewards[pid].append(mean)
 
         save_algo_data(self, save_dir)

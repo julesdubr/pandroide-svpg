@@ -2,6 +2,7 @@ from re import A
 import numpy as np
 import torch as th
 
+
 import os
 from pathlib import Path
 
@@ -19,7 +20,7 @@ def save_algo_data(algo, directory, algo_version="independant"):
     with open(directory + "/rewards.npy", "wb") as f:
         np.save(f, rewards)
     with open(directory + "/eval_timesteps.npy", "wb") as f:
-        np.save(f, algo.eval_timesteps)
+        np.save(f, np.array(algo.eval_timesteps))
 
     action_path = Path(directory + "/action_agents")
     critic_path = Path(directory + "/critic_agents")
@@ -39,7 +40,7 @@ def load_algo_data(directory, device="cpu"):
 
     with open(directory + "/rewards.npy", "rb") as f:
         rewards = np.load(f, allow_pickle=True)
-    with open(directory + "/eval_timesteps.npy", "wb") as f:
+    with open(directory + "/eval_timesteps.npy", "rb") as f:
         eval_timesteps = np.load(f, allow_pickle=True)
 
     action_agents, action_path = [], directory + "/action_agents"
