@@ -41,18 +41,17 @@ params = {
 }
 
 if __name__ == "__main__":
-
     config = OmegaConf.create(params)
-    torch.manual_seed(config.algorithm.seed)
 
     dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
-
     directory = (
         str(Path(__file__).parents[1]) + "/archives/" + config.gym_env.env_name + dtime
     )
 
     if not os.path.exists(directory):
         os.makedirs(directory)
+
+    torch.manual_seed(config.algorithm.seed)
 
     # # --------- A2C-independant --------- #
     a2c = A2C(config)

@@ -6,7 +6,7 @@ import torch
 
 from omegaconf import OmegaConf
 
-from svpg.algos import A2C
+from svpg.algos import A2C, SVPG
 
 params = {
     "save_best": True,
@@ -14,13 +14,13 @@ params = {
         "classname": "salina.logger.TFLogger",
         "log_dir": "./tmp/" + str(time.time()),
         "verbose": True,
-        # "cache_size": 10000,
+        "cache_size": 10000,
         "every_n_seconds": 10,
     },
     "algorithm": {
         "n_particles": 16,
         "seed": 5,
-        "n_envs": 8,
+        "n_envs": 1,
         "n_steps": 8,
         "n_evals": 10,
         "eval_interval": 100,
@@ -42,17 +42,26 @@ params = {
 }
 
 if __name__ == "__main__":
-    d = datetime.datetime.now()
-    directory = d.strftime(
-        str(Path(__file__).parents[1]) + "/archives/%y-%m-%d/%H-%M-%S/"
+    config = OmegaConf.create(params)
+
+    dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
+    directory = (
+        str(Path(__file__).parents[1]) + "/archives/" + config.gym_env.env_name + dtime
     )
 
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    config = OmegaConf.create(params)
     torch.manual_seed(config.algorithm.seed)
 
     # --------- A2C INDEPENDENT --------- #
     a2c = A2C(config)
     a2c.run(directory)
+
+    # --------- A2C-SVPG --------- #
+    svpg = SVPG(A2C(config), is_annealed=False)
+    svpg.run(directory)
+
+    # --------- A2C-SVPG_annealed --------- #
+    svpg_annealed = SVPG(A2C(config), is_annealed=True)
+    svpg_annealed.run(directory)
