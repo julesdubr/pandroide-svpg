@@ -4,55 +4,37 @@ from torch.distributions.normal import Normal
 
 from salina.agent import Agent
 
-
-class CActionAgent(Agent):
-    def __init__(self, output_size, model):
-        super().__init__(name="action_agent")
-        # Model input and output size
-        # Model for estimating torche mean
-        self.model = model
-        # The deviation is estimated by a vector
-        init_variance = torch.randn(output_size, 1)
-        self.std_param = nn.parameter.Parameter(init_variance)
-        self.soft_plus = nn.Softplus()
-
-    def forward(self, t, stochastic, replay=False, **kwargs):
-        observation = self.get(("env/env_obs", t))
-        mean = self.model(observation)
-        dist = Normal(mean, self.soft_plus(self.std_param))
-        entropy = dist.entropy().squeeze(-1)
-
-        if stochastic:
-            action = dist.sample()
-        else:
-            action = mean
-
-        if t == -1:
-            return action
-
-        action_logprobs = dist.log_prob(action).sum(axis=-1)
-        
-        if not replay:
-            self.set(("action", t), action)
-
-        self.set(("action_logprobs", t), action_logprobs)
-        self.set(("entropy", t), entropy)
+from .model import build_mlp
 
 
-class CCriticAgent(Agent):
-    """
-    CriticAgent:
-    - A one hidden layer neural network which takes an observation as input and whose
-      output is the value of this observation.
-    - It thus implements a V(s)  function
-    """
-
-    def __init__(self, model):
+class ContinuousActionAgent(Agent):
+    def __init__(self, state_dim, hidden_layers, action_dim, **kwargs):
         super().__init__()
-        # Model
-        self.model = model
+        layers = [state_dim] + list(hidden_layers) + [action_dim]
+        self.model = build_mlp(layers, activation=nn.ReLU())
+        init_variance = torch.randn(action_dim, 1)
+        # print("init_variance:", init_variance)
+        self.std_param = nn.parameter.Parameter(init_variance)
+        self.soft_plus = torch.nn.Softplus()
 
-    def forward(self, t, **kwargs):
-        observation = self.get(("env/env_obs", t))
-        critic = self.model(observation).squeeze(-1)
-        self.set(("critic", t), critic)
+    def forward(self, t, stochastic, **kwargs):
+        obs = self.get(("env/env_obs", t))
+        mean = self.model(obs)
+        dist = Normal(mean, self.soft_plus(self.std_param))  # std must be positive
+        self.set(("entropy", t), dist.entropy())
+        if stochastic:
+            action = dist.sample()  # valid actions are supposed to be in [-1,1] range
+        else:
+            action = mean  # valid actions are supposed to be in [-1,1] range
+        logp_pi = dist.log_prob(action).sum(axis=-1)
+        self.set(("action", t), action)
+        self.set(("action_logprobs", t), logp_pi)
+
+    def predict_action(self, obs, stochastic):
+        mean = self.model(obs)
+        dist = Normal(mean, self.soft_plus(self.std_param))
+        if stochastic:
+            action = dist.sample()  # valid actions are supposed to be in [-1,1] range
+        else:
+            action = mean  # valid actions are supposed to be in [-1,1] range
+        return action

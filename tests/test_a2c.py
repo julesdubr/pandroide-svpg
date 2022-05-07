@@ -5,14 +5,12 @@ from svpg.algos.svpg import SVPG
 
 from omegaconf import OmegaConf
 
-import matplotlib.pyplot as plt
-
 import datetime
 from pathlib import Path
 
 try:
     OmegaConf.register_new_resolver("get_method", hydra.utils.get_method)
-except:
+except Exception:
     print("Already register")
 
 import os
@@ -24,10 +22,10 @@ def main(cfg):
 
     try:
         mp.set_start_method("spawn")
-    except:
+    except Exception:
         pass
 
-    d = datetime.datetime.today()
+    d = datetime.datetime.now()
     directory = d.strftime(
         str(Path(__file__).parents[1]) + "/archives/%y-%m-%d/%H-%M-%S/"
     )

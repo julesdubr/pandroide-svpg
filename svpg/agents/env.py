@@ -1,4 +1,5 @@
 from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
+from salina import instantiate_class, get_arguments, get_class
 
 import gym
 import my_gym
@@ -7,7 +8,7 @@ from gym.wrappers import TimeLimit
 from svpg import rllab_env_wrapper
 
 
-def make_env(env_name, max_episode_steps):
+def make_gym_env(max_episode_steps, env_name):
     """
     Create the environment using gym:
     - Using hydra to take arguments from a configuration file
@@ -16,29 +17,34 @@ def make_env(env_name, max_episode_steps):
 
 
 class AutoResetEnvAgent(AutoResetGymAgent):
-    """
-    Create the environment agent.
-    This agent implements N gym environments with auto-reset.
-    """
-
-    def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
+    # Create the environment agent
+    # This agent implements N gym environments with auto-reset
+    def __init__(self, cfg, max_episode_steps, n_envs):
         super().__init__(
-            make_env_fn=make_env_fn,
-            make_env_args={
-                "env_name": env_name,
-                "max_episode_steps": max_episode_steps,
-            },
-            n_envs=n_envs,
+            max_episode_steps,
+            get_class(cfg.gym_env),
+            get_arguments(cfg.gym_env),
+            n_envs,
         )
+        env = instantiate_class(cfg.gym_env)
+        env.seed(cfg.algorithm.seed)
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space
+        del env
 
 
 class NoAutoResetEnvAgent(NoAutoResetGymAgent):
-    def __init__(self, env_name, max_episode_steps, n_envs, make_env_fn=make_env):
+    # Create the environment agent
+    # This agent implements N gym environments without auto-reset
+    def __init__(self, cfg, max_episode_steps, n_envs):
         super().__init__(
-            make_env_fn=make_env_fn,
-            make_env_args={
-                "env_name": env_name,
-                "max_episode_steps": max_episode_steps,
-            },
-            n_envs=n_envs,
+            max_episode_steps,
+            get_class(cfg.gym_env),
+            get_arguments(cfg.gym_env),
+            n_envs,
         )
+        env = instantiate_class(cfg.gym_env)
+        env.seed(cfg.algorithm.seed)
+        self.observation_space = env.observation_space
+        self.action_space = env.action_space
+        del env

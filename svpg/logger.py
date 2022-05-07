@@ -8,8 +8,8 @@ configuration file
 
 
 class Logger:
-    def __init__(self, salina_logger):
-        self.logger = salina_logger
+    def __init__(self, cfg):
+        self.logger = instantiate_class(cfg.logger)
 
     def add_log(self, log_string, loss, epoch):
         self.logger.add_scalar(log_string, loss.item(), epoch)

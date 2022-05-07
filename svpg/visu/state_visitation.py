@@ -13,13 +13,12 @@ import os
 
 
 def plot_state_visitation(
+    cfg,
     agents,
     rewards,
     algo_name,
-    env_name,
     directory="",
     nb_best=4,
-    nb_evals=100,
     cmap="Reds",
     bw_adjust=0.75,
     plot=True,
@@ -36,7 +35,9 @@ def plot_state_visitation(
 
     for i, (pid, ax) in enumerate(zip(bests_indices, axes)):
         env_agent = NoAutoResetEnvAgent(
-            env_name=env_name, max_episode_steps=500, n_envs=nb_evals
+            cfg,
+            max_episode_steps=cfg.gym_env.max_episode_steps,
+            n_envs=cfg.algorithm.n_evals,
         )
 
         eval_agent = TemporalAgent(Agents(env_agent, agents[pid]))

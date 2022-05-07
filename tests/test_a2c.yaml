@@ -40,12 +40,12 @@ algorithm:
 
   model:
     _target_: functools.partial
-    _args_: ["${get_method:svpg.agents.model.make_model}"]
+    _args_: ["${get_method: svpg.agents.model.make_model}"]
     hidden_size0: 100
     hidden_size1: 50
     hidden_size2: 25
 
   optimizer:
     _target_: functools.partial
-    _args_: ["${get_method:torch.optim.Adam}"]
+    _args_: ["${get_method: torch.optim.Adam}"]
     lr: 5e-3
