@@ -126,11 +126,10 @@ class SVPG:
                 self.algo.compute_gradient_norm(epoch)
 
             # Gradient descent
-            for optimizer in self.algo.optimizers:
-                optimizer.zero_grad()
             loss.backward()
             for optimizer in self.algo.optimizers:
                 optimizer.step()
+                optimizer.zero_grad()
 
             # Evaluation
             if nb_steps - tmp_steps > self.algo.eval_interval:

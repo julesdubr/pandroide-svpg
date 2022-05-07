@@ -144,7 +144,7 @@ class Algo:
         self.to_device()
 
         nb_steps = 0
-        tmp_steps = 0
+        tmp_epoch = 0
 
         for epoch in range(self.max_epochs):
             # Run all particles
@@ -181,8 +181,8 @@ class Algo:
                 self.optimizers[pid].step()
 
             # Evaluation
-            if nb_steps - tmp_steps > self.eval_interval:
-                tmp_steps = nb_steps
+            if epoch - tmp_epoch == self.eval_interval - 1:
+                tmp_epoch = epoch
                 self.eval_timesteps.append(nb_steps)
 
                 for pid in range(self.n_particles):

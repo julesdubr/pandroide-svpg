@@ -53,13 +53,13 @@ if __name__ == "__main__":
     torch.manual_seed(config.algorithm.seed)
 
     # --------- A2C INDEPENDENT --------- #
-    a2c = A2C(config)
-    a2c.run(directory)
+    # a2c = A2C(config)
+    # a2c.run(directory)
 
     # --------- A2C-SVPG --------- #
     svpg = SVPG(A2C(config), is_annealed=False)
     svpg.run(directory)
 
     # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # svpg_annealed = SVPG(A2C(config), is_annealed=True)
+    # svpg_annealed.run(directory)
