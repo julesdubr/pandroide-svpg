@@ -132,7 +132,7 @@ class SVPG:
                 optimizer.zero_grad()
 
             # Evaluation
-            if epoch - tmp_epoch == self.eval_interval - 1:
+            if epoch - tmp_epoch == self.algo.eval_interval - 1:
                 tmp_epoch = epoch
 
                 for pid in range(self.algo.n_particles):
