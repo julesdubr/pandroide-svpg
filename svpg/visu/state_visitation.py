@@ -33,11 +33,7 @@ def plot_state_visitation(
     axes = fig.subplots(nrows=1, ncols=nb_best, sharey=True)
 
     for i, (pid, ax) in enumerate(zip(bests_indices, axes)):
-        env_agent = NoAutoResetEnvAgent(
-            cfg,
-            max_episode_steps=cfg.gym_env.max_episode_steps,
-            n_envs=cfg.algorithm.n_evals,
-        )
+        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals)
 
         eval_agent = TemporalAgent(Agents(env_agent, agents[pid]))
 
