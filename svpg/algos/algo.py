@@ -45,16 +45,8 @@ class Algo:
         self.optimizers = []
 
         for _ in range(self.n_particles):
-            train_env_agent = AutoResetEnvAgent(
-                cfg,
-                max_episode_steps=cfg.gym_env.max_episode_steps,
-                n_envs=self.n_envs,
-            )
-            eval_env_agent = NoAutoResetEnvAgent(
-                cfg,
-                max_episode_steps=cfg.gym_env.max_episode_steps,
-                n_envs=self.n_evals,
-            )
+            train_env_agent = AutoResetEnvAgent(cfg, n_envs=self.n_envs)
+            eval_env_agent = NoAutoResetEnvAgent(cfg, n_envs=self.n_evals)
 
             observation_size, n_actions = train_env_agent.get_obs_and_actions_sizes()
 

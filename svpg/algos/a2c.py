@@ -16,7 +16,7 @@ class A2C(Algo):
         # Compute TD error
         td = gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
         # Compute critic loss
-        td_error = td ** 2
+        td_error = td**2
         critic_loss = td_error.mean()
         return critic_loss, td
 
