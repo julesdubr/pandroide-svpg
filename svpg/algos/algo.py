@@ -9,11 +9,11 @@ from salina.agents import TemporalAgent, Agents
 from salina.workspace import Workspace
 
 from svpg.agents import ActionAgent, CriticAgent, ContinuousActionAgent
-from svpg.agents.env import AutoResetEnvAgent, NoAutoResetEnvAgent
+from svpg.agents.env import AutoResetEnvAgent, NoAutoResetEnvAgent, get_env_infos
 from svpg.utils.utils import save_algo_data
 from svpg.logger import Logger
 
-from rllab.spaces import Discrete, Box
+from rllab.spaces import Box
 
 from collections import defaultdict
 
@@ -54,11 +54,9 @@ class Algo:
             train_env_agent = AutoResetEnvAgent(cfg, n_envs=self.n_envs)
             eval_env_agent = NoAutoResetEnvAgent(cfg, n_envs=self.n_evals)
 
-            observation_size, n_actions = train_env_agent.get_obs_and_actions_sizes()
+            observation_size, n_actions, is_continuous = get_env_infos(train_env_agent)
 
-            if train_env_agent.is_continuous_action() or isinstance(
-                train_env_agent.action_space, Box
-            ):
+            if is_continuous:
                 action_agent = ContinuousActionAgent(
                     observation_size, cfg.algorithm.architecture.hidden_size, n_actions
                 )

@@ -7,6 +7,8 @@ from gym.wrappers import TimeLimit
 
 from svpg.utils import rllab_env_wrapper
 
+from rllab.spaces import Discrete, Box
+
 
 def make_gym_env(max_episode_steps, env_name):
     """
@@ -14,6 +16,23 @@ def make_gym_env(max_episode_steps, env_name):
     - Using hydra to take arguments from a configuration file
     """
     return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
+
+
+def get_env_infos(env):
+    action_dim = 0
+    state_dim = 0
+    continuous_action = False
+    if env.is_continuous_action() or isinstance(env.action_space, Box):
+        action_dim = env.action_space.shape[0]
+        continuous_action = True
+    elif env.is_discrete_action() or isinstance(env.action_space, Discrete):
+        action_dim = env.action_space.n
+    if env.is_continuous_state() or isinstance(env.observation_space, Box):
+        state_dim = env.observation_space.shape[0]
+    elif env.is_discrete_state() or isinstance(env.observation_space, Discrete):
+        state_dim = env.observation_space.n
+
+    return state_dim, action_dim, continuous_action
 
 
 class AutoResetEnvAgent(AutoResetGymAgent):
