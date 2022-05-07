@@ -13,7 +13,7 @@ def save_algo_data(algo, directory, algo_version="independant"):
         os.makedirs(directory)
 
     rewards = np.array(
-        [[r for r in agent_reward] for agent_reward in algo.rewards.values()]
+        [[r.cpu() for r in agent_reward] for agent_reward in algo.rewards.values()]
     )
 
     rewards_path = Path(directory + "/rewards.npy")
