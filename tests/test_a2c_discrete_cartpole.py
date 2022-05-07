@@ -11,7 +11,7 @@ dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
 params = {
     "logger": {
         "classname": "salina.logger.TFLogger",
-        "log_dir": "tmp/" + dtime,
+        "log_dir": str(Path(__file__).parent) + "/tmp/" + dtime,
         "verbose": True,
         "cache_size": 10000,
         "every_n_seconds": 10,
