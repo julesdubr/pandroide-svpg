@@ -1,5 +1,4 @@
 import datetime
-import time
 import os
 from pathlib import Path
 import torch
@@ -8,11 +7,12 @@ from omegaconf import OmegaConf
 
 from svpg.algos import A2C, SVPG
 
+dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
 params = {
     "save_best": True,
     "logger": {
         "classname": "salina.logger.TFLogger",
-        "log_dir": "./tmp/" + str(time.time()),
+        "log_dir": "tmp/" + dtime,
         "verbose": True,
         "cache_size": 10000,
         "every_n_seconds": 10,
@@ -44,7 +44,6 @@ params = {
 if __name__ == "__main__":
     config = OmegaConf.create(params)
 
-    dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
     directory = (
         str(Path(__file__).parents[1]) + "/archives/" + config.gym_env.env_name + dtime
     )
