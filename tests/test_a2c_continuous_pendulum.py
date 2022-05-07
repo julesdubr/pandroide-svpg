@@ -45,7 +45,7 @@ if __name__ == "__main__":
     config = OmegaConf.create(params)
 
     directory = (
-        str(Path(__file__).parents[1]) + "/archives/" + config.gym_env.env_name + dtime
+        str(Path(__file__).parents[1]) + "/runs/" + config.gym_env.env_name + dtime
     )
 
     if not os.path.exists(directory):
