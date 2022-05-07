@@ -6,7 +6,7 @@ from rllab.misc import autoargs
 
 import gym
 
-from svpg.rllab_env_wrapper.envs.get_model_path import model_path
+from .get_model_path import model_path
 
 
 class MyCartPole(rllab_cartpole.CartpoleEnv, gym.Env):

@@ -6,21 +6,20 @@ from rllab.misc import autoargs
 
 import gym
 
-from svpg.rllab_env_wrapper.envs.get_model_path import model_path
+from .get_model_path import model_path
+
 
 class MyMountainCar(rllab_mountaincar.MountainCarEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
-    @autoargs.arg("height_bonus_coeff", type=float,
-                  help="Height bonus added to each step's reward")
-    @autoargs.arg("goal_cart_pos", type=float,
-                  help="Goal horizontal position")
-    def __init__(self, 
-                height_bonus=1.,
-                goal_cart_pos=.6,
-                *args, **kwargs):
+    @autoargs.arg(
+        "height_bonus_coeff",
+        type=float,
+        help="Height bonus added to each step's reward",
+    )
+    @autoargs.arg("goal_cart_pos", type=float, help="Goal horizontal position")
+    def __init__(self, height_bonus=1.0, goal_cart_pos=0.6, *args, **kwargs):
         super(rllab_mountaincar.MountainCarEnv, self).__init__(
-            model_path("mountain_car.xml.mako"),
-            *args, **kwargs
+            model_path("mountain_car.xml.mako"), *args, **kwargs
         )
         self.max_cart_pos = 2
         self.goal_cart_pos = goal_cart_pos
