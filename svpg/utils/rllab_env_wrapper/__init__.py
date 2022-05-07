@@ -12,17 +12,17 @@ def register(id, entry_point, max_episode_steps=500):
 
 register(
     id="MyCartPole-v0",
-    entry_point="svpg.rllab_env_wrapper.envs.rllab_cartpole:MyCartPole",
+    entry_point="svpg.utils.rllab_env_wrapper.envs.rllab_cartpole:MyCartPole",
 )
 register(
     id="MyCartPoleSwingUp-v0",
-    entry_point="svpg.rllab_env_wrapper.envs.rllab_cartpoleswingup:MyCartPoleSwingUp",
+    entry_point="svpg.utils.rllab_env_wrapper.envs.rllab_cartpoleswingup:MyCartPoleSwingUp",
 )
 register(
     id="MyMountainCar-v0",
-    entry_point="svpg.rllab_env_wrapper.envs.rllab_mountaincar:MyMountainCar",
+    entry_point="svpg.utils.rllab_env_wrapper.envs.rllab_mountaincar:MyMountainCar",
 )
 register(
     id="MyPendulum-v0",
-    entry_point="svpg.rllab_env_wrapper.envs.rllab_pendulum:MyPendulum",
+    entry_point="svpg.utils.rllab_env_wrapper.envs.rllab_pendulum:MyPendulum",
 )
