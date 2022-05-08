@@ -35,10 +35,9 @@ def main(cfg):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    # --------- A2C INDEPENDENT --------- #
-    algo_a2c = instantiate(cfg.algorithm)
-    algo_a2c.run(directory)
-
+    algo_svpg_normal = instantiate(cfg.algorithm, clipped=False)
+    svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
+    svpg_normal.run(directory)
 
 if __name__ == "__main__":
     main()
