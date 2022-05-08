@@ -13,7 +13,7 @@ params = {
     "logger": {
         "classname": "salina.logger.TFLogger",
         "log_dir": str(Path(__file__).parent) + "/tmp/" + dtime,
-        "verbose": True,
+        "verbose": False,
         "cache_size": 10000,
         "every_n_seconds": 10,
     },
@@ -22,10 +22,10 @@ params = {
         "seed": 5,
         "n_envs": 1,
         "n_steps": 8,
-        "eval_interval": 1000,
+        "eval_interval": 8000,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 100,
+        "max_epochs": 20000,
         "discount_factor": 0.95,
         "policy_coef": 0.1,
         "critic_coef": 1.0,
@@ -35,7 +35,6 @@ params = {
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "MyCartPoleSwingUp-v0",
-        "max_episode_steps": 500,
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }
