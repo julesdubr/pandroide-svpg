@@ -46,7 +46,7 @@ def load_algo_data(directory, device="cpu"):
     action_agents, action_path = [], directory + "/action_agents"
     critic_agents, critic_path = [], directory + "/critic_agents"
 
-    for i in range(16):
+    for i in range(rewards.shape[0]):
         action_agent = th.load(action_path + f"/action_agent{i}.pt").to(device)
         action_agents.append(action_agent)
         critic_agent = th.load(critic_path + f"/critic_agent{i}.pt").to(device)

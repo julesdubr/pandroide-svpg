@@ -35,7 +35,6 @@ params = {
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "MyMountainCar-v0",
-        "max_episode_steps": 500,
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }

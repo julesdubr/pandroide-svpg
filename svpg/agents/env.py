@@ -2,7 +2,6 @@ from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
-from gym.wrappers import TimeLimit
 
 from rllab.spaces import Discrete, Box
 
@@ -10,12 +9,12 @@ from svpg.utils import rllab_env_wrapper
 import my_gym
 
 
-def make_gym_env(max_episode_steps, env_name):
+def make_gym_env(env_name):
     """
     Create the environment using gym:
     - Using hydra to take arguments from a configuration file
     """
-    return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
+    return gym.make(env_name)
 
 
 def get_env_infos(env):
