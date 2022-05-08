@@ -2,7 +2,7 @@ env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 1
 
-max_epochs: 100000
+max_epochs: 1000
 n_steps: 8
 eval_interval: 20
 
@@ -30,7 +30,7 @@ algorithm:
       log_dir: ./tmp
       every_n_seconds: 10000
       modulo: 1
-      verbose: False
+      verbose: True
 
   env_agent: "${get_method: svpg.agents.env.AutoResetEnvAgent}"
 

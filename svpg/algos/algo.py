@@ -55,7 +55,7 @@ class Algo:
             env_agent(env_name, max_episode_steps, n_envs) for _ in range(n_particles)
         ]
         self.eval_env_agents = [
-            NoAutoResetEnvAgent(env_name, max_episode_steps, n_envs)
+            NoAutoResetEnvAgent(env_name, max_episode_steps, 1)
             for _ in range(n_particles)
         ]
 
