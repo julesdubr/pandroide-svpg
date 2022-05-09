@@ -78,7 +78,7 @@ class SVPG:
     def run(
         self,
         save_dir,
-        gamma=1,
+        gamma=0.1,
         p=5,
         slope=1.7,
         max_grad_norm=0.5,
@@ -88,6 +88,7 @@ class SVPG:
         self.algo.to_gpu()
         nb_steps = np.zeros(self.algo.n_particles)
         last_epoch = 0
+        total_policy_loss, total_entropy_loss = 0, 0
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
@@ -98,52 +99,62 @@ class SVPG:
             policy_loss, critic_loss, entropy_loss, n_steps = self.algo.compute_loss(
                 epoch, show_loss
             )
+            nb_steps += n_steps
 
-            if self.is_annealed:
-                t = np.max(nb_steps)
-                gamma = self.annealed(t)
-
-            # Compute gradients
-            params = self.get_policy_parameters()
-            params = params.to(self.algo.device)
-
-            kernel = self.kernel()(params, params.detach())
-
-            self.add_gradients(
-                policy_loss * gamma * (1 / self.algo.n_particles), kernel
-            )
-
-            loss = (
-                + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
-                + self.algo.critic_coef * critic_loss / self.algo.n_particles
-                + kernel.sum() / self.algo.n_particles
-            )
-
-            loss.backward()
-
+            total_critic_loss = self.algo.critic_coef * critic_loss / self.algo.n_particles
+            total_critic_loss.backward()
             if self.algo.clipped:
                 for pid in range(self.algo.n_particles):
                     torch.nn.utils.clip_grad_norm_(
-                        self.algo.action_agents[pid].parameters(), max_grad_norm
-                    )
-                    torch.nn.utils.clip_grad_norm_(
                         self.algo.critic_agents[pid].parameters(), max_grad_norm
                     )
-
-            # Log gradient norms
-            if show_grad:
-                self.algo.compute_gradient_norm(epoch)
-
-            for optimizer in self.algo.optimizers:
-                optimizer.step()
-
             # Gradient descent
-            for optimizer in self.algo.optimizers:
-                optimizer.zero_grad()
+            for pid in range(self.algo.n_particles):
+                self.algo.critic_optimizers[pid].step()
+            # Gradient descent
+            for pid in range(self.algo.n_particles):
+                self.algo.critic_optimizers[pid].zero_grad()
 
-            # Evaluation
-            nb_steps += n_steps
-            if epoch - last_epoch == self.algo.eval_interval - 1:
+            total_policy_loss = total_policy_loss + self.algo.policy_coef * policy_loss / self.algo.n_particles
+            total_entropy_loss = total_entropy_loss + self.algo.entropy_coef * entropy_loss / self.algo.n_particles
+
+            if (epoch + 1) % 100 == 0:
+                if self.is_annealed:
+                    t = np.max(nb_steps)
+                    gamma = self.annealed(t)
+
+                # Compute gradients
+                params = self.get_policy_parameters()
+                params = params.to(self.algo.device)
+
+                kernel = self.kernel()(params, params.detach())
+
+                self.add_gradients(
+                    total_policy_loss * gamma * (1 / self.algo.n_particles), kernel
+                )
+
+                total_policy_loss = 0
+
+                (total_entropy_loss + kernel.sum() / self.algo.n_particles).backward()
+                total_entropy_loss = 0
+
+                if self.algo.clipped:
+                    for pid in range(self.algo.n_particles):
+                        torch.nn.utils.clip_grad_norm_(
+                            self.algo.action_agents[pid].parameters(), max_grad_norm)
+
+                # Log gradient norms
+                if show_grad:
+                    self.algo.compute_gradient_norm(epoch)
+
+                for optimizer in self.algo.actor_optimizers:
+                    optimizer.step()
+
+                # Gradient descent
+                for optimizer in self.algo.actor_optimizers:
+                    optimizer.zero_grad()
+
+                # Evaluation
                 for pid in range(self.algo.n_particles):
                     eval_workspace = Workspace()
                     self.algo.eval_acquisition_agents[pid](
@@ -165,7 +176,7 @@ class SVPG:
                     self.algo.eval_time_steps[pid].append(nb_steps[pid])
                     self.algo.eval_epoch[pid].append(epoch)
 
-                last_epoch = epoch
+                # last_epoch = epoch
 
         save_dir = (
             Path(str(save_dir) + "/svpg_annealed")

@@ -104,11 +104,14 @@ class Algo:
         self.workspaces = [Workspace() for _ in range(n_particles)]
 
         # ---------------- Optimizers ------------ #
-        self.optimizers = [
-            optimizer(nn.Sequential(action_agent, critic_agent).parameters())
-            for action_agent, critic_agent in zip(
-                self.action_agents, self.critic_agents
-            )
+        self.actor_optimizers = [
+            optimizer(action_agent.parameters())
+            for action_agent in self.action_agents
+        ]
+
+        self.critic_optimizers = [
+            optimizer(critic_agent.parameters())
+            for critic_agent in self.critic_agents
         ]
 
     def execute_acquisition_agent(self, epoch):
@@ -201,6 +204,7 @@ class Algo:
         self.to_gpu()
         nb_steps = np.zeros(self.n_particles)
         last_epoch = 0
+        total_actor_loss = 0
         for epoch in range(self.max_epochs):
             # Run all particles
             self.execute_acquisition_agent(epoch)
@@ -212,41 +216,55 @@ class Algo:
                 epoch, verbose=show_loss
             )
 
-            total_loss = (
-                +self.policy_coef * policy_loss / self.n_particles
-                + self.critic_coef * critic_loss / self.n_particles
-                + self.entropy_coef * entropy_loss / self.n_particles
-            )
+            nb_steps += n_steps
 
-            for pid in range(self.n_particles):
-                self.optimizers[pid].zero_grad()
-
-            total_loss.backward()
-
+            # total_loss = total_loss + (
+            #     + self.policy_coef * policy_loss / self.n_particles
+            #     + self.critic_coef * critic_loss / self.n_particles
+            #     + self.entropy_coef * entropy_loss / self.n_particles
+            # )
+            total_critic_loss = self.critic_coef * critic_loss / self.n_particles
+            total_critic_loss.backward()
             if self.clipped:
                 for pid in range(self.n_particles):
                     torch.nn.utils.clip_grad_norm_(
-                        self.action_agents[pid].parameters(), max_grad_norm
-                    )
-                    torch.nn.utils.clip_grad_norm_(
                         self.critic_agents[pid].parameters(), max_grad_norm
                     )
-
-            # Log gradient norms
-            if show_grad:
-                self.compute_gradient_norm(epoch)
-
             # Gradient descent
             for pid in range(self.n_particles):
-                self.optimizers[pid].step()
-
+                self.critic_optimizers[pid].step()
             # Gradient descent
             for pid in range(self.n_particles):
-                self.optimizers[pid].zero_grad()
+                self.critic_optimizers[pid].zero_grad()
 
-            # Evaluation
-            nb_steps += n_steps
-            if epoch - last_epoch == self.eval_interval - 1:
+            total_actor_loss = total_actor_loss + (
+                + self.policy_coef * policy_loss / self.n_particles
+                + self.entropy_coef * entropy_loss / self.n_particles
+            )
+
+            if (epoch + 1) % 100 == 0:
+                total_actor_loss.backward()
+                total_actor_loss = 0
+
+                if self.clipped:
+                    for pid in range(self.n_particles):
+                        torch.nn.utils.clip_grad_norm_(
+                            self.action_agents[pid].parameters(), max_grad_norm
+                        )
+
+                # Log gradient norms
+                if show_grad:
+                    self.compute_gradient_norm(epoch)
+
+                # Gradient descent
+                for pid in range(self.n_particles):
+                    self.actor_optimizers[pid].step()
+                # Gradient descent
+                for pid in range(self.n_particles):
+                    self.actor_optimizers[pid].zero_grad()
+
+                # Evaluation
+                # if epoch - last_epoch == self.eval_interval:
                 for pid in range(self.n_particles):
                     eval_workspace = Workspace().to(self.device)
                     self.eval_acquisition_agents[pid](
@@ -264,7 +282,7 @@ class Algo:
                     self.eval_time_steps[pid].append(nb_steps[pid])
                     self.eval_epoch[pid].append(epoch)
 
-                last_epoch = epoch
+                    # last_epoch = epoch
 
         save_dir = Path(str(save_dir) + "/algo_base")
         if not os.path.exists(save_dir):

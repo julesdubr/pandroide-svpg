@@ -12,7 +12,7 @@ def make_env(env_name, max_episode_steps):
     Create the environment using gym:
     - Using hydra to take arguments from a configuration file
     """
-    return TimeLimit(gym.make(env_name), max_episode_steps=max_episode_steps)
+    return gym.make(env_name)
 
 
 class AutoResetEnvAgent(AutoResetGymAgent):
