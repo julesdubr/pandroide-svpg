@@ -35,7 +35,7 @@ def main(cfg):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    algo_svpg_normal = instantiate(cfg.algorithm, clipped=False)
+    algo_svpg_normal = instantiate(cfg.algorithm)
     svpg_normal = SVPG(algo_svpg_normal, is_annealed=False)
     svpg_normal.run(directory)
 
