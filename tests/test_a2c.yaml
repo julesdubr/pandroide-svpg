@@ -1,4 +1,4 @@
-env_name: CartPoleContinuous-v1
+env_name: MyCartPole-v0
 max_episode_steps: 500
 n_envs: 8
 
@@ -12,7 +12,7 @@ algorithm:
   critic_coef: 1.0
   entropy_coef: 0.001
   gae_coef: 1
-  n_particles: 1
+  n_particles: 16
   max_epochs: ${max_epochs}
   discount_factor: 0.95
   env_name: ${env_name}
