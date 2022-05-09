@@ -6,15 +6,19 @@ max_epochs: 20000
 n_steps: 16
 eval_interval: 100
 
+n_particles: 16
+
+verbose: False
+
 algorithm:
   _target_: svpg.algos.a2c.A2C
   policy_coef: 0.1
   critic_coef: 1.0
   entropy_coef: 0.001
   gae_coef: 1
-  n_particles: 16
+  n_particles: ${n_particles}
   max_epochs: ${max_epochs}
-  discount_factor: 0.95
+  discount_factor: 0.99
   env_name: ${env_name}
   max_episode_steps: ${max_episode_steps}
   n_envs: ${n_envs}
@@ -30,7 +34,7 @@ algorithm:
       log_dir: ./tmp
       every_n_seconds: 10000
       modulo: 1
-      verbose: False
+      verbose: ${verbose}
 
   env_agent: "${get_method: svpg.agents.env.AutoResetEnvAgent}"
 

@@ -60,7 +60,7 @@ class A2C(Algo):
         # Compute TD error
         # td = RLF.gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
         target = reward[:-1] + self.discount_factor * critic[1:].detach() * (must_bootstrap.float())
-        td = target - critic
+        td = target - critic[:-1]
         # Compute critic loss
         td_error = td ** 2
         critic_loss = td_error.mean()
