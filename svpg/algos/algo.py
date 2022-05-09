@@ -45,7 +45,8 @@ class Algo:
         self.eval_epoch = defaultdict(lambda: [])
         self.eval_interval = eval_interval
         self.clipped = clipped
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
+        # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # --------------- Logger --------------- #
         self.logger = logger
