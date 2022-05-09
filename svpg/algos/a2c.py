@@ -17,11 +17,10 @@ class A2C(Algo):
         target = reward[:-1] + self.discount_factor * critic[1:].detach() * (
             must_bootstrap.float()
         )
-        td = target - critic
+        td = target - critic[:-1]
         assert (
             target.shape[1] == critic.shape[1]
         ), f"Missing one element in the critic list: {target.shape} vs {critic.shape}"
-        # td = gae(critic, reward, must_bootstrap, cfg.algorithm.discount_factor, cfg.algorithm.gae)
 
         # Compute critic loss
         td_error = td ** 2

@@ -22,10 +22,10 @@ params = {
         "seed": 5,
         "n_envs": 8,
         "n_steps": 16,
-        "eval_interval": 100,
+        "eval_interval": 20,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 20000,
+        "max_epochs": 4000,
         "discount_factor": 0.95,
         "policy_coef": 0.1,
         "entropy_coef": 0.001,
@@ -34,7 +34,7 @@ params = {
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
-        "env_name": "MyCartPole-v0",
+        "env_name": "CartPoleContinuous-v1",
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 0.01},
 }
