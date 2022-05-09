@@ -6,8 +6,8 @@ from svpg.algos.algo import Algo
 
 
 class A2C(Algo):
-    def __init__(self, cfg):
-        super().__init__(cfg)
+    def __init__(self, cfg, solo=False):
+        super().__init__(cfg, solo)
         # self.gae = cfg.algorithm.gae
         self.discount_factor = cfg.algorithm.discount_factor
         self.T = self.n_steps * self.n_envs * cfg.algorithm.max_epochs
@@ -24,7 +24,7 @@ class A2C(Algo):
         # td = gae(critic, reward, must_bootstrap, cfg.algorithm.discount_factor, cfg.algorithm.gae)
 
         # Compute critic loss
-        td_error = td**2
+        td_error = td ** 2
         critic_loss = td_error.mean()
         return critic_loss, td
 
@@ -35,26 +35,18 @@ class A2C(Algo):
     def compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
 
-        for pid in range(self.n_particles):
+        for train_workspace in self.train_workspaces:
             # Extracting the relevant tensors from the workspace
-            transition_workspace = self.train_workspaces[pid].get_transitions()
+            transition_workspace = train_workspace.get_transitions()
 
-            critic, done, action_logp, reward, truncated = transition_workspace[
+            critic, done, action_logp, entrop, reward, truncated = transition_workspace[
                 "critic",
                 "env/done",
                 "action_logprobs",
+                "entropy",
                 "env/reward",
                 "env/truncated",
             ]
-            entropy = self.train_workspaces[pid]["entropy"]
-
-            # Move to device
-            critic = critic.to(self.device)
-            done = done.to(self.device)
-            action_logp = action_logp.to(self.device)
-            reward = reward.to(self.device)
-            entropy = entropy.to(self.device)
-            truncated = truncated.to(self.device)
 
             must_bootstrap = th.logical_or(~done[1], truncated[1])
 
@@ -65,7 +57,7 @@ class A2C(Algo):
             policy_loss = self.compute_policy_loss(action_logp, td)
             total_policy_loss = total_policy_loss - policy_loss
 
-            entropy_loss = th.mean(entropy)
+            entropy_loss = th.mean(entrop)
             total_entropy_loss = total_entropy_loss - entropy_loss
 
         if verbose:

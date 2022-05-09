@@ -1,3 +1,4 @@
+from pickletools import optimize
 import numpy as np
 
 import torch
@@ -17,10 +18,10 @@ from collections import defaultdict
 
 
 class Algo:
-    def __init__(self, cfg):
+    def __init__(self, cfg, solo=False):
         self.cfg = cfg
 
-        self.n_particles = cfg.algorithm.n_particles
+        self.n_particles = 1 if solo else cfg.algorithm.n_particles
         self.clipped = cfg.algorithm.clipped
         self.n_steps = cfg.algorithm.n_steps
         self.n_evals = cfg.algorithm.n_evals
@@ -35,7 +36,8 @@ class Algo:
         self.rewards = defaultdict(lambda: [])
         self.eval_timesteps = []
 
-        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        # self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        self.device = torch.device("cpu")
 
         self.logger = Logger(cfg)
 
@@ -48,22 +50,19 @@ class Algo:
         self.tcritic_agents = []
 
         self.train_workspaces = []
-        self.optimizers = []
+
+        self.action_optimizers = []
+        self.critic_optimizers = []
 
         for _ in range(self.n_particles):
             train_env_agent = AutoResetEnvAgent(cfg, n_envs=self.n_envs)
             eval_env_agent = NoAutoResetEnvAgent(cfg, n_envs=self.n_evals)
 
             observation_size, n_actions, is_continuous = get_env_infos(train_env_agent)
+            hidden_size = cfg.algorithm.architecture.hidden_size
 
-            if is_continuous:
-                action_agent = ContinuousActionAgent(
-                    observation_size, cfg.algorithm.architecture.hidden_size, n_actions
-                )
-            else:
-                action_agent = ActionAgent(
-                    observation_size, cfg.algorithm.architecture.hidden_size, n_actions
-                )
+            actionAgentClass = ContinuousActionAgent if is_continuous else ActionAgent
+            action_agent = actionAgentClass(observation_size, hidden_size, n_actions)
 
             self.action_agents.append(action_agent)
 
@@ -83,10 +82,15 @@ class Algo:
 
             self.train_workspaces.append(Workspace())
 
+            # Optimizers
+            optimizer = get_class(cfg.optimizer)
             optimizer_args = get_arguments(cfg.optimizer)
-            parameters = nn.Sequential(action_agent, critic_agent).parameters()
-            self.optimizers.append(
-                get_class(cfg.optimizer)(parameters, **optimizer_args)
+
+            self.action_optimizers.append(
+                optimizer(action_agent.parameters(), **optimizer_args)
+            )
+            self.critic_optimizers.append(
+                optimizer(critic_agent.parameters(), **optimizer_args)
             )
 
     def execute_train_agents(self, epoch):
@@ -140,11 +144,10 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def run(self, save_dir, max_grad_norm=0.5, show_loss=False, show_grad=False):
-        self.to_device()
-
+    def run(self, save_dir, max_gradn=0.5, show_loss=False, show_grad=False):
+        action_loss = 0
+        tmp_epoch = 0
         steps = 0
-        tmp_steps = 0
 
         for epoch in range(self.max_epochs):
             # Run all particles
@@ -158,35 +161,45 @@ class Algo:
                 epoch, verbose=show_loss
             )
 
-            loss = (
-                +self.policy_coef * policy_loss / self.n_particles
-                + self.critic_coef * critic_loss / self.n_particles
+            critic_loss = self.critic_coef * critic_loss / self.n_particles
+            critic_loss.backward()
+
+            if self.clipped:
+                for critic_agent in self.critic_agents:
+                    clip_grad_norm_(critic_agent.parameters(), max_gradn)
+
+            # Critic gradient descent
+            for critic_optimizer in self.critic_optimizers:
+                critic_optimizer.step()
+                critic_optimizer.zero_grad()
+
+            action_loss = action_loss + (
+                self.policy_coef * policy_loss / self.n_particles
                 + self.entropy_coef * entropy_loss / self.n_particles
             )
 
-            if self.clipped:
-                for pid in range(self.n_particles):
-                    clip_grad_norm_(self.action_agents[pid].parameters(), max_grad_norm)
-                    clip_grad_norm_(self.critic_agents[pid].parameters(), max_grad_norm)
-
-            # Log gradient norms
-            if show_grad:
-                self.compute_gradient_norm(epoch)
-
-            # Gradient descent
-            for pid in range(self.n_particles):
-                self.optimizers[pid].zero_grad()
-            loss.backward()
-            for pid in range(self.n_particles):
-                self.optimizers[pid].step()
-
             # Evaluation
-            if steps - tmp_steps > self.eval_interval:
-                tmp_steps = steps
+            if epoch - tmp_epoch > self.eval_interval:
+                tmp_epoch = epoch
                 self.eval_timesteps.append(steps)
 
+                action_loss.backward()
+                action_loss = 0
+
+                if self.clipped:
+                    for action_agent in self.action_agents:
+                        clip_grad_norm_(action_agent.parameters(), max_gradn)
+
+                # Log gradient norms
+                if show_grad:
+                    self.compute_gradient_norm(epoch)
+
+                for action_optimizer in self.action_optimizers:
+                    action_optimizer.step()
+                    action_optimizer.zero_grad()
+
                 for pid in range(self.n_particles):
-                    eval_workspace = Workspace().to(self.device)
+                    eval_workspace = Workspace()
                     self.eval_agents[pid](
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
                     )

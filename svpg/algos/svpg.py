@@ -75,13 +75,13 @@ class SVPG:
             mod = t % (self.algo.T / self.C)
             return (mod / (self.algo.T / self.C)) ** self.p
 
-    def run(
-        self, save_dir, gamma=1, max_grad_norm=0.5, show_loss=False, show_grad=False
-    ):
-        self.algo.to_device()
-
+    def run(self, save_dir, gamma=1, max_gradn=0.5, show_loss=False, show_grad=False):
+        policy_loss = 0
+        entropy_loss = 0
+        tmp_epoch = 0
         steps = 0
-        tmp_steps = 0
+
+        n_particles = self.algo.n_particles
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
@@ -95,49 +95,60 @@ class SVPG:
                 epoch, show_loss
             )
 
-            if self.is_annealed:
-                t = np.max(steps)
-                gamma = self.annealed(t)
-
-            # Compute gradients
-            params = self.get_policy_parameters()
-            params = params.to(self.algo.device)
-            kernel = RBF()(params, params.detach())
-
-            self.add_gradients(policy_loss * gamma / self.algo.n_particles, kernel)
-
-            loss = (
-                +self.algo.entropy_coef * entropy_loss / self.algo.n_particles
-                + self.algo.critic_coef * critic_loss / self.algo.n_particles
-                + kernel.sum() / self.algo.n_particles
-            )
+            critic_loss = self.algo.critic_coef * critic_loss / n_particles
+            critic_loss.backward()
 
             if self.algo.clipped:
-                for pid in range(self.algo.n_particles):
-                    clip_grad_norm_(
-                        self.algo.action_agents[pid].parameters(), max_grad_norm
-                    )
-                    clip_grad_norm_(
-                        self.algo.critic_agents[pid].parameters(), max_grad_norm
-                    )
+                for critic_agent in self.algo.critic_agents:
+                    clip_grad_norm_(critic_agent.parameters(), max_gradn)
 
-            # Log gradient norms
-            if show_grad:
-                self.algo.compute_gradient_norm(epoch)
+            # Critic gradient descent
+            for critic_optimizer in self.algo.critic_optimizers:
+                critic_optimizer.step()
+                critic_optimizer.zero_grad()
 
-            # Gradient descent
-            loss.backward()
-            for optimizer in self.algo.optimizers:
-                optimizer.step()
-                optimizer.zero_grad()
+            policy_loss = (
+                policy_loss + self.algo.policy_coef * policy_loss / n_particles
+            )
+            entropy_loss = (
+                entropy_loss + self.algo.entropy_coef * entropy_loss / n_particles
+            )
 
             # Evaluation
-            if steps - tmp_steps > self.algo.eval_interval:
-                tmp_steps = steps
+            if epoch - tmp_epoch > self.algo.eval_interval:
+                tmp_epoch = epoch
                 self.algo.eval_timesteps.append(steps)
 
+                if self.is_annealed:
+                    t = np.max(steps)
+                    gamma = self.annealed(t)
+
+                params = self.get_policy_parameters()
+                params = params.to(self.algo.device)
+                kernel = RBF()(params, params.detach())
+
+                self.add_gradients(policy_loss * gamma / self.algo.n_particles, kernel)
+
+                loss = entropy_loss + kernel.sum() / n_particles
+                loss.backward()
+                policy_loss = 0
+                entropy_loss = 0
+
+                if self.algo.clipped:
+                    for action_agent in self.algo.action_agents:
+                        clip_grad_norm_(action_agent.parameters(), max_gradn)
+
+                # Gradient descent
+                for action_optimizer in self.algo.action_optimizers:
+                    action_optimizer.step()
+                    action_optimizer.zero_grad()
+
+                # Log gradient norms
+                if show_grad:
+                    self.algo.compute_gradient_norm(epoch)
+
                 for pid in range(self.algo.n_particles):
-                    eval_workspace = Workspace().to(self.algo.device)
+                    eval_workspace = Workspace()
                     self.algo.eval_agents[pid](
                         eval_workspace, t=0, stop_variable="env/done", stochastic=False
                     )
