@@ -23,7 +23,7 @@ class A2C(Algo):
         ), f"Missing one element in the critic list: {target.shape} vs {critic.shape}"
 
         # Compute critic loss
-        td_error = td ** 2
+        td_error = td**2
         critic_loss = td_error.mean()
         return critic_loss, td
 
