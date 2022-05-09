@@ -1,8 +1,8 @@
-env_name: MyCartPole-v0
+env_name: CartPoleContinuous-v1
 max_episode_steps: 500
 n_envs: 8
 
-max_epochs: 20000
+max_epochs: 5000
 n_steps: 16
 eval_interval: 100
 
