@@ -26,7 +26,6 @@ def main(cfg):
 
     try:
         mp.set_start_method("spawn")
-        torch.manual_seed(cfg.algorithm.env_seed)
     except:
         pass
 
