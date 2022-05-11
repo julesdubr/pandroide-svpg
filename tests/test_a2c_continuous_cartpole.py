@@ -17,8 +17,8 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 16,
-        "seed": 4,
+        "n_particles": 1,
+        "seed": 432,
         "n_envs": 8,
         "n_steps": 16,
         "eval_interval": 100,
@@ -35,8 +35,9 @@ params = {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "CartPoleContinuous-v1",
     },
-    "optimizer": {"classname": "torch.optim.Adam", "lr": 0.01},
+    "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }
+
 if __name__ == "__main__":
     config = OmegaConf.create(params)
 

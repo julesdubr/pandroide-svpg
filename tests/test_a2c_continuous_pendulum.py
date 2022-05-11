@@ -35,8 +35,9 @@ params = {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "Pendulum-v1",
     },
-    "optimizer": {"classname": "torch.optim.Adam", "lr": 0.01},
+    "optimizer": {"classname": "torch.optim.Adam", "lr": 0.0005},
 }
+
 if __name__ == "__main__":
     config = OmegaConf.create(params)
 
