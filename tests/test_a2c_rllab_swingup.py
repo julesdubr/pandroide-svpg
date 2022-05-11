@@ -9,7 +9,6 @@ from svpg.algos import A2C, SVPG
 
 dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
 params = {
-    "save_best": True,
     "logger": {
         "classname": "salina.logger.TFLogger",
         "log_dir": str(Path(__file__).parent) + "/tmp/" + dtime,

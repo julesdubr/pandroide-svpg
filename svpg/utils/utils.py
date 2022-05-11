@@ -1,13 +1,11 @@
-from re import A
 import numpy as np
 import torch as th
-
 
 import os
 from pathlib import Path
 
 
-def save_algo_data(algo, directory, algo_version="independant"):
+def save_algo(algo, directory, algo_version="independent"):
     directory = str(directory) + f"{algo.__class__.__name__}-{algo_version}"
 
     if not os.path.exists(directory):
@@ -35,7 +33,7 @@ def save_algo_data(algo, directory, algo_version="independant"):
         th.save(c_agent, str(critic_path) + f"/critic_agent{i}.pt")
 
 
-def load_algo_data(directory, device="cpu"):
+def load_algo(directory, device="cpu"):
     directory = str(directory)
 
     with open(directory + "/rewards.npy", "rb") as f:

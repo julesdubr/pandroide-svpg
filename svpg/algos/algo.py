@@ -11,7 +11,7 @@ from salina.workspace import Workspace
 
 from svpg.agents import ActionAgent, CriticAgent, ContinuousActionAgent
 from svpg.agents.env import AutoResetEnvAgent, NoAutoResetEnvAgent, get_env_infos
-from svpg.utils.utils import save_algo_data
+from svpg.utils.utils import save_algo
 from svpg.logger import Logger
 
 from collections import defaultdict
@@ -208,4 +208,4 @@ class Algo:
                     self.logger.add_log(f"reward_{pid}", mean, steps)
                     self.rewards[pid].append(mean)
 
-        save_algo_data(self, save_dir)
+        save_algo(self, save_dir)

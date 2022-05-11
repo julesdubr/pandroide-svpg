@@ -9,7 +9,6 @@ from svpg.algos import A2C, SVPG
 
 dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
 params = {
-    "save_best": True,
     "logger": {
         "classname": "salina.logger.TFLogger",
         "log_dir": str(Path(__file__).parent) + "/tmp/" + dtime,
@@ -19,14 +18,14 @@ params = {
     },
     "algorithm": {
         "n_particles": 16,
-        "seed": 5,
+        "seed": 432,
         "n_envs": 8,
         "n_steps": 16,
-        "eval_interval": 20,
+        "eval_interval": 100,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 4000,
-        "discount_factor": 0.95,
+        "max_epochs": 20000,
+        "discount_factor": 0.99,
         "policy_coef": 0.1,
         "entropy_coef": 0.001,
         "critic_coef": 1.0,
@@ -34,11 +33,10 @@ params = {
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
-        "env_name": "CartPoleContinuous-v1",
+        "env_name": "Pendulum-v1",
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 0.01},
 }
-
 if __name__ == "__main__":
     config = OmegaConf.create(params)
 
@@ -49,7 +47,7 @@ if __name__ == "__main__":
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    torch.manual_seed(config.algorithm.seed)
+    # torch.manual_seed(config.algorithm.seed)
 
     # --------- A2C INDEPENDENT --------- #
     a2c = A2C(config)

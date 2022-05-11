@@ -6,7 +6,7 @@ from torch.nn.utils import parameters_to_vector, clip_grad_norm_
 
 from salina.workspace import Workspace
 
-from svpg.utils.utils import save_algo_data
+from svpg.utils.utils import save_algo
 
 
 class RBF(nn.Module):
@@ -158,4 +158,4 @@ class SVPG:
                     self.algo.rewards[pid].append(mean)
 
         ver = "SVPG_annealed" if self.is_annealed else "SVPG"
-        save_algo_data(self.algo, save_dir, algo_version=ver)
+        save_algo(self.algo, save_dir, algo_version=ver)
