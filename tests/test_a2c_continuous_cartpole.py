@@ -17,7 +17,7 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 16,
+        "n_particles": 1,
         "seed": 4,
         "n_envs": 8,
         "n_steps": 16,

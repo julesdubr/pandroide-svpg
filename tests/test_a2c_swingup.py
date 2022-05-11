@@ -9,32 +9,31 @@ from svpg.algos import A2C, SVPG
 
 dtime = datetime.datetime.now().strftime("/%y-%m-%d/%H-%M-%S/")
 params = {
-    "save_best": True,
     "logger": {
         "classname": "salina.logger.TFLogger",
         "log_dir": str(Path(__file__).parent) + "/tmp/" + dtime,
-        "verbose": True,
+        "verbose": False,
         "cache_size": 10000,
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 16,
-        "seed": 5,
-        "n_envs": 1,
-        "n_steps": 8,
-        "eval_interval": 1000,
+        "n_particles": 1,
+        "seed": 432,
+        "n_envs": 8,
+        "n_steps": 256,
+        "eval_interval": 5,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 100,
+        "max_epochs": 1000,
         "discount_factor": 0.95,
-        "policy_coef": 0.1,
-        "critic_coef": 1.0,
-        "entropy_coef": 1e-3,
+        "policy_coef": 1,
+        "critic_coef": 0.4,
+        "entropy_coef": 2.55e-7,
         "architecture": {"hidden_size": [100, 50, 25]},
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
-        "env_name": "MyCartPole-v0",
+        "env_name": "MyCartPoleSwingUp-v0",
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }
