@@ -75,7 +75,7 @@ class SVPG:
             mod = t % (self.algo.T / self.C)
             return (mod / (self.algo.T / self.C)) ** self.p
 
-    def run(self, save_dir, gamma=1, max_gradn=0.5, show_loss=False, show_grad=False):
+    def run(self, save_dir, gamma=0.1, max_gradn=0.5, show_loss=False, show_grad=False):
         policy_loss = 0
         entropy_loss = 0
         tmp_epoch = 0
