@@ -24,16 +24,16 @@ params = {
         "eval_interval": 5,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 1000,
+        "max_epochs": 2000,
         "discount_factor": 0.99,
         "policy_coef": 1,
-        "critic_coef": 0.4,
-        "entropy_coef": 2.55e-7,
+        "critic_coef": 1,
+        "entropy_coef": 1e-3,
         "architecture": {"hidden_size": [100, 50, 25]},
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
-        "env_name": "MyCartPoleSwingUp-v0",
+        "env_name": "CartPoleSwingUp-v0",
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }
@@ -55,9 +55,9 @@ if __name__ == "__main__":
     a2c.run(directory)
 
     # --------- A2C-SVPG --------- #
-    svpg = SVPG(A2C(config), is_annealed=False)
-    svpg.run(directory)
+    # svpg = SVPG(A2C(config), is_annealed=False)
+    # svpg.run(directory)
 
-    # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # # --------- A2C-SVPG_annealed --------- #
+    # svpg_annealed = SVPG(A2C(config), is_annealed=True)
+    # svpg_annealed.run(directory)

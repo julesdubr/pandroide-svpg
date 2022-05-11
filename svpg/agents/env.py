@@ -2,11 +2,12 @@ from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
+import my_gym
+import gym_cartpole_swingup
 
 from rllab.spaces import Discrete, Box
 
 from svpg.utils import rllab_env_wrapper
-import my_gym
 
 
 def make_gym_env(env_name):
