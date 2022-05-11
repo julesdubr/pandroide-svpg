@@ -26,9 +26,9 @@ params = {
         "clipped": True,
         "max_epochs": 000,
         "discount_factor": 0.95,
-        "policy_coef": 1.0,
-        "critic_coef": 1.0,
-        "entropy_coef": 1e-3,
+        "policy_coef": 1,
+        "critic_coef": 0.4,
+        "entropy_coef": 2.55e-7,
         "architecture": {"hidden_size": [100, 50, 25]},
     },
     "gym_env": {
