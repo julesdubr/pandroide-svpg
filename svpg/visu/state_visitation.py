@@ -11,44 +11,55 @@ from svpg.agents.env import NoAutoResetEnvAgent
 import os
 
 
-def plot_state_visitation(
-    cfg,
-    agents,
-    rewards,
-    algo_name,
-    device="cpu",
-    directory="./figures/",
-    nb_best=4,
-    cmap="Reds",
-    bw_adjust=0.75,
-    plot=True,
-    save=True,
-    suptitle=True,
-):
-    rewards = rewards.mean(axis=1)
+def get_embedded_spaces(cfg, agents, rewards, nb_best=4):
+    rewards = rewards.sum(axis=1)
     bests_indices = rewards.argsort()[-nb_best:][::-1]
+
+    best_rewards = rewards[bests_indices]
 
     tsne = TSNE(init="random", random_state=0, learning_rate="auto", n_iter=300)
 
-    fig = plt.figure(figsize=(4 * nb_best, nb_best), constrained_layout=True)
-    axes = fig.subplots(nrows=1, ncols=nb_best, sharey=True)
+    outputs = []
 
-    for i, (pid, ax) in enumerate(zip(bests_indices, axes)):
-        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals).to(device)
+    for pid in bests_indices:
+        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals)
 
         eval_agent = TemporalAgent(Agents(env_agent, agents[pid]))
 
-        eval_workspace = Workspace().to(device)
+        eval_workspace = Workspace()
         eval_agent(eval_workspace, t=0, stop_variable="env/done", stochastic=False)
 
-        obs = eval_workspace["env/env_obs"].cpu()
+        obs = eval_workspace["env/env_obs"]
         obs = obs.reshape(-1, obs.shape[2])
 
-        Y = tsne.fit_transform(obs)
+        outputs.append(tsne.fit_transform(obs))
+
+    return outputs, best_rewards
+
+
+def plot_state_visitation(
+    directory,
+    embedded_spaces,
+    rewards,
+    algo_name,
+    suptitle=False,
+    cmap="Blues",
+    bw_adjust=0.75,
+    save=False,
+    plot=True,
+):
+
+    n = rewards.shape[0]
+
+    fig = plt.figure(figsize=(4 * n, n), constrained_layout=True)
+    axes = fig.subplots(nrows=1, ncols=n, sharey=True)
+
+    for i, ax in enumerate(axes):
+        Y = embedded_spaces[i]
 
         sns.kdeplot(ax=ax, x=Y[:, 0], y=Y[:, 1], cmap=cmap, bw_adjust=bw_adjust)
         ax.axis("off")
-        ax.set_title(f"#{i+1} ({round(rewards[pid])})")
+        ax.set_title(f"#{i+1} ({round(rewards[i])})")
 
     if suptitle:
         fig.suptitle(f"{algo_name} state visitation density", fontsize=14)
