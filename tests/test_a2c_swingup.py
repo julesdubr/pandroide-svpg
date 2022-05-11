@@ -25,7 +25,7 @@ params = {
         "n_evals": 1,
         "clipped": True,
         "max_epochs": 000,
-        "discount_factor": 0.95,
+        "discount_factor": 0.99,
         "policy_coef": 1,
         "critic_coef": 0.4,
         "entropy_coef": 2.55e-7,
