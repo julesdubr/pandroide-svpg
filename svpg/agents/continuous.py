@@ -19,7 +19,7 @@ class CActionAgent(Agent):
     def forward(self, t, stochastic, replay=False, **kwargs):
         observation = self.get(("env/env_obs", t))
         mean = self.model(observation)
-        dist = Normal(mean, self.soft_plus(self.std_param))
+        dist = Normal(mean, torch.exp(self.soft_plus(self.std_param)))
         entropy = dist.entropy().squeeze(-1)
 
         if stochastic:
@@ -31,7 +31,7 @@ class CActionAgent(Agent):
             return action
 
         action_logprobs = dist.log_prob(action).sum(axis=-1)
-        
+
         if not replay:
             self.set(("action", t), action)
 

@@ -77,10 +77,23 @@ class A2C(Algo):
 
         for pid in range(self.n_particles):
             # Extracting the relevant tensors from the workspace
+            # print("In normal workspace:")
+            # critic, done, action_logprobs, reward, entropy, truncated = self.workspaces[pid][
+            #     "critic", "env/done", "action_logprobs", "env/reward", "entropy", "env/truncated"
+            # ]
+            # # print(critic, done, action_logprobs, reward, entropy, truncated)
+            # print(critic.size(), done.size(), action_logprobs.size(), entropy.size(), truncated.size())
+            # print(reward.size())
+            # print(reward)
             transition_workspace = self.workspaces[pid].get_transitions()
             critic, done, action_logprobs, reward, entropy, truncated = transition_workspace[
                 "critic", "env/done", "action_logprobs", "env/reward", "entropy", "env/truncated"
             ]
+            # print("Transition workspace")
+            # # print(critic, done, action_logprobs, reward, entropy, truncated)
+            # print(critic.size(), done.size(), action_logprobs.size(), entropy.size(), truncated.size())
+            # print(reward.size())
+            # print(reward)
 
             # Move to gpu
             critic = critic.to(self.device)
