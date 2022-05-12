@@ -205,7 +205,10 @@ class Algo:
                     )
                     rewards = eval_workspace["env/cumulated_reward"][-1]
                     mean = rewards.mean()
+                    # print("eval rewards:", rewards)
+                    # print("eval mean   :", mean)
                     self.logger.add_log(f"reward_{pid}", mean, steps)
                     self.rewards[pid].append(mean)
 
-        save_algo(self, save_dir)
+        if self.cfg.save_run:
+            save_algo(self, save_dir)

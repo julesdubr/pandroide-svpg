@@ -2,12 +2,11 @@ from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
-import my_gym
 import gym_cartpole_swingup
 
-from rllab.spaces import Discrete, Box
-
 from svpg.utils import rllab_env_wrapper
+
+from rllab.spaces import Discrete, Box
 
 
 def make_gym_env(env_name):
@@ -19,9 +18,9 @@ def make_gym_env(env_name):
 
 
 def get_env_infos(env):
-    action_dim = 0
-    state_dim = 0
+    action_dim, state_dim = 0, 0
     continuous_action = False
+
     if env.is_continuous_action() or isinstance(env.action_space, Box):
         action_dim = env.action_space.shape[0]
         continuous_action = True

@@ -29,8 +29,8 @@ def save_algo(algo, directory, algo_version="independent"):
         os.makedirs(critic_path)
 
     for i, (a_agent, c_agent) in enumerate(zip(algo.action_agents, algo.critic_agents)):
-        th.save(a_agent, str(action_path) + f"/action_agent{i}.pt")
-        th.save(c_agent, str(critic_path) + f"/critic_agent{i}.pt")
+        a_agent.save_model(f"{action_path}/action_agent{i}.pt")
+        c_agent.save_model(f"{critic_path}/critic_agent{i}.pt")
 
 
 def load_algo(directory, device="cpu"):
@@ -45,9 +45,9 @@ def load_algo(directory, device="cpu"):
     critic_agents, critic_path = [], directory + "/critic_agents"
 
     for i in range(rewards.shape[0]):
-        action_agent = th.load(action_path + f"/action_agent{i}.pt").to(device)
+        action_agent = th.load(f"{action_path}/action_agent{i}.pt").to(device)
         action_agents.append(action_agent)
-        critic_agent = th.load(critic_path + f"/critic_agent{i}.pt").to(device)
+        critic_agent = th.load(f"{critic_path}/critic_agent{i}.pt").to(device)
         critic_agents.append(critic_agent)
 
     return action_agents, critic_agents, rewards, eval_timesteps

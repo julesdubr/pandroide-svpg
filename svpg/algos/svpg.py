@@ -120,8 +120,7 @@ class SVPG:
                 self.algo.eval_timesteps.append(steps)
 
                 if self.is_annealed:
-                    t = np.max(steps)
-                    gamma = self.annealed(t)
+                    gamma = self.annealed(steps)
 
                 params = self.get_policy_parameters()
                 params = params.to(self.algo.device)
