@@ -2,9 +2,7 @@ from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
-import gym_cartpole_swingup
-
-from svpg.utils import rllab_env_wrapper
+from svpg.utils import rllab_gym
 
 from rllab.spaces import Discrete, Box
 

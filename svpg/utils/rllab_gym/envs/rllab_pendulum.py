@@ -11,7 +11,7 @@ import numpy as np
 from .get_model_path import model_path
 
 
-class MyPendulum(rllab_pendulum.DoublePendulumEnv, gym.Env):
+class Pendulum(rllab_pendulum.DoublePendulumEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         kwargs["frame_skip"] = kwargs.get("frame_skip", 2)

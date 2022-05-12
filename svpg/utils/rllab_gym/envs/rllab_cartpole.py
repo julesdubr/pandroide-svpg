@@ -9,7 +9,7 @@ import gym
 from .get_model_path import model_path
 
 
-class MyCartPole(rllab_cartpole.CartpoleEnv, gym.Env):
+class CartPole(rllab_cartpole.CartpoleEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         self.max_pole_angle = 0.2

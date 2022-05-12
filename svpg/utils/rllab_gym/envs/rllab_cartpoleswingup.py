@@ -9,7 +9,7 @@ import gym
 from .get_model_path import model_path
 
 
-class MyCartPoleSwingUp(rllab_cartpole_swingup.CartpoleSwingupEnv, gym.Env):
+class CartPoleSwingUp(rllab_cartpole_swingup.CartpoleSwingupEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         super(rllab_cartpole_swingup.CartpoleSwingupEnv, self).__init__(

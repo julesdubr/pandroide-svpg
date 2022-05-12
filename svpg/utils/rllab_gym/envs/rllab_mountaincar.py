@@ -9,7 +9,7 @@ import gym
 from .get_model_path import model_path
 
 
-class MyMountainCar(rllab_mountaincar.MountainCarEnv, gym.Env):
+class MountainCar(rllab_mountaincar.MountainCarEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
     @autoargs.arg(
         "height_bonus_coeff",

@@ -18,14 +18,14 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 4,
+        "n_particles": 1,
         "seed": 432,
         "n_envs": 8,
-        "n_steps": 16,
-        "eval_interval": 80,
+        "n_steps": 8,
+        "eval_interval": 160,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 16000,
+        "max_epochs": 12800,
         "discount_factor": 0.99,
         "gae": 1,
         "policy_coef": 1,
@@ -35,7 +35,7 @@ params = {
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
-        "env_name": "CartPoleSwingUp-v0",
+        "env_name": "RllCartPoleSwingUp-v0",
     },
     "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
 }
