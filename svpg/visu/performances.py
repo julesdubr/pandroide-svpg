@@ -28,15 +28,17 @@ def plot_algos_performances(
     algo_names = [path.name for path in Path(directory).iterdir() if path.is_dir()]
 
     for algo_name in algo_names:
-        _, _, rewards, timesteps = load_algo(directory + algo_name)
+        _, _, rewards, t = load_algo(directory + algo_name)
 
         if mode == "best":
             best = rewards.sum(axis=1).argmax()
             rewards = rewards[best]
         else:
+            std = rewards.std(axis=0)
             rewards = rewards.mean(axis=0)
+            ax.fill_between(t, rewards + std, rewards - std, alpha=0.5)
 
-        ax.plot(timesteps, rewards, linewidth=2, label=f"{algo_name}")
+        ax.plot(t, rewards, linewidth=2, label=f"{algo_name}")
 
     ax.xaxis.set_major_formatter(formatter)
     plt.legend()
