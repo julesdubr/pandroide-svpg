@@ -28,7 +28,7 @@ class ActionAgent(Agent):
         else:
             action = probs.argmax(1)
 
-        action_logp = probs.gather(1, action[0].view(-1, 1)).squeeze().log()
+        action_logp = probs[0].gather(1, action[0].view(-1, 1)).squeeze().log()
         self.set(("action", t), action)
         self.set(("action_logprobs", t), action_logp)
 
