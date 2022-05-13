@@ -1,4 +1,4 @@
-import torch
+import torch as th
 import torch.nn as nn
 from torch.distributions.normal import Normal
 
@@ -12,20 +12,24 @@ class ContinuousActionAgent(Agent):
         super().__init__()
         layers = [state_dim] + list(hidden_layers) + [action_dim]
         self.model = build_mlp(layers, activation=nn.ReLU())
-        init_variance = torch.randn(action_dim, 1)
-        # print("init_variance:", init_variance)
+        # The deviation is estimated by a vector
+        init_variance = th.randn(action_dim, 1)
         self.std_param = nn.parameter.Parameter(init_variance)
-        self.soft_plus = torch.nn.Softplus()
+        self.soft_plus = nn.Softplus()
 
     def forward(self, t, stochastic, **kwargs):
         obs = self.get(("env/env_obs", t))
         mean = self.model(obs)
-        dist = Normal(mean, self.soft_plus(self.std_param))  # std must be positive
+
+        # std must be positive
+        dist = Normal(mean, th.exp(self.soft_plus(self.std_param)))
         self.set(("entropy", t), dist.entropy())
+
         if stochastic:
             action = dist.sample()  # valid actions are supposed to be in [-1,1] range
         else:
             action = mean  # valid actions are supposed to be in [-1,1] range
+
         logp_pi = dist.log_prob(action).sum(axis=-1)
         self.set(("action", t), action)
         self.set(("action_logprobs", t), logp_pi)

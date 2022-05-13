@@ -1,49 +1,4 @@
 import torch as th
-
-from salina.agent import Agent
-
-
-class ActionAgent(Agent):
-    def __init__(self, model):
-        super().__init__(name="action_agent")
-        # Model
-        self.model = model
-
-    def forward(self, t, stochastic, replay=False, **kwargs):
-        if "observation" in kwargs:
-            observation = kwargs["observation"]
-        else:
-            observation = self.get(("env/env_obs", t))
-        scores = self.model(observation)
-        probs = th.softmax(scores, dim=-1)
-
-        if stochastic:
-            action = th.distributions.Categorical(probs).sample()
-        else:
-            action = probs.argmax(1)
-
-        if t == -1:
-            return action
-
-        entropy = th.distributions.Categorical(probs).entropy()
-        logprobs = probs[th.arange(probs.size()[0]), action].log()
-
-        if not replay:
-            self.set(("action", t), action)
-        self.set(("action_logprobs", t), logprobs)
-        self.set(("entropy", t), entropy)
-
-
-class CriticAgent(Agent):
-    """
-    CriticAgent:
-    - A one hidden layer neural network which takes an observation as input and whose
-      output is the value of this observation.
-    - It thus implements a V(s) function
-    """
-
-
-import torch as th
 import torch.nn as nn
 
 from salina.agent import Agent
@@ -59,30 +14,32 @@ class ActionAgent(Agent):
             [state_dim] + list(hidden_layers) + [n_action], activation=nn.ReLU()
         )
 
-    def forward(self, t, stochastic, replay=False, **kwargs):
-        if "observation" in kwargs:
-            observation = kwargs["observation"]
-        else:
-            observation = self.get(("env/env_obs", t))
-
-        scores = self.model(observation)
+    def forward(self, t, stochastic, **kwargs):
+        obs = self.get(("env/env_obs", t))
+        scores = self.model(obs)
         probs = th.softmax(scores, dim=-1)
+        assert not th.any(th.isnan(probs)), "Nan Here"
+
+        entropy = th.distributions.Categorical(probs).entropy()
+        self.set(("entropy", t), entropy)
 
         if stochastic:
             action = th.distributions.Categorical(probs).sample()
         else:
             action = probs.argmax(1)
 
-        if t == -1:
-            return action
+        action_logp = probs.gather(1, action[0].view(-1, 1)).squeeze().log()
+        self.set(("action", t), action)
+        self.set(("action_logprobs", t), action_logp)
 
-        logprobs = probs[th.arange(probs.size()[0]), action].log()
-        self.set(("action_logprobs", t), logprobs)
-        entropy = th.distributions.Categorical(probs).entropy()
-        self.set(("entropy", t), entropy)
-
-        if not replay:
-            self.set(("action", t), action)
+    def predict_action(self, obs, stochastic):
+        scores = self.model(obs)
+        probs = th.softmax(scores, dim=-1)
+        if stochastic:
+            action = th.distributions.Categorical(probs).sample()
+        else:
+            action = probs.argmax(1)
+        return action
 
 
 class CriticAgent(Agent):
