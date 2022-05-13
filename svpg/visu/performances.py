@@ -24,7 +24,8 @@ def plot_algos_performances(
     _, ax = plt.subplots(figsize=(9, 6))
     formatter = FuncFormatter(format_num)
 
-    env_name = str(Path(directory).parents[1].name)
+    prefix = (Path(directory).parent.name + Path(directory).name).replace("-", "")
+    env_name = Path(directory).parents[1].name
     algo_names = [path.name for path in Path(directory).iterdir() if path.is_dir()]
 
     for algo_name in algo_names:
@@ -48,14 +49,12 @@ def plot_algos_performances(
     save_dir += f"/{env_name}"
 
     clean_env_name = env_name.split("-")[0]
-    figname = f"/{clean_env_name.lower()}_{mode}"
+    figname = f"/{prefix}_{clean_env_name.lower()}_{mode}"
     title = f"{clean_env_name} ({mode}"
     if suffix:
+        figname += f"_{suffix}"
         title += f" {suffix}"
     title += ")"
-
-    if suffix:
-        figname += f"_{suffix}"
 
     final_show(save_fig, True, figname, "timesteps", "rewards", title, save_dir)
 
