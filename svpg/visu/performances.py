@@ -33,10 +33,12 @@ def plot_algos_performances(
         if mode == "best":
             best = rewards.sum(axis=1).argmax()
             rewards = rewards[best]
+        elif mode == "max":
+            rewards = np.max(rewards, axis=0)
         else:
             std = rewards.std(axis=0)
             rewards = rewards.mean(axis=0)
-            ax.fill_between(t, rewards + std, rewards - std, alpha=0.5)
+            ax.fill_between(t, rewards + std, rewards - std, alpha=0.2)
 
         ax.plot(t, rewards, linewidth=2, label=f"{algo_name}")
 

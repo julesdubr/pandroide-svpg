@@ -72,8 +72,9 @@ class SVPG:
             return np.tanh((self.slope * t / self.algo.T) ** self.p)
 
         elif self.mode == 2:
-            mod = t % (self.algo.T / self.C)
-            return (mod / (self.algo.T / self.C)) ** self.p
+            tmp = self.algo.T / self.C
+            mod = t % tmp
+            return (mod / tmp) ** self.p
 
     def run(self, save_dir, gamma=0.1, max_gradn=0.5, show_loss=False, show_grad=False):
         policy_loss = 0

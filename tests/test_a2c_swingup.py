@@ -23,7 +23,7 @@ params = {
         "n_envs": 8,
         "n_steps": 16,
         "eval_interval": 80,
-        "n_evals": 10,
+        "n_evals": 1,
         "clipped": True,
         "max_epochs": 16000,
         "discount_factor": 0.99,
@@ -57,9 +57,9 @@ if __name__ == "__main__":
     a2c.run(directory)
 
     # --------- A2C-SVPG --------- #
-    svpg = SVPG(A2C(config), is_annealed=False)
-    svpg.run(directory)
+    # svpg = SVPG(A2C(config), is_annealed=False)
+    # svpg.run(directory)
 
     # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # svpg_annealed = SVPG(A2C(config), is_annealed=True)
+    # svpg_annealed.run(directory)
