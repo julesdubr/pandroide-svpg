@@ -9,7 +9,7 @@ class A2C(Algo):
         super().__init__(cfg, solo)
         # self.gae = cfg.algorithm.gae
         self.discount_factor = cfg.algorithm.discount_factor
-        self.gae = cfg.algorithm.gae
+        self.gae_coef = cfg.algorithm.gae_coef
         self.T = self.n_steps * self.n_envs * cfg.algorithm.max_epochs
 
     def compute_critic_loss(self, reward, must_bootstrap, critic):
@@ -21,7 +21,7 @@ class A2C(Algo):
         # assert (
         #     target.shape[1] == critic.shape[1]
         # ), f"Missing one element in the critic list: {target.shape} vs {critic.shape}"
-        td = gae(critic, reward, must_bootstrap, self.discount_factor, self.gae)
+        td = gae(critic, reward, must_bootstrap, self.discount_factor, self.gae_coef)
 
         # Compute critic loss
         td_error = td ** 2
