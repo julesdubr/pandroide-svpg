@@ -158,5 +158,6 @@ class SVPG:
                     self.algo.logger.add_log(f"reward_{pid}", mean, steps)
                     self.algo.rewards[pid].append(mean)
 
-        ver = "SVPG_annealed" if self.is_annealed else "SVPG"
-        save_algo(self.algo, save_dir, algo_version=ver)
+        if self.algo.cfg.save_run:
+            version = "SVPG_annealed" if self.is_annealed else "SVPG"
+            save_algo(self.algo, save_dir, algo_version=version)
