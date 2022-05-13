@@ -6,6 +6,7 @@ from torch.nn.utils import parameters_to_vector, clip_grad_norm_
 
 from salina.workspace import Workspace
 
+from svpg.algos.algo import Algo
 from svpg.utils.utils import save_algo
 
 
@@ -44,30 +45,29 @@ class SVPG:
         self.p = p
         self.C = C
 
-    def get_policy_parameters(self):
+    def _get_policy_parameters(self):
         policy_params = [
             parameters_to_vector(action_agent.parameters())
             for action_agent in self.algo.action_agents
         ]
         return torch.stack(policy_params)
 
-    def add_gradients(self, policy_loss, kernel):
+    def _add_gradients(self, policy_loss, kernel):
         policy_loss.backward(retain_graph=True)
 
-        # Get all the couples of particules (i,j) st. i /= j
-        # for i, j in list(permutations(range(self.algo.n_particles), r=2)):
         for i in range(self.algo.n_particles):
+            theta_i = self.algo.action_agents[i].parameters()
+
             for j in range(self.algo.n_particles):
                 if i == j:
                     continue
 
-                theta_i = self.algo.action_agents[i].parameters()
                 theta_j = self.algo.action_agents[j].parameters()
 
                 for (wi, wj) in zip(theta_i, theta_j):
                     wi.grad = wi.grad + wj.grad * kernel[j, i].detach()
 
-    def annealed(self, t):
+    def _annealed(self, t):
         if self.mode == 1:
             return np.tanh((self.slope * t / self.algo.T) ** self.p)
 

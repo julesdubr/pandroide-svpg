@@ -91,7 +91,7 @@ class Algo:
                 optimizer(critic_agent.parameters(), **optimizer_args)
             )
 
-    def execute_train_agents(self, epoch):
+    def _execute_train_agents(self, epoch):
         for pid in range(self.n_particles):
             kwargs = {"t": 0, "stochastic": True, "n_steps": self.n_steps}
             if epoch > 0:
@@ -102,21 +102,14 @@ class Algo:
 
             self.train_agents[pid](self.train_workspaces[pid], **kwargs)
 
-    def execute_tcritic_agents(self):
+    def _execute_tcritic_agents(self):
         if self.critic_coef == 0:
             return
 
         for pid in range(self.n_particles):
             self.tcritic_agents[pid](self.train_workspaces[pid], n_steps=self.n_steps)
 
-    def to_device(self):
-        for pid in range(self.n_particles):
-            self.tcritic_agents[pid].to(self.device)
-            self.train_agents[pid].to(self.device)
-            self.eval_agents[pid].to(self.device)
-            self.train_workspaces[pid].to(self.device)
-
-    def compute_gradient_norm(self, epoch):
+    def _compute_gradient_norm(self, epoch):
         policy_gradnorm, critic_gradnorm = 0, 0
 
         for pid in range(self.n_particles):
@@ -138,7 +131,7 @@ class Algo:
         self.logger.add_log("Policy Gradient norm", policy_gradnorm, epoch)
         self.logger.add_log("Critic Gradient norm", critic_gradnorm, epoch)
 
-    def compute_loss(self, epoch, verbose=True):
+    def _compute_loss(self, epoch, verbose=True):
         # Needs to be defined by the child
         raise NotImplementedError
 
@@ -149,13 +142,13 @@ class Algo:
 
         for epoch in range(self.max_epochs):
             # Run all particles
-            self.execute_train_agents(epoch)
-            self.execute_tcritic_agents()
+            self._execute_train_agents(epoch)
+            self._execute_tcritic_agents()
 
             steps += self.n_steps * self.n_envs
 
             # Compute loss
-            policy_loss, critic_loss, entropy_loss = self.compute_loss(
+            policy_loss, critic_loss, entropy_loss = self._compute_loss(
                 epoch, verbose=show_loss
             )
 
@@ -191,7 +184,7 @@ class Algo:
 
                 # Log gradient norms
                 if show_grad:
-                    self.compute_gradient_norm(epoch)
+                    self._compute_gradient_norm(epoch)
 
                 # Actor gradient descent
                 for action_optimizer in self.action_optimizers:

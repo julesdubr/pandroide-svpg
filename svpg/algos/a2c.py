@@ -12,7 +12,7 @@ class A2C(Algo):
         self.gae_coef = cfg.algorithm.gae_coef
         self.T = self.n_steps * self.n_envs * cfg.algorithm.max_epochs
 
-    def compute_critic_loss(self, reward, must_bootstrap, critic):
+    def _compute_critic_loss(self, reward, must_bootstrap, critic):
         # Compute temporal difference
         # target = reward[:-1] + self.discount_factor * critic[1:].detach() * (
         #     must_bootstrap.float()
@@ -28,11 +28,11 @@ class A2C(Algo):
         critic_loss = td_error.mean()
         return critic_loss, td
 
-    def compute_policy_loss(self, action_logprobs, td):
+    def _compute_policy_loss(self, action_logprobs, td):
         policy_loss = action_logprobs[:-1] * td.detach()
         return policy_loss.mean()
 
-    def compute_loss(self, epoch, verbose=True):
+    def _compute_loss(self, epoch, verbose=True):
         total_critic_loss, total_entropy_loss, total_policy_loss = 0, 0, 0
 
         for train_workspace in self.train_workspaces:
@@ -51,10 +51,10 @@ class A2C(Algo):
             must_bootstrap = th.logical_or(~done[1], truncated[1])
 
             # Compute loss
-            critic_loss, td = self.compute_critic_loss(reward, must_bootstrap, critic)
+            critic_loss, td = self._compute_critic_loss(reward, must_bootstrap, critic)
             total_critic_loss = total_critic_loss + critic_loss
 
-            policy_loss = self.compute_policy_loss(action_logp, td)
+            policy_loss = self._compute_policy_loss(action_logp, td)
             total_policy_loss = total_policy_loss - policy_loss
 
             entropy_loss = th.mean(entrop)
