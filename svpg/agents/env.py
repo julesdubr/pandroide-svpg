@@ -61,13 +61,15 @@ class RewardWrapper(gym.RewardWrapper):
         return (reward - self.mean) / (np.sqrt(self.var) + self.epsilon)
 
 
-def make_gym_env(env_name):
-    """
-    Create the environment using gym:
-    - Using hydra to take arguments from a configuration file
-    """
+def make_gym_env(env_name, wrap_action=True, wrap_reward=True, wrap_obs=True):
     env = gym.make(env_name)
-    return ObservationWrapper(RewardWrapper(ActionWrapper(env)))
+    if wrap_action:
+        env = ActionWrapper(env)
+    if wrap_reward:
+        env = RewardWrapper(env)
+    if wrap_obs:
+        env = ObservationWrapper(env)
+    return env
 
 
 def get_env_infos(env):
@@ -91,8 +93,9 @@ def get_env_infos(env):
 class AutoResetEnvAgent(AutoResetGymAgent):
     # Create the environment agent
     # This agent implements N gym environments with auto-reset
-    def __init__(self, cfg, n_envs):
-        super().__init__(get_class(cfg.gym_env), get_arguments(cfg.gym_env), n_envs)
+    def __init__(self, cfg, n_envs, **kwargs):
+        args = get_arguments(cfg.gym_env) | kwargs
+        super().__init__(get_class(cfg.gym_env), args, n_envs)
         env = instantiate_class(cfg.gym_env)
         env.seed(cfg.algorithm.seed)
         self.observation_space = env.observation_space
@@ -103,8 +106,9 @@ class AutoResetEnvAgent(AutoResetGymAgent):
 class NoAutoResetEnvAgent(NoAutoResetGymAgent):
     # Create the environment agent
     # This agent implements N gym environments without auto-reset
-    def __init__(self, cfg, n_envs):
-        super().__init__(get_class(cfg.gym_env), get_arguments(cfg.gym_env), n_envs)
+    def __init__(self, cfg, n_envs, **kwargs):
+        args = get_arguments(cfg.gym_env) | kwargs
+        super().__init__(get_class(cfg.gym_env), args, n_envs)
         env = instantiate_class(cfg.gym_env)
         env.seed(cfg.algorithm.seed)
         self.observation_space = env.observation_space
