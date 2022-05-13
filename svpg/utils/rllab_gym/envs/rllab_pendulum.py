@@ -22,7 +22,7 @@ class Pendulum(rllab_pendulum.DoublePendulumEnv, gym.Env):
         kwargs["template_args"] = kwargs.get("template_args", {})
         kwargs["template_args"]["link_len"] = self.link_len
         super(rllab_pendulum.DoublePendulumEnv, self).__init__(
-            model_path("double_pendulum.xml.mako"), *args, **kwargs
+            model_path("double_pendulum.mako"), *args, **kwargs
         )
         self.link1 = find_body(self.world, "link1")
         self.link2 = find_body(self.world, "link2")

@@ -19,7 +19,7 @@ class MountainCar(rllab_mountaincar.MountainCarEnv, gym.Env):
     @autoargs.arg("goal_cart_pos", type=float, help="Goal horizontal position")
     def __init__(self, height_bonus=1.0, goal_cart_pos=0.6, *args, **kwargs):
         super(rllab_mountaincar.MountainCarEnv, self).__init__(
-            model_path("mountain_car.xml.mako"), *args, **kwargs
+            model_path("mountain_car.mako"), *args, **kwargs
         )
         self.max_cart_pos = 2
         self.goal_cart_pos = goal_cart_pos

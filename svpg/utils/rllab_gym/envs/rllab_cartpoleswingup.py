@@ -13,7 +13,7 @@ class CartPoleSwingUp(rllab_cartpole_swingup.CartpoleSwingupEnv, gym.Env):
     @autoargs.inherit(Box2DEnv.__init__)
     def __init__(self, *args, **kwargs):
         super(rllab_cartpole_swingup.CartpoleSwingupEnv, self).__init__(
-            model_path("cartpole.xml.mako"), *args, **kwargs
+            model_path("cartpole.mako"), *args, **kwargs
         )
 
         self.max_cart_pos = 3

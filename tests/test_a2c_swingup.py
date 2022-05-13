@@ -30,7 +30,7 @@ params = {
         "gae_coef": 1,
         "policy_coef": 1.0,
         "critic_coef": 1.0,
-        "entropy_coef": 1e-5,
+        "entropy_coef": 1e-3,
         "architecture": {"hidden_size": [100, 50, 25]},
     },
     "gym_env": {

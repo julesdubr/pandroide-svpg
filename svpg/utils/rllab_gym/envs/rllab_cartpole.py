@@ -18,7 +18,7 @@ class CartPole(rllab_cartpole.CartpoleEnv, gym.Env):
         self.max_pole_speed = 4.0
         self.reset_range = 0.05
         super(rllab_cartpole.CartpoleEnv, self).__init__(
-            model_path("cartpole.xml.mako"), *args, **kwargs
+            model_path("cartpole.mako"), *args, **kwargs
         )
         self.cart = find_body(self.world, "cart")
         self.pole = find_body(self.world, "pole")

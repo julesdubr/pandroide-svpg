@@ -45,7 +45,7 @@ class ObservationWrapper(gym.ObservationWrapper):
 
 
 class RewardWrapper(gym.RewardWrapper):
-    def __init__(self, env, alpha=0.001, epsilon=1e-8) -> None:
+    def __init__(self, env, alpha=1e-3, epsilon=1e-8) -> None:
         super().__init__(env)
         self.alpha = alpha
         self.epsilon = epsilon
