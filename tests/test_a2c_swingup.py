@@ -18,7 +18,7 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 4,
+        "n_particles": 16,
         "seed": 432,
         "n_envs": 8,
         "n_steps": 16,
@@ -26,18 +26,18 @@ params = {
         "n_evals": 1,
         "clipped": True,
         "max_epochs": 16000,
-        "discount_factor": 0.99,
-        "gae_coef": 1,
+        "discount_factor": 0.9999,
+        "gae_coef": 0.99,
         "policy_coef": 1.0,
-        "critic_coef": 1.0,
-        "entropy_coef": 1e-5,
+        "critic_coef": 0.16,
+        "entropy_coef": 8e-8,
         "architecture": {"hidden_size": [100, 50, 25]},
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "RllCartPoleSwingUp-v0",
     },
-    "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
+    "optimizer": {"classname": "torch.optim.RMSprop", "lr": 4e-4},
 }
 
 if __name__ == "__main__":
