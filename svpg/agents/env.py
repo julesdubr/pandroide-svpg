@@ -1,10 +1,64 @@
+import numpy as np
+
 from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
 from svpg.utils import rllab_gym
-
 from rllab.spaces import Discrete, Box
+
+
+class ActionWrapper(gym.ActionWrapper):
+    def __init__(self, env, lower_bound=None, upper_bound=None):
+        super().__init__(env)
+        if lower_bound is None and upper_bound is None:
+            self.lower_bound, self.upper_bound = env.action_space.bounds
+        else:
+            self.lower_bound, self.upper_bound = lower_bound, upper_bound
+
+    def action(self, action):
+        scaled_action = self.lower_bound + (action + 1) * 0.5 * (
+            self.upper_bound - self.lower_bound
+        )
+        scaled_action = np.clip(scaled_action, self.lower_bound, self.upper_bound)
+        return scaled_action
+
+
+class ObservationWrapper(gym.ObservationWrapper):
+    def __init__(self, env, alpha=0.001, epsilon=1e-8):
+        super().__init__(env)
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.means = np.zeros(env.observation_space.flat_dim)
+        self.vars = np.ones(env.observation_space.flat_dim)
+        self.wrapped_env = env
+
+    def update_estimate(self, obs):
+        flat_obs = self.wrapped_env.observation_space.flatten(obs)
+        one_alpha = 1 - self.alpha
+        self.means = one_alpha * self.means + self.alpha * flat_obs
+        self.vars = one_alpha * self.vars + self.alpha * (flat_obs - self.means) ** 2
+
+    def observation(self, obs):
+        self.update_estimate(obs)
+        return (obs - self.means) / (np.sqrt(self.vars) + self.epsilon)
+
+
+class RewardWrapper(gym.RewardWrapper):
+    def __init__(self, env, alpha=0.001, epsilon=1e-8) -> None:
+        super().__init__(env)
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.mean = 0
+        self.var = 1
+
+    def update_estimate(self, reward):
+        self.mean = (1 - self.alpha) * self.mean + self.alpha * reward
+        self.var = (1 - self.alpha) * self.var + self.alpha * (reward - self.mean) ** 2
+
+    def reward(self, reward: float) -> float:
+        self.update_estimate(reward)
+        return (reward - self.mean) / (np.sqrt(self.var) + self.epsilon)
 
 
 def make_gym_env(env_name):
@@ -12,7 +66,8 @@ def make_gym_env(env_name):
     Create the environment using gym:
     - Using hydra to take arguments from a configuration file
     """
-    return gym.make(env_name)
+    env = gym.make(env_name)
+    return ObservationWrapper(RewardWrapper(ActionWrapper(env)))
 
 
 def get_env_infos(env):
