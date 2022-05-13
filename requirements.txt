@@ -7,9 +7,9 @@ path.py
 python-dateutil
 joblib==0.10.3
 mako
-Box2D
 theano
 cached-property
 salina @ git+https://github.com/osigaud/salina.git
 rllab @ git+https://github.com/rll/rllab.git
+Box2D @ git+https://github.com/pybox2d/pybox2d.git
 # my_gym @ git+https://github.com/osigaud/my_gym.git 
