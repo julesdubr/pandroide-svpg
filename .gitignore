@@ -134,6 +134,7 @@ my_gym/
 
 # outputs
 outputs/
+runs/
 .hydra
 *.log
 
