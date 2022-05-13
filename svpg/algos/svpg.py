@@ -105,6 +105,7 @@ class SVPG:
             # Critic gradient descent
             for critic_optimizer in self.algo.critic_optimizers:
                 critic_optimizer.step()
+            for critic_optimizer in self.algo.critic_optimizers:
                 critic_optimizer.zero_grad()
 
             policy_loss = (
@@ -137,9 +138,10 @@ class SVPG:
                     for action_agent in self.algo.action_agents:
                         clip_grad_norm_(action_agent.parameters(), max_gradn)
 
-                # Gradient descent
+                # Actor radient descent
                 for action_optimizer in self.algo.action_optimizers:
                     action_optimizer.step()
+                for action_optimizer in self.algo.action_optimizers:
                     action_optimizer.zero_grad()
 
                 # Log gradient norms

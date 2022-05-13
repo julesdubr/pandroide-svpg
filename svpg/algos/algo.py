@@ -58,17 +58,15 @@ class Algo:
             train_env_agent = AutoResetEnvAgent(cfg, n_envs=self.n_envs)
             eval_env_agent = NoAutoResetEnvAgent(cfg, n_envs=self.n_evals)
 
-            observation_size, n_actions, is_continuous = get_env_infos(train_env_agent)
+            (_, obs_size), (is_continuous, n_actions) = get_env_infos(train_env_agent)
             hidden_size = cfg.algorithm.architecture.hidden_size
 
             actionAgentClass = ContinuousActionAgent if is_continuous else ActionAgent
-            action_agent = actionAgentClass(observation_size, hidden_size, n_actions)
+            action_agent = actionAgentClass(obs_size, hidden_size, n_actions)
 
             self.action_agents.append(action_agent)
 
-            critic_agent = CriticAgent(
-                observation_size, cfg.algorithm.architecture.hidden_size
-            )
+            critic_agent = CriticAgent(obs_size, cfg.algorithm.architecture.hidden_size)
             self.critic_agents.append(critic_agent)
 
             # Get an agent that is executed on a complete workspace
@@ -171,6 +169,7 @@ class Algo:
             # Critic gradient descent
             for critic_optimizer in self.critic_optimizers:
                 critic_optimizer.step()
+            for critic_optimizer in self.critic_optimizers:
                 critic_optimizer.zero_grad()
 
             action_loss = action_loss + (
@@ -194,8 +193,10 @@ class Algo:
                 if show_grad:
                     self.compute_gradient_norm(epoch)
 
+                # Actor gradient descent
                 for action_optimizer in self.action_optimizers:
                     action_optimizer.step()
+                for action_optimizer in self.action_optimizers:
                     action_optimizer.zero_grad()
 
                 for pid in range(self.n_particles):

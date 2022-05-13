@@ -17,7 +17,7 @@ def make_gym_env(env_name):
 
 def get_env_infos(env):
     action_dim, state_dim = 0, 0
-    continuous_action = False
+    continuous_action, continuous_state = False, False
 
     if env.is_continuous_action() or isinstance(env.action_space, Box):
         action_dim = env.action_space.shape[0]
@@ -26,10 +26,11 @@ def get_env_infos(env):
         action_dim = env.action_space.n
     if env.is_continuous_state() or isinstance(env.observation_space, Box):
         state_dim = env.observation_space.shape[0]
+        continuous_state = True
     elif env.is_discrete_state() or isinstance(env.observation_space, Discrete):
         state_dim = env.observation_space.n
 
-    return state_dim, action_dim, continuous_action
+    return (continuous_state, state_dim), (continuous_action, action_dim)
 
 
 class AutoResetEnvAgent(AutoResetGymAgent):
