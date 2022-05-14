@@ -24,11 +24,13 @@ def plot_algos_performances(
     _, ax = plt.subplots(figsize=(9, 6))
     formatter = FuncFormatter(format_num)
 
+    colors = ["#09b542", "#008fd5", "#fc4f30", "#e5ae38", "#e5ae38", "#810f7c"]
+
     prefix = (Path(directory).parent.name + Path(directory).name).replace("-", "")
     env_name = Path(directory).parents[1].name
     algo_names = [path.name for path in Path(directory).iterdir() if path.is_dir()]
 
-    for algo_name in algo_names:
+    for algo_name, color in zip(algo_names, colors):
         _, _, rewards, t = load_algo(directory + algo_name)
 
         if mode == "best":
@@ -39,9 +41,9 @@ def plot_algos_performances(
         else:
             std = rewards.std(axis=0)
             rewards = rewards.mean(axis=0)
-            ax.fill_between(t, rewards + std, rewards - std, alpha=0.2)
+            ax.fill_between(t, rewards + std, rewards - std, alpha=0.1, color=color)
 
-        ax.plot(t, rewards, linewidth=2, label=f"{algo_name}")
+        ax.plot(t, rewards, lw=2, label=f"{algo_name}", color=color)
 
     ax.xaxis.set_major_formatter(formatter)
     plt.legend()
