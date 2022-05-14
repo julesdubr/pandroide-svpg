@@ -57,9 +57,9 @@ if __name__ == "__main__":
     a2c.run(directory)
 
     # --------- A2C-SVPG --------- #
-    # svpg = SVPG(A2C(config), is_annealed=False)
-    # svpg.run(directory)
+    svpg = SVPG(A2C(config), is_annealed=False)
+    svpg.run(directory)
 
     # --------- A2C-SVPG_annealed --------- #
-    # svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    # svpg_annealed.run(directory)
+    svpg_annealed = SVPG(A2C(config), is_annealed=True)
+    svpg_annealed.run(directory)

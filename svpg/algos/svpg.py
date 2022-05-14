@@ -86,8 +86,8 @@ class SVPG:
 
         for epoch in range(self.algo.max_epochs):
             # Execute particles' agents
-            self.algo.execute_train_agents(epoch)
-            self.algo.execute_tcritic_agents()
+            self.algo._execute_train_agents(epoch)
+            self.algo._execute_tcritic_agents()
 
             steps += self.algo.n_steps * self.algo.n_envs
 
