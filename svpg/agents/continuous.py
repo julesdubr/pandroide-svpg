@@ -11,7 +11,7 @@ class ContinuousActionAgent(Agent):
     def __init__(self, state_dim, hidden_layers, action_dim, **kwargs):
         super().__init__()
         layers = [state_dim] + list(hidden_layers) + [action_dim]
-        self.model = build_mlp(layers, activation=nn.Tanh())
+        self.model = build_mlp(layers, activation=nn.ReLU())
         # The deviation is estimated by a vector
         init_variance = th.randn(action_dim, 1)
         self.std_param = nn.parameter.Parameter(init_variance)

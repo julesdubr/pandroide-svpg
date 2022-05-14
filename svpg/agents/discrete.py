@@ -53,7 +53,7 @@ class CriticAgent(Agent):
     def __init__(self, state_dim, hidden_layers):
         super().__init__()
         self.model = build_mlp(
-            [state_dim] + list(hidden_layers) + [1], activation=nn.Tanh()
+            [state_dim] + list(hidden_layers) + [1], activation=nn.ReLU()
         )
 
     def forward(self, t, **kwargs):
