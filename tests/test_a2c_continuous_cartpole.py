@@ -2,6 +2,7 @@ import datetime
 import os
 from pathlib import Path
 import torch
+import pickle
 
 from omegaconf import OmegaConf
 
@@ -18,25 +19,26 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 1,
-        "seed": 4,
+        "n_particles": 4,
+        "seed": 432,
         "n_envs": 8,
-        "n_steps": 16,
-        "eval_interval": 100,
+        "n_steps": 100,
+        "eval_interval": 4,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 20000,
-        "discount_factor": 0.99,
+        "max_epochs": 625,
+        "discount_factor": 0.95,
+        "gae_coef": 0.8,
         "policy_coef": 0.1,
         "entropy_coef": 0.001,
         "critic_coef": 1.0,
-        "architecture": {"hidden_size": [100, 50, 25]},
+        "architecture": {"hidden_size": [64, 64]},
     },
     "gym_env": {
         "classname": "svpg.agents.env.make_gym_env",
         "env_name": "CartPoleContinuous-v1",
     },
-    "optimizer": {"classname": "torch.optim.Adam", "lr": 5e-3},
+    "optimizer": {"classname": "torch.optim.Adam", "lr": 0.01},
 }
 
 if __name__ == "__main__":
@@ -49,16 +51,14 @@ if __name__ == "__main__":
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    with open(directory + "/params.pk", "wb+") as f:
+        pickle.dump(params, f)
+
     # torch.manual_seed(config.algorithm.seed)
 
-    # --------- A2C INDEPENDENT --------- #
-    a2c = A2C(config)
-    a2c.run(directory)
-
-    # --------- A2C-SVPG --------- #
-    svpg = SVPG(A2C(config), is_annealed=False)
-    svpg.run(directory)
-
-    # # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # ---------- A2C INDEPENDENT --------- #
+    A2C(config).run(directory)
+    # ------------- A2C-SVPG ------------- #
+    SVPG(A2C(config), is_annealed=False).run(directory)
+    # --------- A2C-SVPG_annealed -------- #
+    SVPG(A2C(config), is_annealed=True).run(directory)

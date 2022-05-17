@@ -4,6 +4,8 @@ from salina.agents.gymb import AutoResetGymAgent, NoAutoResetGymAgent
 from salina import instantiate_class, get_arguments, get_class
 
 import gym
+import my_gym
+import gym_cartpole_swingup
 from svpg.utils import rllab_gym
 from rllab.spaces import Discrete, Box
 
@@ -17,11 +19,11 @@ class ActionWrapper(gym.ActionWrapper):
             self.lower_bound, self.upper_bound = lower_bound, upper_bound
 
     def action(self, action):
-        scaled_action = self.lower_bound + (action + 1) * 0.5 * (
-            self.upper_bound - self.lower_bound
-        )
-        scaled_action = np.clip(scaled_action, self.lower_bound, self.upper_bound)
-        return scaled_action
+        # scaled_action = self.lower_bound + (action + 1) * 0.5 * (
+        #     self.upper_bound - self.lower_bound
+        # )
+        # scaled_action = np.clip(scaled_action, self.lower_bound, self.upper_bound)
+        return np.clip(action, self.lower_bound, self.upper_bound)
 
 
 class ObservationWrapper(gym.ObservationWrapper):
@@ -62,14 +64,15 @@ class RewardWrapper(gym.RewardWrapper):
 
 
 def make_gym_env(env_name, wrap_action=True, wrap_reward=True, wrap_obs=True):
-    env = gym.make(env_name)
-    if wrap_action:
-        env = ActionWrapper(env)
-    if wrap_reward:
-        env = RewardWrapper(env)
-    if wrap_obs:
-        env = ObservationWrapper(env)
-    return env
+    return gym.make(env_name)
+    # env = gym.make(env_name)
+    # if wrap_action:
+    #     env = ActionWrapper(env)
+    # if wrap_reward:
+    #     env = RewardWrapper(env)
+    # if wrap_obs:
+    #     env = ObservationWrapper(env)
+    # return env
 
 
 def get_env_infos(env):
