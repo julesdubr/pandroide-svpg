@@ -25,7 +25,7 @@ params = {
         "eval_interval": 160,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 32000,
+        "max_epochs": 16000,
         "discount_factor": 0.99,
         "gae_coef": 1.0,
         "policy_coef": 1.0,

@@ -8,7 +8,7 @@ from .model import build_mlp
 
 
 class ContinuousActionAgent(Agent):
-    def __init__(self, state_dim, hidden_layers, action_dim, **kwargs):
+    def __init__(self, state_dim, hidden_layers, action_dim, eval=False, **kwargs):
         super().__init__()
         layers = [state_dim] + list(hidden_layers) + [action_dim]
         self.model = build_mlp(layers, activation=nn.ReLU())

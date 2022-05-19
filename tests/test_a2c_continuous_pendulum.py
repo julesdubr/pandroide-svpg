@@ -2,6 +2,7 @@ import datetime
 import os
 from pathlib import Path
 import torch
+import pickle
 
 from omegaconf import OmegaConf
 
@@ -49,16 +50,14 @@ if __name__ == "__main__":
     if not os.path.exists(directory):
         os.makedirs(directory)
 
+    with open(directory + "/params.pk", "wb+") as f:
+        pickle.dump(params, f)
+
     # torch.manual_seed(config.algorithm.seed)
 
-    # --------- A2C INDEPENDENT --------- #
-    a2c = A2C(config)
-    a2c.run(directory)
-
-    # --------- A2C-SVPG --------- #
-    svpg = SVPG(A2C(config), is_annealed=False)
-    svpg.run(directory)
-
-    # # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # ---------- A2C INDEPENDENT --------- #
+    A2C(config).run(directory)
+    # ------------- A2C-SVPG ------------- #
+    SVPG(A2C(config), is_annealed=False).run(directory)
+    # --------- A2C-SVPG_annealed -------- #
+    SVPG(A2C(config), is_annealed=True).run(directory)

@@ -2,7 +2,6 @@ from pickletools import optimize
 import numpy as np
 
 import torch
-import torch.nn as nn
 from torch.nn.utils import clip_grad_norm_
 
 from salina import get_arguments, get_class
@@ -55,8 +54,8 @@ class Algo:
         self.critic_optimizers = []
 
         for _ in range(self.n_particles):
-            train_env_agent = AutoResetEnvAgent(cfg, self.n_envs, wrap_reward=True)
-            eval_env_agent = NoAutoResetEnvAgent(cfg, self.n_evals, wrap_reward=False)
+            train_env_agent = AutoResetEnvAgent(cfg, self.n_envs)
+            eval_env_agent = NoAutoResetEnvAgent(cfg, self.n_evals)
 
             (_, obs_size), (is_continuous, n_actions) = get_env_infos(train_env_agent)
             hidden_size = cfg.algorithm.architecture.hidden_size
