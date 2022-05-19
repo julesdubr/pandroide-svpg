@@ -125,10 +125,10 @@ class SVPG:
                     gamma = self._annealed(steps)
 
                 params = self._get_policy_parameters()
-                params = params.to(self.algo.device)
+                # params = params.to(self.algo.device)
                 kernel = RBF()(params, params.detach())
 
-                self._add_gradients(policy_loss * gamma / self.algo.n_particles, kernel)
+                self._add_gradients(policy_loss * gamma / n_particles, kernel)
 
                 loss = entropy_loss + kernel.sum() / n_particles
                 loss.backward()

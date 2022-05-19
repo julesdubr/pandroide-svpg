@@ -7,12 +7,32 @@ from salina.workspace import Workspace
 from salina.agents import Agents, TemporalAgent
 
 from svpg.agents.env import NoAutoResetEnvAgent
+from svpg.utils.utils import load_algo
 
+from omegaconf import OmegaConf
+from pathlib import Path
 import os
 
 
-def get_embedded_spaces(cfg, agents, rewards, nb_best=4):
-    rewards = rewards.sum(axis=1)
+def get_embedded_spaces(directory, algo_name, nb_best=4, n_eval=100, seed=432):
+    env_name = str(Path(directory).parents[1].name)
+
+    config = OmegaConf.create(
+        {
+            "algorithm": {
+                "seed": seed,
+                "n_evals": n_eval,
+            },
+            "gym_env": {
+                "classname": "svpg.agents.env.make_gym_env",
+                "env_name": env_name,
+            },
+        }
+    )
+
+    agents, _, rewards, _ = load_algo(directory + algo_name)
+
+    rewards = rewards.mean(axis=1)
     bests_indices = rewards.argsort()[-nb_best:][::-1]
 
     best_rewards = rewards[bests_indices]
@@ -22,7 +42,7 @@ def get_embedded_spaces(cfg, agents, rewards, nb_best=4):
     outputs = []
 
     for pid in bests_indices:
-        env_agent = NoAutoResetEnvAgent(cfg, n_envs=cfg.algorithm.n_evals)
+        env_agent = NoAutoResetEnvAgent(config, n_envs=config.algorithm.n_evals)
 
         eval_agent = TemporalAgent(Agents(env_agent, agents[pid]))
 
@@ -42,12 +62,14 @@ def plot_state_visitation(
     embedded_spaces,
     rewards,
     algo_name,
-    suptitle=False,
+    suptitle=True,
     cmap="Blues",
     bw_adjust=0.75,
-    save=False,
+    save_fig=True,
+    save_dir="../plots",
     plot=True,
 ):
+    env_name = str(Path(directory).parents[1].name)
 
     n = rewards.shape[0]
 
@@ -61,13 +83,19 @@ def plot_state_visitation(
         ax.axis("off")
         ax.set_title(f"#{i+1} ({round(rewards[i])})")
 
-    if suptitle:
-        fig.suptitle(f"{algo_name} state visitation density", fontsize=14)
+    clean_env_name = env_name.split("-")[0]
 
-    if save:
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        filename = directory + f"{algo_name}_state_visitation.jpg"
+    if suptitle:
+        fig.suptitle(
+            f"({clean_env_name}) {algo_name} state visitation density", fontsize=14
+        )
+
+    if save_fig:
+        save_dir += f"/{env_name}"
+
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        filename = save_dir + f"/{algo_name}_{clean_env_name.lower()}_SVD.jpg"
         plt.savefig(filename)
 
     if plot:
