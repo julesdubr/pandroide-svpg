@@ -18,14 +18,14 @@ params = {
         "every_n_seconds": 10,
     },
     "algorithm": {
-        "n_particles": 4,
-        "seed": 432,
+        "n_particles": 16,
+        "seed": 31,
         "n_envs": 8,
         "n_steps": 8,
         "eval_interval": 160,
         "n_evals": 1,
         "clipped": True,
-        "max_epochs": 16000,
+        "max_epochs": 32000,
         "discount_factor": 0.99,
         "gae_coef": 1.0,
         "policy_coef": 1.0,
@@ -52,14 +52,9 @@ if __name__ == "__main__":
 
     # torch.manual_seed(config.algorithm.seed)
 
-    # --------- A2C INDEPENDENT --------- #
-    a2c = A2C(config)
-    a2c.run(directory)
-
-    # --------- A2C-SVPG --------- #
-    svpg = SVPG(A2C(config), is_annealed=False)
-    svpg.run(directory)
-
-    # --------- A2C-SVPG_annealed --------- #
-    svpg_annealed = SVPG(A2C(config), is_annealed=True)
-    svpg_annealed.run(directory)
+    # ---------- A2C INDEPENDENT ----------- #
+    A2C(config).run(directory)
+    # -------------- A2C-SVPG -------------- #
+    SVPG(A2C(config), is_annealed=False).run(directory)
+    # --------- A2C-SVPG_annealed ---------- #
+    SVPG(A2C(config), is_annealed=True).run(directory)

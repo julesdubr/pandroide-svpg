@@ -20,7 +20,7 @@ params = {
     },
     "algorithm": {
         "n_particles": 16,
-        "seed": 4,
+        "seed": 42,
         "n_envs": 8,
         "n_steps": 100,
         "eval_interval": 4,

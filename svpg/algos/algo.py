@@ -134,7 +134,9 @@ class Algo:
         # Needs to be defined by the child
         raise NotImplementedError
 
-    def run(self, save_dir, max_gradn=0.6, show_loss=False, show_grad=False):
+    def run(
+        self, save_dir="./outputs/", max_gradn=0.6, show_loss=False, show_grad=False
+    ):
         action_loss = 0
         tmp_epoch = 0
         steps = 0

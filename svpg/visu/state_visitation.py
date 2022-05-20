@@ -1,3 +1,4 @@
+import numpy as np
 from sklearn.manifold import TSNE
 
 import seaborn as sns
@@ -14,7 +15,7 @@ from pathlib import Path
 import os
 
 
-def get_embedded_spaces(directory, algo_name, nb_best=4, n_eval=100, seed=432):
+def get_embedded_spaces(directory, algo_name, nb_best=4, n_eval=10, seed=432):
     env_name = str(Path(directory).parents[1].name)
 
     config = OmegaConf.create(
@@ -32,10 +33,8 @@ def get_embedded_spaces(directory, algo_name, nb_best=4, n_eval=100, seed=432):
 
     agents, _, rewards, _ = load_algo(directory + algo_name)
 
-    rewards = rewards.mean(axis=1)
-    bests_indices = rewards.argsort()[-nb_best:][::-1]
-
-    best_rewards = rewards[bests_indices]
+    bests_indices = rewards.mean(axis=1).argsort()[-nb_best:][::-1]
+    best_rewards = []
 
     tsne = TSNE(init="random", random_state=0, learning_rate="auto", n_iter=300)
 
@@ -52,7 +51,12 @@ def get_embedded_spaces(directory, algo_name, nb_best=4, n_eval=100, seed=432):
         obs = eval_workspace["env/env_obs"]
         obs = obs.reshape(-1, obs.shape[2])
 
+        r = eval_workspace["env/cumulated_reward"][-1]
+        best_rewards.append(r.mean().item())
+
         outputs.append(tsne.fit_transform(obs))
+
+    # inds = np.argsort(best_rewards)[::-1]
 
     return outputs, best_rewards
 

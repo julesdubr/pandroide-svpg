@@ -66,12 +66,15 @@ def plot_histograms(
 ):
     plt.figure(figsize=(9, 6))
 
+    colors = ["#09b542", "#008fd5", "#fc4f30", "#e5ae38", "#e5ae38", "#810f7c"]
+    # colors = ["#fc4f30", "#008fd5", "#e5ae38"]
+
     n_bars = len(rewards)
     x = np.arange(len(list(rewards.values())[0]))
-    width = 0.5 / n_bars
+    width = 0.75 / n_bars
 
     for i, reward in enumerate(rewards.values()):
-        plt.bar(x + width * i, np.sort(reward)[::-1], width=width)
+        plt.bar(x + width * i, np.sort(reward)[::-1], width=width, color=colors[i])
 
     plt.legend(labels=rewards.keys())
     plt.xticks([], [])
